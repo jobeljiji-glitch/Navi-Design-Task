@@ -43,17 +43,17 @@ export default function PriceBreakdown({
   if (items && items.length > 0) {
     return (
       <div
-        className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3.5 border border-divider shadow-sm ${className}`}
+        className={`w-full bg-bg-surface rounded-[8px] p-[14px] flex flex-col gap-3 border border-divider shadow-sm ${className}`}
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--divider)',
           borderRadius: '8px',
         }}
       >
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2">
           {items.map(item => (
             <div key={item.label} className="flex flex-col gap-0.5">
-              <div className="flex items-center justify-between text-[15px] leading-[22px]">
+              <div className="flex items-center justify-between text-[14px] leading-[20px]">
                 <span
                   className="font-normal"
                   style={{ color: 'var(--text-secondary)' }}
@@ -97,13 +97,13 @@ export default function PriceBreakdown({
 
         <div className="flex items-center justify-between">
           <span
-            className="text-[17px] leading-[22px] font-medium"
+            className="text-[16px] leading-[22px] font-medium"
             style={{ color: 'var(--text-primary)' }}
           >
             {totalLabel}
           </span>
           <span
-            className="text-[17px] leading-[22px] font-medium"
+            className="text-[16px] leading-[22px] font-medium"
             style={{ color: 'var(--text-primary)' }}
           >
             {totalAmount}
@@ -116,16 +116,16 @@ export default function PriceBreakdown({
   // Modern fidelity matching reference 22
   return (
     <div
-      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3.5 border border-divider shadow-sm ${className}`}
+      className={`w-full bg-bg-surface rounded-[8px] p-[14px] flex flex-col gap-3 border border-divider shadow-sm ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--divider)',
         borderRadius: '8px',
       }}
     >
-      <div className="flex flex-col gap-3">
-        {/* Row 1: Ticket(s) price in grey 15 pt, value in black 15 pt */}
-        <div className="flex items-center justify-between text-[15px] leading-[22px]">
+      <div className="flex flex-col gap-2.5">
+        {/* Row 1: Ticket(s) price in grey 14 pt, value in black 14 pt */}
+        <div className="flex items-center justify-between text-[14px] leading-[20px]">
           <span
             className="font-normal"
             style={{ color: 'var(--text-secondary)' }}
@@ -140,12 +140,12 @@ export default function PriceBreakdown({
           </span>
         </div>
 
-        {/* Row 2: Convenience fees ⌄ in grey 15 pt, value in black 15 pt */}
+        {/* Row 2: Convenience fees ⌄ in grey 14 pt, value in black 14 pt */}
         <div className="flex flex-col">
           <button
             type="button"
             onClick={() => setIsFeeExpanded(prev => !prev)}
-            className="flex items-center justify-between text-[15px] leading-[22px] text-left w-full hover:opacity-90"
+            className="flex items-center justify-between text-[14px] leading-[20px] text-left w-full hover:opacity-90"
           >
             <div className="flex items-center gap-1">
               <span
@@ -155,9 +155,9 @@ export default function PriceBreakdown({
                 Convenience fees
               </span>
               {isFeeExpanded ? (
-                <ChevronUp size={16} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+                <ChevronUp size={15} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
               ) : (
-                <ChevronDown size={16} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+                <ChevronDown size={15} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
               )}
             </div>
             <span
@@ -170,7 +170,7 @@ export default function PriceBreakdown({
 
           {/* Expanded Fee Details */}
           {isFeeExpanded && (
-            <div className="flex flex-col gap-1.5 pl-3 pt-2 text-[13px] border-l-2 border-divider my-1">
+            <div className="flex flex-col gap-1 pl-3 pt-1.5 text-[12px] border-l-2 border-divider my-1">
               {feeBreakdown.map(item => (
                 <div key={item.label} className="flex items-center justify-between text-text-secondary">
                   <span>{item.label}</span>
@@ -181,16 +181,16 @@ export default function PriceBreakdown({
           )}
         </div>
 
-        {/* Row 3: Give to Underprivileged Musicians (15 pt black), (₹1 per ticket) VIEW T&C (13 pt grey underlined), ₹0.00 / Add ₹6.00 in red */}
+        {/* Row 3: Give to Underprivileged Musicians (14 pt black), (₹1 per ticket) VIEW T&C (12 pt grey underlined), ₹0.00 / Add ₹6.00 in red */}
         <div className="flex items-start justify-between">
           <div className="flex flex-col">
             <span
-              className="text-[15px] leading-[21px] font-normal"
+              className="text-[14px] leading-[19px] font-normal"
               style={{ color: 'var(--text-primary)' }}
             >
               Give to Underprivileged Musicians
             </span>
-            <div className="flex items-center gap-1 text-[13px] leading-[18px]">
+            <div className="flex items-center gap-1 text-[12px] leading-[16px]">
               <span style={{ color: 'var(--text-secondary)' }}>(₹1 per ticket)</span>
               <button
                 type="button"
@@ -204,7 +204,7 @@ export default function PriceBreakdown({
 
           <div className="flex flex-col items-end">
             <span
-              className="text-[15px] leading-[21px] font-normal"
+              className="text-[14px] leading-[19px] font-normal"
               style={{ color: 'var(--text-primary)' }}
             >
               {musiciansFee}
@@ -212,7 +212,7 @@ export default function PriceBreakdown({
             <button
               type="button"
               onClick={onAddMusicians}
-              className="text-[13px] leading-[18px] font-medium hover:opacity-85"
+              className="text-[12px] leading-[16px] font-medium hover:opacity-85"
               style={{ color: 'var(--bms-red-text)' }}
             >
               {musiciansAddText}
@@ -227,16 +227,16 @@ export default function PriceBreakdown({
         style={{ borderColor: 'var(--divider)' }}
       />
 
-      {/* Order total: 17 pt, weight 500 on both label and amount */}
+      {/* Order total: 16 pt, weight 500 on both label and amount */}
       <div className="flex items-center justify-between">
         <span
-          className="text-[17px] leading-[22px] font-medium"
+          className="text-[16px] leading-[22px] font-medium"
           style={{ color: 'var(--text-primary)' }}
         >
           {totalLabel}
         </span>
         <span
-          className="text-[17px] leading-[22px] font-medium"
+          className="text-[16px] leading-[22px] font-medium"
           style={{ color: 'var(--text-primary)' }}
         >
           {totalAmount}

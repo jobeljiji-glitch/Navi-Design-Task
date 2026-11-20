@@ -55,13 +55,13 @@ export default function ConfirmBookingScreen({
     >
       {/* Header: sits on same grey, no white bar, 20 pt wt 400 */}
       <header
-        className="flex items-center px-4 h-[54px] shrink-0"
+        className="flex items-center px-3 h-[54px] shrink-0"
         style={{ backgroundColor: '#F2F3F5' }}
       >
         <button
           type="button"
           onClick={onBack}
-          className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-black/5 active:opacity-70 transition-opacity"
+          className="w-10 h-10 -ml-1.5 rounded-full flex items-center justify-center hover:bg-black/5 active:opacity-70 transition-opacity"
           aria-label="Back"
         >
           <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
@@ -74,9 +74,9 @@ export default function ConfirmBookingScreen({
         </h1>
       </header>
 
-      {/* Scrollable Booking Details with 15 pt side margins */}
-      <div className="flex-1 overflow-y-auto px-[15px] pb-6 flex flex-col gap-3.5 no-scrollbar">
-        {/* Movie Summary Card with cancellation band inside */}
+      {/* Scrollable Booking Details with 12 pt side margins (px-3) */}
+      <div className="flex-1 overflow-y-auto px-3 pb-6 flex flex-col gap-3 no-scrollbar">
+        {/* Movie Summary Card with cancellation band inside (no fixed height, no clipping) */}
         <SummaryCard
           title={DEMO_SHOW.filmTitle}
           ticketCount={ticketCount}
@@ -107,7 +107,7 @@ export default function ConfirmBookingScreen({
 
         {/* For Sending Booking Details Card */}
         <div
-          className="w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-1 border border-divider shadow-sm"
+          className="w-full bg-bg-surface rounded-[8px] p-[14px] flex flex-col gap-1 border border-divider shadow-sm"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderColor: 'var(--divider)',
@@ -115,7 +115,7 @@ export default function ConfirmBookingScreen({
         >
           <div className="flex items-center justify-between">
             <span
-              className="text-[17px] leading-[22px] font-medium"
+              className="text-[16px] leading-[21px] font-medium"
               style={{ color: 'var(--text-primary)' }}
             >
               For Sending Booking Details
@@ -130,13 +130,13 @@ export default function ConfirmBookingScreen({
             </button>
           </div>
           <span
-            className="text-[15px] leading-[21px] mt-1"
+            className="text-[14px] leading-[20px] mt-1"
             style={{ color: 'var(--text-secondary)' }}
           >
             +91-98XXXXXX10 | rohan.m@gmail.com
           </span>
           <span
-            className="text-[15px] leading-[21px]"
+            className="text-[14px] leading-[20px]"
             style={{ color: 'var(--text-secondary)' }}
           >
             Maharashtra (for GST purposes)

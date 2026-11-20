@@ -33,34 +33,34 @@ export default function SummaryCard({
 }: SummaryCardProps) {
   return (
     <div
-      className={`w-full bg-bg-surface rounded-[8px] flex flex-col border border-divider shadow-sm overflow-hidden ${className}`}
+      className={`w-full bg-bg-surface rounded-[8px] flex flex-col border border-divider shadow-sm ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--divider)',
         borderRadius: '8px',
       }}
     >
-      <div className="p-4 flex flex-col gap-2.5">
-        {/* Line 1: Title & Ticket Count Row at 20 pt, weight 500 */}
+      <div className="p-[14px] flex flex-col gap-2">
+        {/* Line 1: Title & Ticket Count Row at 18 pt, weight 500 */}
         <div className="flex items-start justify-between gap-2">
           <h2
-            className="text-[20px] leading-[26px] font-medium text-text-primary"
+            className="text-[18px] leading-[23px] font-medium text-text-primary"
             style={{ color: 'var(--text-primary)' }}
           >
             {title}
           </h2>
           <span
-            className="text-[20px] leading-[26px] font-medium text-text-primary shrink-0"
+            className="text-[18px] leading-[23px] font-medium text-text-primary shrink-0"
             style={{ color: 'var(--text-primary)' }}
           >
             {ticketCount}
           </span>
         </div>
 
-        {/* Line 2: Date & M-Ticket Row at 17 pt, weight 500 */}
+        {/* Line 2: Date & M-Ticket Row at 16 pt, weight 500 */}
         <div className="flex items-center justify-between gap-2">
           <span
-            className="text-[17px] leading-[22px] font-medium text-text-primary"
+            className="text-[16px] leading-[21px] font-medium text-text-primary"
             style={{ color: 'var(--text-primary)' }}
           >
             {dateTime}
@@ -68,7 +68,7 @@ export default function SummaryCard({
           <button
             type="button"
             onClick={onEditTicket}
-            className="flex items-center gap-1 text-[14px] leading-none font-medium hover:opacity-80 shrink-0"
+            className="flex items-center gap-1 text-[13px] leading-none font-medium hover:opacity-80 shrink-0"
             style={{ color: 'var(--bms-red-text)' }}
           >
             <Edit3 size={13} strokeWidth={2} />
@@ -76,9 +76,9 @@ export default function SummaryCard({
           </button>
         </div>
 
-        {/* Line 3+: Meta text at 15 pt grey */}
+        {/* Line 3+: Grey info lines at 14 pt */}
         <div
-          className="flex flex-col gap-0.5 text-[15px] leading-[21px]"
+          className="flex flex-col gap-0.5 text-[14px] leading-[19px]"
           style={{ color: 'var(--text-secondary)' }}
         >
           <span>{languageFormat}</span>
@@ -89,22 +89,22 @@ export default function SummaryCard({
           </span>
         </div>
 
-        {/* Age Warning Row: red-outlined 16+ circle, 15 pt black text, no divider */}
+        {/* Age Warning Row: 22 pt red circle, 14 pt black text, fully visible (no clip) */}
         {ageRating && (
           <div className="flex items-center gap-2 pt-1">
             <div
-              className="w-5 h-5 rounded-full border border-bms-red-strong flex items-center justify-center shrink-0"
+              className="w-[22px] h-[22px] rounded-full border border-bms-red-strong flex items-center justify-center shrink-0"
               style={{ borderColor: 'var(--bms-red-strong)' }}
             >
               <span
-                className="text-[10px] font-bold"
+                className="text-[11px] font-bold"
                 style={{ color: 'var(--bms-red-strong)' }}
               >
                 {ageRating}
               </span>
             </div>
             <span
-              className="text-[15px] leading-[20px] font-normal"
+              className="text-[14px] leading-[19px] font-normal"
               style={{ color: 'var(--text-primary)' }}
             >
               {ageRatingText}
@@ -113,22 +113,22 @@ export default function SummaryCard({
         )}
       </div>
 
-      {/* Cancellation Band inside card, flush to bottom edge, sharing bottom radius */}
+      {/* Cancellation Band: INSIDE the summary card, flush to bottom edge, sharing bottom radius */}
       {showCancellationBand && (
         <div
-          className="px-4 py-2.5 flex flex-col gap-0.5 rounded-b-[8px]"
+          className="px-[14px] py-2.5 flex flex-col gap-0.5 rounded-b-[8px]"
           style={{
             backgroundColor: '#EAF8F1',
           }}
         >
           <span
-            className="text-[15px] leading-[20px] font-medium"
+            className="text-[14px] leading-[19px] font-medium"
             style={{ color: '#047857' }}
           >
             Cancellation Available
           </span>
           <span
-            className="text-[13px] leading-[18px]"
+            className="text-[14px] leading-[19px]"
             style={{ color: '#065F46' }}
           >
             {cancellationText}

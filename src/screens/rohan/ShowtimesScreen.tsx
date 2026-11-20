@@ -139,44 +139,44 @@ export default function ShowtimesScreen({
         </span>
       </div>
 
-      {/* Filter Chips Bar */}
+      {/* Filter Chips Bar: 32 pt tall, 14 pt text */}
       <div
-        className="w-full flex items-center gap-2 px-4 py-2.5 overflow-x-auto no-scrollbar shrink-0 bg-bg-surface border-b border-divider"
+        className="w-full flex items-center gap-2 px-3 py-2 overflow-x-auto no-scrollbar shrink-0 bg-bg-surface border-b border-divider"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottomColor: 'var(--divider)',
         }}
       >
-        {/* Sort by chip: grey outline, red sort icon, chevron */}
+        {/* Sort by chip: 32 pt tall, 14 pt text */}
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-divider text-[15px] font-normal whitespace-nowrap bg-bg-surface"
+          className="h-[32px] flex items-center gap-1.5 px-3 rounded-full border border-divider text-[14px] font-normal whitespace-nowrap bg-bg-surface"
           style={{ borderColor: 'var(--divider)' }}
         >
-          <ArrowUpDown size={15} strokeWidth={1.75} style={{ color: 'var(--bms-red-text)' }} />
+          <ArrowUpDown size={14} strokeWidth={1.75} style={{ color: 'var(--bms-red-text)' }} />
           <span style={{ color: 'var(--text-primary)' }}>Sort by</span>
-          <ChevronDown size={14} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+          <ChevronDown size={13} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
         </button>
 
         {/* Vertical divider */}
-        <div className="w-[1px] h-6 bg-divider shrink-0 mx-0.5" />
+        <div className="w-[1px] h-5 bg-divider shrink-0 mx-0.5" />
 
-        {/* Red outline & red text chips: 15 pt, fully rounded */}
+        {/* Red outline & red text chips: 32 pt tall, 14 pt text, fully rounded */}
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[15px] font-normal whitespace-nowrap bg-bg-surface"
+          className="h-[32px] flex items-center gap-1.5 px-3 rounded-full border text-[14px] font-normal whitespace-nowrap bg-bg-surface"
           style={{
             borderColor: 'var(--bms-red)',
             color: 'var(--bms-red-text)',
           }}
         >
           <span>Special Formats</span>
-          <ChevronDown size={14} strokeWidth={1.75} />
+          <ChevronDown size={13} strokeWidth={1.75} />
         </button>
 
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[15px] font-normal whitespace-nowrap bg-bg-surface"
+          className="h-[32px] flex items-center gap-1.5 px-3 rounded-full border text-[14px] font-normal whitespace-nowrap bg-bg-surface"
           style={{
             borderColor: 'var(--bms-red)',
             color: 'var(--bms-red-text)',
@@ -187,7 +187,7 @@ export default function ShowtimesScreen({
 
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[15px] font-normal whitespace-nowrap bg-bg-surface"
+          className="h-[32px] flex items-center gap-1.5 px-3 rounded-full border text-[14px] font-normal whitespace-nowrap bg-bg-surface"
           style={{
             borderColor: 'var(--bms-red)',
             color: 'var(--bms-red-text)',
@@ -197,20 +197,20 @@ export default function ShowtimesScreen({
         </button>
       </div>
 
-      {/* Cinema Listings Content: sitting on light-grey page, ~22 pt side margins */}
-      <div className="flex-1 overflow-y-auto px-[22px] py-4 flex flex-col gap-4 no-scrollbar">
-        {/* Cinema 1: Cineplex Kurla (Active Demo Show) */}
+      {/* Cinema Listings Content: sitting on light-grey page, 12 pt side margins (px-3) */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3 no-scrollbar">
+        {/* Cinema 1: Cineplex Kurla (Active Demo Show) - padding 14 pt */}
         <div
-          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3.5 border border-divider shadow-sm"
+          className="w-full rounded-[8px] p-[14px] flex flex-col gap-3 border border-divider shadow-sm"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderColor: 'var(--divider)',
           }}
         >
-          <div className="flex items-start gap-3">
-            {/* 56 pt logo tile: rounded 8, light border, brand initials */}
+          <div className="flex items-start gap-2.5">
+            {/* 36 pt logo tile: CP Cineplex */}
             <div
-              className="w-[56px] h-[56px] rounded-[8px] border border-divider flex items-center justify-center font-bold text-[16px] shrink-0"
+              className="w-[36px] h-[36px] rounded-[6px] border border-divider flex items-center justify-center font-bold text-[13px] shrink-0"
               style={{
                 backgroundColor: 'var(--bg-muted)',
                 borderColor: 'var(--divider)',
@@ -220,18 +220,18 @@ export default function ShowtimesScreen({
               CP
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[56px]">
-              {/* Line 1: Name + Info + Heart */}
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-1 min-w-0">
+            <div className="flex-1 min-w-0 flex flex-col">
+              {/* Line 1: Name (15 pt weight 500, wrap to 2 lines, no ellipsis) + Info + Heart */}
+              <div className="flex items-start justify-between gap-1.5">
+                <div className="flex items-center gap-1 min-w-0 flex-wrap">
                   <h2
-                    className="text-[16px] leading-[20px] font-medium truncate"
+                    className="text-[15px] leading-[19px] font-medium"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {DEMO_SHOW.cinemaName}
                   </h2>
                   <Info
-                    size={15}
+                    size={14}
                     strokeWidth={1.75}
                     style={{ color: 'var(--text-secondary)' }}
                     className="shrink-0"
@@ -239,21 +239,21 @@ export default function ShowtimesScreen({
                 </div>
                 <button
                   type="button"
-                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0"
+                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0 -mt-0.5"
                   aria-label="Favorite cinema"
                 >
                   <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
                 </button>
               </div>
 
-              {/* Line 2: Distance & Cancellation + Visited tag */}
+              {/* Line 2: Distance & Cancellation (13 pt grey) + Visited tag */}
               <div
-                className="flex items-center justify-between gap-1 text-[13px] mt-1"
+                className="flex items-center justify-between gap-1 text-[13px] leading-[17px] mt-1"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Navigation size={12} strokeWidth={1.75} className="shrink-0" />
-                  <span className="truncate">{DEMO_SHOW.distanceKm} | Cancellation available</span>
+                  <span>{DEMO_SHOW.distanceKm} | Cancellation available</span>
                 </div>
                 <span
                   className="text-[11px] font-medium px-1.5 py-0.5 rounded-[2px] shrink-0"
@@ -268,8 +268,8 @@ export default function ShowtimesScreen({
             </div>
           </div>
 
-          {/* Active Showtime Pill: 200 x 72 pt, no SCREEN 4 badge, centred 17 pt time */}
-          <div className="flex items-center gap-3 pt-1">
+          {/* Showtime Pill: 110 x 39 pt, 15 pt centred time */}
+          <div className="flex items-center gap-2 pt-1">
             <ShowtimePill
               time="09:15 PM"
               onClick={() => onSelectShowtime?.('09:15 PM')}
@@ -277,37 +277,38 @@ export default function ShowtimesScreen({
           </div>
         </div>
 
-        {/* Cinema 2: INOX R-City, Ghatkopar (Context cinema, normal-looking, not greyed out) */}
+        {/* Cinema 2: INOX R-City, Ghatkopar - logo tile "IX" */}
         <div
-          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3.5 border border-divider shadow-sm"
+          className="w-full rounded-[8px] p-[14px] flex flex-col gap-3 border border-divider shadow-sm"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderColor: 'var(--divider)',
           }}
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2.5">
+            {/* 36 pt logo tile: IX INOX */}
             <div
-              className="w-[56px] h-[56px] rounded-[8px] border border-divider flex items-center justify-center font-bold text-[16px] shrink-0"
+              className="w-[36px] h-[36px] rounded-[6px] border border-divider flex items-center justify-center font-bold text-[13px] shrink-0"
               style={{
                 backgroundColor: 'var(--bg-muted)',
                 borderColor: 'var(--divider)',
                 color: '#D97706',
               }}
             >
-              PVR
+              IX
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[56px]">
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-1 min-w-0">
+            <div className="flex-1 min-w-0 flex flex-col">
+              <div className="flex items-start justify-between gap-1.5">
+                <div className="flex items-center gap-1 min-w-0 flex-wrap">
                   <h2
-                    className="text-[16px] leading-[20px] font-medium truncate"
+                    className="text-[15px] leading-[19px] font-medium"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     INOX: R-City, Ghatkopar
                   </h2>
                   <Info
-                    size={15}
+                    size={14}
                     strokeWidth={1.75}
                     style={{ color: 'var(--text-secondary)' }}
                     className="shrink-0"
@@ -315,7 +316,7 @@ export default function ShowtimesScreen({
                 </div>
                 <button
                   type="button"
-                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0"
+                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0 -mt-0.5"
                   aria-label="Favorite cinema"
                 >
                   <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
@@ -323,18 +324,18 @@ export default function ShowtimesScreen({
               </div>
 
               <div
-                className="flex items-center justify-between gap-1 text-[13px] mt-1"
+                className="flex items-center justify-between gap-1 text-[13px] leading-[17px] mt-1"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Navigation size={12} strokeWidth={1.75} className="shrink-0" />
-                  <span className="truncate">4.2 km | Cancellation available</span>
+                  <span>4.2 km | Cancellation available</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-2 pt-1">
             <ShowtimePill
               time="12:45 PM"
               sublabel="ENG"
@@ -343,17 +344,18 @@ export default function ShowtimesScreen({
           </div>
         </div>
 
-        {/* Cinema 3: Cinepolis Magnet Mall (Context cinema, normal-looking) */}
+        {/* Cinema 3: Cinepolis Magnet Mall - logo tile "CN" */}
         <div
-          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3.5 border border-divider shadow-sm"
+          className="w-full rounded-[8px] p-[14px] flex flex-col gap-3 border border-divider shadow-sm"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderColor: 'var(--divider)',
           }}
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2.5">
+            {/* 36 pt logo tile: CN Cinepolis */}
             <div
-              className="w-[56px] h-[56px] rounded-[8px] border border-divider flex items-center justify-center font-bold text-[16px] shrink-0"
+              className="w-[36px] h-[36px] rounded-[6px] border border-divider flex items-center justify-center font-bold text-[13px] shrink-0"
               style={{
                 backgroundColor: 'var(--bg-muted)',
                 borderColor: 'var(--divider)',
@@ -363,17 +365,17 @@ export default function ShowtimesScreen({
               CN
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[56px]">
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-1 min-w-0">
+            <div className="flex-1 min-w-0 flex flex-col">
+              <div className="flex items-start justify-between gap-1.5">
+                <div className="flex items-center gap-1 min-w-0 flex-wrap">
                   <h2
-                    className="text-[16px] leading-[20px] font-medium truncate"
+                    className="text-[15px] leading-[19px] font-medium"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     Cinepolis: Magnet Mall, Bhandup (W)
                   </h2>
                   <Info
-                    size={15}
+                    size={14}
                     strokeWidth={1.75}
                     style={{ color: 'var(--text-secondary)' }}
                     className="shrink-0"
@@ -381,7 +383,7 @@ export default function ShowtimesScreen({
                 </div>
                 <button
                   type="button"
-                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0"
+                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0 -mt-0.5"
                   aria-label="Favorite cinema"
                 >
                   <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
@@ -389,12 +391,12 @@ export default function ShowtimesScreen({
               </div>
 
               <div
-                className="flex items-center justify-between gap-1 text-[13px] mt-1"
+                className="flex items-center justify-between gap-1 text-[13px] leading-[17px] mt-1"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Navigation size={12} strokeWidth={1.75} className="shrink-0" />
-                  <span className="truncate">1.8 km | Non-cancellable</span>
+                  <span>1.8 km | Non-cancellable</span>
                 </div>
                 <span
                   className="text-[11px] font-medium px-1.5 py-0.5 rounded-[2px] shrink-0"
@@ -409,7 +411,7 @@ export default function ShowtimesScreen({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-2 pt-1">
             <ShowtimePill
               time="05:50 PM"
               sublabel="LASER"
