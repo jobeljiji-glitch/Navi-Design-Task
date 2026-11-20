@@ -291,8 +291,10 @@ export function friendFlowReducer(state: AppState, action: AppAction): AppState 
       const ids = chosenSeats(state, name);
       if (ids.length === 0) return state;
       const now = state.clock.now;
-      const taken = ids.find((id) => isTakenByOther(state.seats[id], name, now));
+      if (hasPaid(state, name) || hasDeclined(state, name)) return state;
+      const taken = ids.find((id) => !isFreeFor(state.seats[id], name, now));
       if (taken) {
+        if (!isTakenByOther(state.seats[taken], name, now)) return state; // paid or released meanwhile
         const session = state.friendFlow.sessions[name];
         return setSession(state, name, { conflict: conflictCopy(taken), seatId: session.seatId === taken ? null : session.seatId, extra: 0 });
       }
@@ -325,20 +327,24 @@ export function friendFlowReducer(state: AppState, action: AppAction): AppState 
     }
 
     case 'FRIEND_PHONE_SUBMIT': {
+      if (openPayment(state, action.name)?.status !== 'locked') return state;
       const s = setSession(state, action.name, { phone: action.phone, screen: 'otp' });
       return { ...s, friendPayments: s.friendPayments.map((p) => (p.name === action.name && p.status === 'locked' ? { ...p, phone: action.phone } : p)) };
     }
 
+    // Checkout steps only move while the friend has a live (locked) payment.
     case 'FRIEND_OTP_OK':
+      if (openPayment(state, action.name)?.status !== 'locked') return state;
       return setSession(state, action.name, { verified: true, screen: 'upi' });
 
     case 'FRIEND_CHOOSE_UPI':
+      if (openPayment(state, action.name)?.status !== 'locked') return state;
       return setSession(state, action.name, { upiApp: action.app, screen: 'approve' });
 
     case 'FRIEND_APPROVE': {
       const { name } = action;
       const payment = openPayment(state, name);
-      if (!payment || !isHoldLive(state)) return state;
+      if (!payment || payment.status === 'pending' || !isHoldLive(state)) return state;
       const now = state.clock.now;
       const lost = payment.seatIds.find((id) => !isFreeFor(state.seats[id], name, now));
       if (lost) {
@@ -526,6 +532,7 @@ export interface FriendPageView {
   priceSub: string;
   heldUntil: string;
   cancellation: string;
+  cancellationBody: string;
   cta: string;
   ctaEnabled: boolean;
   extra: number;
@@ -587,6 +594,8 @@ export function selectFriendPage(state: AppState, name: FriendName): FriendPageV
     priceSub: 'incl. fees',
     heldUntil: `Held for you until ${deadline}${day ? ` ${day}` : ''}`,
     cancellation: "Cancellation: Cinema's rules apply",
+    // Failure #26 (draft copy)
+    cancellationBody: `Your ticket follows the cinema's cancellation rules, like any BookMyShow booking. Cancel before ${deadline}${day ? ` ${day}` : ''} and your seat goes back to the group; after that it goes back on sale.`,
     cta: n ? `Pay ${amount} for ${seatsText(validIds)}` : 'Pick a seat',
     ctaEnabled: n > 0 && (hold.status === 'active' || hold.status === 'resolving'),
     extra: n ? n - 1 : 0,
@@ -646,6 +655,8 @@ export interface FriendTicketView {
   groupLine: string;
   qrValue: string;
   seats: string;
+  ticketCount: string;
+  bookingId: string;
   amount: string;
   screen: string;
 }
@@ -679,6 +690,9 @@ export function selectFriendTicket(state: AppState, name: FriendName): FriendTic
     groupLine: `${paidSeats} of ${hold.seatIds.length} in · ${names.join(', ')}`,
     qrValue: `BMS-GROUP-${hold.id}-${payment.id}`,
     seats: `${tier}-${seats}`,
+    ticketCount: `${count} Ticket(s)`,
+    // Deterministic booking ID (ref 16 shows one): base-36 of the payment time + seat
+    bookingId: `BOOKING ID: ${(payment.at / 1000).toString(36).toUpperCase().slice(-5)}${payment.seatIds[0].slice(-2)}`,
     amount,
     screen: state.show.screen.toUpperCase(),
   };

@@ -9,7 +9,8 @@ import { motion, AnimatePresence } from 'motion/react'
  */
 export interface UpiMandateScreenProps {
   amount: string
-  mode?: 'block' | 'payment'
+  /** block = Reserve Pay (organiser), payment = pay-and-refund fallback, pay = a friend's one-off payment (05) */
+  mode?: 'block' | 'payment' | 'pay'
   debitedNow?: string
   furtherDebits?: string
   blockEnds?: string
@@ -111,6 +112,12 @@ export default function UpiMandateScreen({
               <DetailRow label="Block ends" value={blockEnds} />
               <DetailRow label="Type" value="UPI Reserve Pay" />
             </>
+          ) : mode === 'pay' ? (
+            <>
+              <DetailRow label="Debited now" value={amount} />
+              <DetailRow label="From" value={payerVpa} />
+              <DetailRow label="Type" value="UPI payment" />
+            </>
           ) : (
             <>
               <DetailRow label="Debited now" value={amount} />
@@ -125,11 +132,13 @@ export default function UpiMandateScreen({
             {plainNote}
           </div>
         )}
-        <p className="mt-3 text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
-          {isBlock
-            ? 'Unused money is unblocked automatically. You can cancel this block from Mandates.'
-            : 'Each time a friend pays, their share comes back to this account.'}
-        </p>
+        {mode !== 'pay' && (
+          <p className="mt-3 text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
+            {isBlock
+              ? 'Unused money is unblocked automatically. You can cancel this block from Mandates.'
+              : 'Each time a friend pays, their share comes back to this account.'}
+          </p>
+        )}
       </div>
 
       {/* Actions */}

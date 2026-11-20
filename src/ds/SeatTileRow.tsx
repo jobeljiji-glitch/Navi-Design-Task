@@ -2,7 +2,18 @@
  * SeatTileRow (04b): the group's seats as a row of seat-map tiles with a caption under each.
  * Colours are the seat-map states (Seat.tsx / design-system §1), scaled up to 44 pt tiles.
  */
-export type SeatTileKind = 'owner' | 'paid' | 'covered' | 'held' | 'paying' | 'kept' | 'released'
+export type SeatTileKind =
+  | 'owner'
+  | 'paid'
+  | 'covered'
+  | 'held'
+  | 'paying'
+  | 'kept'
+  | 'released'
+  // Friend's picker (05): the real BMS seat-map language
+  | 'available'
+  | 'selected'
+  | 'taken'
 
 export interface SeatTile {
   id: string
@@ -29,6 +40,12 @@ function tileStyle(kind: SeatTileKind) {
       return { backgroundColor: 'var(--seat-paying-fill)', border: '1px solid var(--seat-held-border)', color: 'var(--text-warning)' }
     case 'released':
       return { backgroundColor: 'var(--seat-sold)', border: '1px solid var(--seat-sold)', color: 'var(--seat-sold-text)' }
+    case 'taken':
+      return { backgroundColor: 'var(--seat-sold)', border: '1px solid var(--seat-sold)', color: 'var(--text-secondary)' }
+    case 'available':
+      return { backgroundColor: 'var(--bg-surface)', border: '1px solid var(--seat-available-border)', color: 'var(--seat-number)' }
+    case 'selected':
+      return { backgroundColor: 'var(--seat-selected)', border: '1px solid var(--seat-selected)', color: 'var(--text-on-brand)' }
     case 'held':
     default:
       return { backgroundColor: 'var(--seat-held-fill)', border: '1px dashed var(--seat-held-border)', color: 'var(--text-warning)' }
@@ -36,7 +53,7 @@ function tileStyle(kind: SeatTileKind) {
 }
 
 function captionColor(kind: SeatTileKind) {
-  if (kind === 'owner' || kind === 'paid' || kind === 'covered') return 'var(--text-success)'
+  if (kind === 'owner' || kind === 'paid' || kind === 'covered' || kind === 'selected') return 'var(--text-success)'
   if (kind === 'paying') return 'var(--text-warning)'
   return 'var(--text-secondary)'
 }
@@ -60,7 +77,7 @@ export default function SeatTileRow({ tiles, onTileClick, isTappable, className 
               <button
                 type="button"
                 role="radio"
-                aria-checked={t.kind === 'owner'}
+                aria-checked={t.kind === 'owner' || t.kind === 'selected'}
                 aria-label={`Seat ${t.id}${t.caption ? `, ${t.caption}` : ''}`}
                 onClick={() => onTileClick!(t.id)}
                 className="w-full active:scale-95 transition-transform"

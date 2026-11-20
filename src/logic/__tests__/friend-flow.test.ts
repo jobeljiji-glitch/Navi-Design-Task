@@ -246,6 +246,12 @@ describe('friendFlow: more seats, assigned mode, restart', () => {
     expect(page.tiles.find((t) => t.id === 'D08')!.kind).toBe('selected');
   });
 
+  it('paying again after a ticket never re-locks a paid seat', () => {
+    const s = run(payFlow(shared(), 'Amit'), { type: 'FRIEND_OPEN_LINK', name: 'Amit' }, { type: 'FRIEND_PAY', name: 'Amit' });
+    expect(s.seats.D08.state).toBe('paid_friend');
+    expect(s.friendFlow.sessions.Amit.screen).toBe('ticket');
+  });
+
   it('restart resets the friend slice', () => {
     const s = run(payFlow(shared(), 'Amit'), { type: 'RESTART_DEMO' });
     expect(s.friendFlow.share).toBeNull();

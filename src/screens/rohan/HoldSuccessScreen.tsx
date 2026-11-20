@@ -25,6 +25,10 @@ import { selectHoldSuccess } from '@/logic/holdFlow'
  */
 export interface HoldSuccessScreenProps {
   onBack?: () => void
+  /** "Friday movie" contact or the WhatsApp tile in the share sheet: opens the simulated chat */
+  onOpenChat?: () => void
+  /** Bank SMS banner on mount (off on the board stand-in so it doesn't repeat) */
+  showSms?: boolean
 }
 
 const SHARE_CONTACTS: IosShareContact[] = [
@@ -37,10 +41,10 @@ const SHARE_CONTACTS: IosShareContact[] = [
 const SMS_DELAY_MS = 600
 const SMS_SHOW_MS = 4000
 
-export default function HoldSuccessScreen({ onBack }: HoldSuccessScreenProps) {
+export default function HoldSuccessScreen({ onBack, onOpenChat, showSms = true }: HoldSuccessScreenProps) {
   const state = useDemoStore()
   const v = selectHoldSuccess(state)
-  const sms = state.smsToasts[0]
+  const sms = showSms ? state.smsToasts[0] : undefined
 
   const [smsVisible, setSmsVisible] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -188,8 +192,14 @@ export default function HoldSuccessScreen({ onBack }: HoldSuccessScreenProps) {
         onClose={() => setShareOpen(false)}
         message={v.shareMessage.split('\n')[0]}
         contacts={SHARE_CONTACTS}
-        onSelectContact={() => setShareOpen(false)}
-        onSelectApp={() => setShareOpen(false)}
+        onSelectContact={(c) => {
+          setShareOpen(false)
+          if (c.isGroup) onOpenChat?.()
+        }}
+        onSelectApp={(app) => {
+          setShareOpen(false)
+          if (app === 'WhatsApp') onOpenChat?.()
+        }}
         onCopy={() => {
           setShareOpen(false)
           copyLink()

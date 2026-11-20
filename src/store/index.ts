@@ -1,10 +1,9 @@
 import { create } from 'zustand';
-import { holdFlowReducer, type FlowAction } from '../logic/holdFlow';
+import { friendFlowReducer, withFriendFlow, type AppAction, type AppState } from '../logic/friendFlow';
 import { createInitialDemoState } from '../logic/seed';
-import type { DemoState } from '../logic/types';
 
-export interface DemoStore extends DemoState {
-  dispatch: (action: FlowAction) => void;
+export interface DemoStore extends AppState {
+  dispatch: (action: AppAction) => void;
   advanceClockMinutes: (minutes: number) => void;
   setClockTime: (timeMs: number) => void;
   setLiveClock: (isLive: boolean) => void;
@@ -14,10 +13,10 @@ export const useDemoStore = create<DemoStore>((set, get) => {
   let liveInterval: ReturnType<typeof setInterval> | null = null;
 
   return {
-    ...createInitialDemoState(),
+    ...withFriendFlow(createInitialDemoState()),
 
-    dispatch: (action: FlowAction) => {
-      set((state) => holdFlowReducer(state, action));
+    dispatch: (action: AppAction) => {
+      set((state) => friendFlowReducer(state, action));
     },
 
     advanceClockMinutes: (minutes: number) => {

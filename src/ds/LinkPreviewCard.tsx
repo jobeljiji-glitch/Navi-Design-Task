@@ -1,3 +1,10 @@
+import PosterArt from './PosterArt'
+
+/**
+ * Link preview inside a chat bubble (spec §4 step 4), laid out like a WhatsApp rich preview:
+ * artwork on top, then a grey body with title, description, deadline and domain.
+ * Static: values come from `selectLinkPreview`.
+ */
 export interface LinkPreviewCardProps {
   filmTitle?: string
   headline?: string
@@ -11,65 +18,37 @@ export interface LinkPreviewCardProps {
 export default function LinkPreviewCard({
   filmTitle = 'Monsoon Heist',
   headline = 'Rohan is holding 6 seats for Monsoon Heist',
-  subtitle = 'Fri 9:15 PM · Cineplex Kurla · ₹277.14 each',
+  subtitle = 'Fri, 9:15 PM · Cineplex Kurla · ₹277.14 each',
   deadlineNote = 'Pick your seat by 7:15 PM today',
-  domain = 'bms.link/g/k7Qx2',
+  domain = 'bms.link',
   onClick,
   className = '',
 }: LinkPreviewCardProps) {
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className={`rounded-[12px] overflow-hidden border transition-transform active:scale-[0.98] cursor-pointer ${className}`}
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--divider)',
-      }}
+      className={`w-full block text-left rounded-[8px] overflow-hidden active:opacity-80 ${className}`}
+      style={{ backgroundColor: 'var(--wa-preview-bg)' }}
+      aria-label={`Open link: ${headline}`}
+      data-testid="link-preview"
+      data-tour="link-preview"
     >
-      {/* Artwork banner */}
-      <div
-        className="w-full h-24 relative p-3 flex flex-col justify-end overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, var(--trending-blue), var(--bms-red-strong))',
-        }}
-      >
-        <span className="text-[10px] font-medium uppercase tracking-wider text-white opacity-80">
-          BookMyShow · Group Hold
-        </span>
-        <h4 className="text-[16px] font-medium text-white leading-tight truncate">
-          {filmTitle}
-        </h4>
-      </div>
-
-      {/* Content */}
-      <div className="p-3 flex flex-col gap-1">
-        <span
-          className="text-[14px] leading-[18px] font-medium text-text-primary line-clamp-2"
-          style={{ color: 'var(--text-primary)' }}
-        >
+      <PosterArt title={filmTitle} titleSize={24} tagline="GROUP HOLD · BOOKMYSHOW" className="w-full h-[132px]" />
+      <span className="block px-2.5 pt-2 pb-2.5">
+        <span className="block text-[15px] leading-[20px] font-semibold" style={{ color: 'var(--text-primary)' }}>
           {headline}
         </span>
-        <span
-          className="text-[12px] leading-[16px] text-text-secondary"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+        <span className="block text-[13px] leading-[18px] mt-0.5" style={{ color: 'var(--wa-meta)' }}>
           {subtitle}
         </span>
-        <div className="flex items-center justify-between pt-1 mt-1 border-t border-divider">
-          <span
-            className="text-[11px] font-medium text-text-warning"
-            style={{ color: 'var(--text-warning)' }}
-          >
-            {deadlineNote}
-          </span>
-          <span
-            className="text-[11px] text-text-secondary"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {domain}
-          </span>
-        </div>
-      </div>
-    </div>
+        <span className="block text-[13px] leading-[18px]" style={{ color: 'var(--wa-meta)' }}>
+          {deadlineNote}
+        </span>
+        <span className="block text-[12px] leading-[16px] mt-1" style={{ color: 'var(--wa-meta)' }}>
+          {domain}
+        </span>
+      </span>
+    </button>
   )
 }

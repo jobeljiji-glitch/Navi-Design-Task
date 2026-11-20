@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import DeviceFrame from '@/demo/DeviceFrame'
 import MovieDetailScreen from './MovieDetailScreen'
@@ -12,11 +12,14 @@ import type { Seat as LogicSeat } from '@/logic/types'
 import { DEMO_SHOW } from '@/logic/seed'
 import { selectHoldSheet } from '@/logic/holdFlow'
 import { useDemoStore } from '@/store'
-import { LoaderSheet, UpiMandateScreen } from '@/ds'
+import { IosNotification, LoaderSheet, UpiMandateScreen } from '@/ds'
+import ChatScreen from '@/screens/chat/ChatScreen'
+import { selectLatestFriendNotification, selectShareDraft } from '@/logic/friendFlow'
 
 const DEMO_GROUP = ['D05', 'D06', 'D07', 'D08', 'D09', 'D10']
 const ALREADY_HOLDING = "You're already holding seats for this show."
 const UPI_OPENING_MS = 600
+const CHAT_TO_BOARD_MS = 900
 
 export default function RohanFlow() {
   const location = useLocation()
@@ -24,7 +27,11 @@ export default function RohanFlow() {
   const state = useDemoStore()
   const { dispatch, hold } = state
   const holdView = selectHoldSheet(state)
-  const holdPaths = ['/rohan/hold', '/rohan/upi-opening', '/rohan/upi', '/rohan/held']
+  const holdPaths = ['/rohan/hold', '/rohan/upi-opening', '/rohan/upi', '/rohan/held', '/rohan/chat', '/rohan/board']
+  const activePaths = ['/rohan/held', '/rohan/chat', '/rohan/board']
+  const friendNotif = selectLatestFriendNotification(state)
+  const [bannerId, setBannerId] = useState<string | null>(null)
+  const seenNotif = useRef<string | null | undefined>(undefined)
 
   // Selected seats state across the booking flow (defaulting to 6 seats: D05-D10)
   const [selectedSeats, setSelectedSeats] = useState<LogicSeat[]>([
@@ -55,14 +62,40 @@ export default function RohanFlow() {
       }
       s.dispatch({ type: 'BEGIN_GROUP_HOLD', seatIds: DEMO_GROUP })
       if (path === '/rohan/upi' || path === '/rohan/upi-opening') s.dispatch({ type: 'OPEN_UPI' })
-      if (path === '/rohan/held') {
+      if (activePaths.includes(path)) {
         s.dispatch({ type: 'OPEN_UPI' })
         s.dispatch({ type: 'APPROVE_HOLD', pin: '0000' })
+      }
+      if (path === '/rohan/board') {
+        const d = selectShareDraft(useDemoStore.getState())
+        if (d) s.dispatch({ type: 'SHARE_TO_GROUP', text: `${d.editable}\n${d.locked}` })
       }
     } else if (path === '/rohan/hold' && (s.hold.status === 'active' || s.hold.status === 'resolving')) {
       navigate('/rohan/held', { replace: true })
     }
   }, [path]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Friend events reach Rohan as iOS banners (spec §4 step 6 "Simultaneously on Rohan").
+  // Only notifications that arrive after mount; the first render just records the latest id.
+  useEffect(() => {
+    const id = friendNotif?.id ?? null
+    if (seenNotif.current === undefined) {
+      seenNotif.current = id
+      return
+    }
+    if (id && id !== seenNotif.current) {
+      seenNotif.current = id
+      setBannerId(id)
+    }
+  }, [friendNotif?.id])
+
+  // Step 4: after sending in the chat, Rohan lands on the board (placeholder until prompt 06)
+  const sentAt = state.friendFlow.share?.sentAt
+  useEffect(() => {
+    if (path !== '/rohan/chat' || !sentAt) return
+    const t = setTimeout(() => navigate('/rohan/board'), CHAT_TO_BOARD_MS)
+    return () => clearTimeout(t)
+  }, [path, sentAt]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Step 3 transition: "Opening your UPI app…" for 600 ms
   useEffect(() => {
@@ -143,7 +176,14 @@ export default function RohanFlow() {
         )
 
       case '/rohan/held':
-        return <HoldSuccessScreen onBack={() => navigate('/rohan/seats')} />
+        return <HoldSuccessScreen onBack={() => navigate('/rohan/seats')} onOpenChat={() => navigate('/rohan/chat')} />
+
+      case '/rohan/chat':
+        return <ChatScreen viewer="Rohan" onBack={() => navigate('/rohan/held')} />
+
+      // Status board: prompt 06. Until then the live hold screen stands in (D-068).
+      case '/rohan/board':
+        return <HoldSuccessScreen showSms={false} onBack={() => navigate('/rohan/chat')} onOpenChat={() => navigate('/rohan/chat')} />
 
       case '/rohan/showtimes':
         return (
@@ -237,6 +277,20 @@ export default function RohanFlow() {
   return (
     <DeviceFrame time="11:04">
       {renderActiveScreen()}
+      {friendNotif && (
+        <IosNotification
+          inFrameOverlay
+          app="bms"
+          title={friendNotif.title}
+          body={friendNotif.body}
+          visible={bannerId === friendNotif.id}
+          onDismiss={() => setBannerId(null)}
+          onClick={() => {
+            setBannerId(null)
+            navigate('/rohan/board')
+          }}
+        />
+      )}
     </DeviceFrame>
   )
 }

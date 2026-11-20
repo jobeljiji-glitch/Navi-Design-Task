@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import DeviceFrame from '@/demo/DeviceFrame'
 import RohanFlow from '@/screens/rohan/RohanFlow'
+import FriendFlow from '@/screens/friend/FriendFlow'
 
 // Lazy-loaded routes to minimize main production bundle size
 const KitPage = lazy(() => import('@/screens/KitPage'))
@@ -62,27 +63,6 @@ function DemoStage() {
   )
 }
 
-function FriendPlaceholder() {
-  return (
-    <DeviceFrame time="9:41">
-      <div
-        style={{
-          display: 'flex',
-          height: '100%',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          gap: '8px',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        <span style={{ fontSize: '14px', fontWeight: 500 }}>Friend's screen</span>
-        <span style={{ fontSize: '12px' }}>Coming soon</span>
-      </div>
-    </DeviceFrame>
-  )
-}
-
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
@@ -94,7 +74,7 @@ export default function App() {
         <Route path="/" element={<DemoStage />} />
         <Route path="/rohan/*" element={<RohanFlow />} />
         <Route path="/rohan" element={<RohanFlow />} />
-        <Route path="/friend/:name" element={<FriendPlaceholder />} />
+        <Route path="/friend/:name" element={<FriendFlow />} />
         <Route
           path="/kit"
           element={

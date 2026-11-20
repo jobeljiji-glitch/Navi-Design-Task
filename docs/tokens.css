@@ -69,6 +69,32 @@
   --whatsapp-green: #25D366;            /* new 04b: user-approved stylised WhatsApp tile/badge (D-041) */
   --ios-group-pink: #FFD6DF;            /* new 04b: group contact avatar (ref 17) */
   --ios-avatar-bg: #E3E3E8;             /* new 04b: initials avatars */
+  /* Simulated chat, WhatsApp-styled (user-approved exception, D-041 / D-066) */
+  --wa-wallpaper: #EFE7DE;              /* new 05 */
+  --wa-header: #F6F6F6;                 /* new 05 */
+  --wa-bubble-out: #D9FDD3;             /* new 05 */
+  --wa-bubble-in: #FFFFFF;              /* new 05 */
+  --wa-meta: #667781;                   /* new 05: times, member list (4.6:1 on bubbles) */
+  --wa-tick: #53BDEB;                   /* new 05: read ticks */
+  --wa-notice-bg: #FFF5C4;              /* new 05: system notice chip */
+  --wa-notice-text: #54656F;            /* new 05 */
+  --wa-preview-bg: #F0F2F5;             /* new 05: link preview body */
+  --wa-link: #027EB5;                   /* new 05: links in bubbles */
+  --wa-composer-bg: #FFFFFF;            /* new 05 */
+  --wa-bubble-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13); /* new 05 */
+  --wa-name-1: #C2185B;                 /* new 05: sender names */
+  --wa-name-2: #1F7A4D;                 /* new 05 */
+  --wa-name-3: #6A3FB5;                 /* new 05 */
+  --wa-name-4: #B5530F;                 /* new 05 */
+
+  /* Generated poster (spec §1: teal to indigo, rain streaks) */
+  --poster-1: #0F2B38;                  /* new 05: from the movie-detail poster */
+  --poster-2: #153B50;
+  --poster-3: #1E293B;
+  --poster-4: #0F172A;
+  --poster-rain: rgba(255, 255, 255, 0.4);
+  --ticket-page-bg: #E5E5E5;            /* new 05: ref 16 grey behind the M-Ticket */
+
   --scrim: rgba(0, 0, 0, 0.70);
   --sheet-handle: #C9C7CC;
   --divider: #E6E6E6;                   /* est */
