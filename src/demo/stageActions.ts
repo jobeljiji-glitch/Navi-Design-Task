@@ -3,7 +3,7 @@
  * Domain changes go through the real reducer (script.ts sub-steps / store dispatch);
  * this file only sequences them and moves the phone.
  */
-import { useDemoStore } from '@/store'
+import { setDemoState, useDemoStore } from '@/store'
 import { useStageStore, type BannerCursor } from '@/store/stage'
 import { navPhone } from './PhoneRouter'
 import { rohanBannerIds } from '@/screens/rohan/RohanFlow'
@@ -54,7 +54,7 @@ function log(text: string) {
 
 /** Replace domain state wholesale (jumps). No banners for what the replay produced. */
 function replaceState(next: BoardState, cursor?: BannerCursor) {
-  useDemoStore.setState(next)
+  setDemoState(next)
   useStageStore.setState((s) => ({ cursor: cursor ?? rohanBannerIds(next), phoneKey: s.phoneKey + 1 }))
 }
 

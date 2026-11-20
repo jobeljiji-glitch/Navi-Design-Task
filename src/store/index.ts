@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import { boardFlowReducer, withBoard, type BoardFlowAction, type BoardState } from '../logic/boardFlow';
+import { withBoard } from '../logic/boardFlow';
+import { failureFlowReducer, initialFailure, type FailureFlowAction, type FailureState } from '../logic/failureFlow';
 import { createInitialDemoState } from '../logic/seed';
 
-export interface DemoStore extends BoardState {
-  dispatch: (action: BoardFlowAction) => void;
+export interface DemoStore extends FailureState {
+  dispatch: (action: FailureFlowAction) => void;
   advanceClockMinutes: (minutes: number) => void;
   setClockTime: (timeMs: number) => void;
   setLiveClock: (isLive: boolean) => void;
@@ -14,9 +15,11 @@ export const useDemoStore = create<DemoStore>((set, get) => {
 
   return {
     ...withBoard(createInitialDemoState()),
+    failure: initialFailure(),
 
-    dispatch: (action: BoardFlowAction) => {
-      set((state) => boardFlowReducer(state, action));
+    // 08: every action goes through the failure layer (→ board → friend → hold → base reducer)
+    dispatch: (action: FailureFlowAction) => {
+      set((state) => failureFlowReducer(state, action));
     },
 
     advanceClockMinutes: (minutes: number) => {
@@ -45,3 +48,8 @@ export const useDemoStore = create<DemoStore>((set, get) => {
     },
   };
 });
+
+/** Replace domain state wholesale (deep links, jumps). Resets the failure slice unless `next` has one. */
+export function setDemoState(next: FailureState) {
+  useDemoStore.setState({ failure: initialFailure(), ...next });
+}

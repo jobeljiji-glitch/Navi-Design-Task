@@ -429,7 +429,7 @@ export function selectHoldSheet(state: DemoState): HoldSheetView | null {
     columns: fallback
       ? [
           { key: 'now', label: 'Paid now', price: formatINR(hold.blockAmount), status: `All ${n} seats`, tone: 'green' },
-          { key: 'aside', label: 'Comes back', price: formatINR(per * friends), status: `As ${friends} friends pay`, tone: 'grey' },
+          { key: 'aside', label: 'Refunded', price: formatINR(per * friends), status: 'as each friend pays', tone: 'grey' },
         ]
       : [
           {
@@ -457,14 +457,18 @@ export function selectHoldSheet(state: DemoState): HoldSheetView | null {
       ...(fallback ? [] : [cover === 0 ? 'No seats covered' : `${cover} ${cover === 1 ? 'seat' : 'seats'} covered`]),
     ].join(' · '),
     settingsLine2: isCard
-      ? 'Paying with a credit or debit card'
+      ? 'Paying with your card ending 4021'
       : fallback
         ? `Paying for all seats with UPI · ${hold.organiser.upi}`
         : `Paying with UPI · ${hold.organiser.upi}`,
     seatsModeLabel: hold.assignMode === 'friends_pick' ? 'Friends pick their own' : 'You assign them',
     coverLabel: cover === 0 ? 'None' : `${cover} ${cover === 1 ? 'seat' : 'seats'}`,
     railLabel: hold.paymentRail === 'card_preauth' ? 'Card' : fallback ? 'UPI · pay all now' : `UPI ${hold.organiser.upi}`,
-    caption: fallback ? 'One UPI PIN · Refunds come back to this account' : 'One UPI PIN · Unused money is unblocked automatically',
+    caption: fallback
+      ? 'One UPI PIN · Refunds come back to this account'
+      : isCard
+        ? 'One card OTP · Unused money is unblocked automatically'
+        : 'One UPI PIN · Unused money is unblocked automatically',
   };
 }
 
@@ -584,7 +588,7 @@ export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
           ? `${formatINRShort(ownerSeat.price)} + ${formatINRShort(state.show.fee)} fee`
           : '',
     setAsideSub: fallback ? 'Paid now, refunded as friends pay' : 'Blocked, not charged',
-    mostLabel: 'Most you could pay',
+    mostLabel: 'Blocked on UPI',
     most: formatINR(hold.debited + (fallback ? 0 : blockedPaise)),
     moneyNote: freeTime
       ? `Unpaid seats stay yours at ${deadline}. Release free until ${freeTime}.`

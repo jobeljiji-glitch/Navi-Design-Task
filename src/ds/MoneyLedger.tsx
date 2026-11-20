@@ -55,7 +55,7 @@ export default function MoneyLedger({
           <Row label="Blocked, not taken" value={blockedAmount} />
           <Dashed />
           <div className="flex items-center justify-between text-[15px] leading-[20px] font-medium" style={{ color: 'var(--text-primary)' }}>
-            <span>Most you could pay</span>
+            <span>Blocked on UPI</span>
             <span>{mostPayable}</span>
           </div>
           {helperText && (

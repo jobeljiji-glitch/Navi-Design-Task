@@ -1199,7 +1199,17 @@ export function selectLatePage(state: BoardState, name: FriendName): LatePageVie
   const p = formatINR(per(state));
   const base = { film: state.show.filmTitle, meta: `Fri, ${start} · ${state.show.cinemaName}`, price: p };
   if (view === 'started') {
-    return { ...base, view, kicker: '', title: 'This show has started.', seatId: null, body: '', cta: '', availability: '' };
+    // Failure #25: never a dead end. Paid friends already have their ticket by SMS.
+    return {
+      ...base,
+      view,
+      kicker: '',
+      title: 'This show has started.',
+      seatId: null,
+      body: "Tickets for this show can't be bought any more. If you paid, your ticket is in your SMS.",
+      cta: 'See other shows',
+      availability: '',
+    };
   }
   if (view === 'late' && seatId) {
     return {

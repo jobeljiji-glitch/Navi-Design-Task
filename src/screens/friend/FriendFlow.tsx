@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import DeviceFrame from '@/demo/DeviceFrame'
-import { useDemoStore } from '@/store'
+import { setDemoState, useDemoStore } from '@/store'
 import { formatClockIST } from '@/logic/holdFlow'
 import { friendFromParam, selectShareDraft, suggestedSeat, type FriendName, type FriendScreen } from '@/logic/friendFlow'
 import { boardFlowReducer, openLatePayment, selectFriendReminder, withBoard, type BoardFlowAction } from '@/logic/boardFlow'
@@ -86,7 +86,7 @@ export default function FriendFlow() {
       let next = runScriptTo(withBoard(createInitialDemoState()), at === 'showtime' ? 'grace' : AT_PARAM[at])
       if (at === '810') next = boardFlowReducer(next, { type: 'SET_CLOCK', now: ist(20, 10) })
       if (at === 'showtime') next = boardFlowReducer(next, { type: 'SET_CLOCK', now: ist(21, 20) })
-      useDemoStore.setState(next)
+      setDemoState(next)
       dispatch({ type: 'FRIEND_OPEN_LINK', name })
       return
     }

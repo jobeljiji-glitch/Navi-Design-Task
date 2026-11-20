@@ -11,7 +11,7 @@ import HoldSuccessScreen from './HoldSuccessScreen'
 import type { Seat as LogicSeat } from '@/logic/types'
 import { DEMO_SHOW } from '@/logic/seed'
 import { selectHoldSheet } from '@/logic/holdFlow'
-import { useDemoStore } from '@/store'
+import { setDemoState, useDemoStore } from '@/store'
 import { IosNotification, LoaderSheet, UpiMandateScreen } from '@/ds'
 import ChatScreen from '@/screens/chat/ChatScreen'
 import BoardScreen, { type BoardSheet } from './BoardScreen'
@@ -100,7 +100,7 @@ export default function RohanFlow() {
       if (clock && /^\d{4}$/.test(clock)) {
         next = boardFlowReducer(next, { type: 'SET_CLOCK', now: ist(Number(clock.slice(0, 2)), Number(clock.slice(2))) })
       }
-      useDemoStore.setState(next)
+      setDemoState(next)
       // What the script produced is history: no banners for it
       seenNotif.current = selectRohanBanner(next)?.id ?? null
       seenSms.current = next.smsToasts.find((t) => SMS_KEYS.some((k) => t.id.startsWith(k)))?.id ?? null
