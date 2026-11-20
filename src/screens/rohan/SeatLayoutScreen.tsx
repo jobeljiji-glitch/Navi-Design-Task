@@ -161,7 +161,7 @@ export default function SeatLayoutScreen({
         <button
           type="button"
           onClick={onBack}
-          className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70 transition-opacity shrink-0"
+          className="p-1 -ml-1 flex items-center justify-center active:opacity-70 shrink-0"
           aria-label="Back"
         >
           <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />

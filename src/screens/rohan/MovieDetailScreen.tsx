@@ -32,7 +32,7 @@ export default function MovieDetailScreen({
           <button
             type="button"
             onClick={onBack}
-            className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70 transition-opacity"
+            className="p-1 -ml-1 flex items-center justify-center active:opacity-70"
             aria-label="Back"
           >
             <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
@@ -46,7 +46,7 @@ export default function MovieDetailScreen({
         </div>
         <button
           type="button"
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70 transition-opacity"
+          className="p-1.5 flex items-center justify-center active:opacity-70"
           aria-label="Share movie"
         >
           <Share2 size={20} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
@@ -200,12 +200,13 @@ export default function MovieDetailScreen({
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderTopColor: 'var(--divider)',
+          paddingBottom: 'calc(var(--safe-bottom) + 12px)',
         }}
       >
         <button
           type="button"
           onClick={onBookTickets}
-          className="w-full h-[44px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white shadow-sm transition-transform active:scale-[0.99]"
+          className="w-full h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white shadow-sm transition-transform active:scale-[0.99]"
           style={{ backgroundColor: 'var(--bms-red-strong)' }}
         >
           Book tickets

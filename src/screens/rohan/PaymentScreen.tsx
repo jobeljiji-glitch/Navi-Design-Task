@@ -36,7 +36,7 @@ export default function PaymentScreen({
         <button
           type="button"
           onClick={onBack}
-          className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70 transition-opacity"
+          className="p-1 -ml-1 flex items-center justify-center active:opacity-70"
           aria-label="Back"
         >
           <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />

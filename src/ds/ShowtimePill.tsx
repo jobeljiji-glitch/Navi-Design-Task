@@ -1,7 +1,9 @@
 export interface ShowtimePillProps {
   time: string
-  sublabel?: string
-  badge?: string
+  subtitle?: string // e.g. "ENG" as small boxed inline icon
+  caption?: string // e.g. "LASER" as 10 pt grey caption UNDER the time
+  sublabel?: string // backwards-compatibility alias for caption or subtitle
+  badge?: string // backwards-compatibility alias
   selected?: boolean
   size?: 'normal' | 'large'
   onClick?: () => void
@@ -10,11 +12,17 @@ export interface ShowtimePillProps {
 
 export default function ShowtimePill({
   time,
+  subtitle,
+  caption,
   sublabel,
   selected = false,
   onClick,
   className = '',
 }: ShowtimePillProps) {
+  // Determine subtitle (inline badge e.g. ENG) and caption (under-time e.g. LASER)
+  const effectiveSubtitle = subtitle || (sublabel === 'ENG' ? 'ENG' : undefined)
+  const effectiveCaption = caption || (sublabel && sublabel !== 'ENG' ? sublabel : undefined)
+
   if (selected) {
     return (
       <button
@@ -27,14 +35,14 @@ export default function ShowtimePill({
         }}
         aria-label={`Showtime ${time}`}
       >
-        <span className="text-[15px] leading-none font-medium text-white tracking-wide">
+        <span className="text-[15px] leading-none font-normal text-white tracking-wide whitespace-nowrap">
           {time}
         </span>
       </button>
     )
   }
 
-  // 110 x 39 pt, 1 pt green border, 4 pt green left bar, time 15 pt centred
+  // 110 x 39 pt, 1 pt green border, 4 pt green left bar, time on one line 15 pt weight 400
   return (
     <button
       type="button"
@@ -44,7 +52,7 @@ export default function ShowtimePill({
         borderColor: 'var(--showtime-green)',
         backgroundColor: '#FFFFFF',
       }}
-      aria-label={`Showtime ${time}${sublabel ? ` ${sublabel}` : ''}`}
+      aria-label={`Showtime ${time}${effectiveSubtitle ? ` ${effectiveSubtitle}` : ''}${effectiveCaption ? ` ${effectiveCaption}` : ''}`}
     >
       {/* 4pt solid green bar on the left */}
       <div
@@ -52,24 +60,36 @@ export default function ShowtimePill({
         style={{ backgroundColor: 'var(--showtime-green)' }}
       />
 
-      {/* Centred Time & optional sublabel */}
-      <div className="flex-1 flex flex-col items-center justify-center pl-1 pr-0.5 select-none">
-        <div className="flex items-center gap-1">
+      {/* Centred Time + optional inline subtitle + optional caption underneath */}
+      <div className="flex-1 flex flex-col items-center justify-center pl-1.5 pr-0.5 select-none leading-none">
+        <div className="flex items-center justify-center gap-1">
           <span
-            className="text-[15px] leading-none font-medium"
+            className="text-[15px] font-normal whitespace-nowrap leading-none"
             style={{ color: 'var(--text-primary)' }}
           >
             {time}
           </span>
-          {sublabel && (
+          {effectiveSubtitle && (
             <span
-              className="text-[9px] uppercase font-normal tracking-wide px-0.5 py-0.2 border border-divider rounded-[2px]"
-              style={{ color: 'var(--text-secondary)' }}
+              className="text-[9px] uppercase font-normal tracking-wide px-1 py-0.5 border border-divider rounded-[2px] leading-none"
+              style={{
+                color: 'var(--text-secondary)',
+                borderColor: 'var(--divider)',
+              }}
             >
-              {sublabel}
+              {effectiveSubtitle}
             </span>
           )}
         </div>
+
+        {effectiveCaption && (
+          <span
+            className="text-[10px] uppercase font-normal tracking-wide text-text-secondary mt-0.5 leading-none"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {effectiveCaption}
+          </span>
+        )}
       </div>
     </button>
   )

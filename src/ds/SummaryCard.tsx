@@ -40,7 +40,7 @@ export default function SummaryCard({
         borderRadius: '8px',
       }}
     >
-      <div className="p-[14px] flex flex-col gap-2">
+      <div className="p-4 flex flex-col gap-2">
         {/* Line 1: Title & Ticket Count Row at 18 pt, weight 500 */}
         <div className="flex items-start justify-between gap-2">
           <h2
@@ -76,9 +76,9 @@ export default function SummaryCard({
           </button>
         </div>
 
-        {/* Line 3+: Grey info lines at 14 pt */}
+        {/* Line 3+: Grey info lines at 14 pt, gap 4 pt */}
         <div
-          className="flex flex-col gap-0.5 text-[14px] leading-[19px]"
+          className="flex flex-col gap-1 text-[14px] leading-[19px]"
           style={{ color: 'var(--text-secondary)' }}
         >
           <span>{languageFormat}</span>
@@ -89,7 +89,7 @@ export default function SummaryCard({
           </span>
         </div>
 
-        {/* Age Warning Row: 22 pt red circle, 14 pt black text, fully visible (no clip) */}
+        {/* Age Warning Row: 22 pt red circle, 13 pt black text on one line */}
         {ageRating && (
           <div className="flex items-center gap-2 pt-1">
             <div
@@ -104,7 +104,7 @@ export default function SummaryCard({
               </span>
             </div>
             <span
-              className="text-[14px] leading-[19px] font-normal"
+              className="text-[13px] leading-[18px] font-normal truncate whitespace-nowrap"
               style={{ color: 'var(--text-primary)' }}
             >
               {ageRatingText}
@@ -113,10 +113,10 @@ export default function SummaryCard({
         )}
       </div>
 
-      {/* Cancellation Band: INSIDE the summary card, flush to bottom edge, sharing bottom radius */}
+      {/* Cancellation Band: INSIDE the summary card, flush to bottom edge, sharing bottom radius (padding 12 pt 16 pt) */}
       {showCancellationBand && (
         <div
-          className="px-[14px] py-2.5 flex flex-col gap-0.5 rounded-b-[8px]"
+          className="px-4 py-3 flex flex-col gap-0.5 rounded-b-[8px]"
           style={{
             backgroundColor: '#EAF8F1',
           }}

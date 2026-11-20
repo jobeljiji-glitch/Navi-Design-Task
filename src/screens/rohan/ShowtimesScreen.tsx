@@ -57,7 +57,7 @@ export default function ShowtimesScreen({
         height: 874,
       }}
     >
-      {/* Top Header */}
+      {/* Top Header: plain chevron, 24 pt, no grey circle background */}
       <header
         className="flex items-center justify-between px-4 h-[54px] shrink-0 border-b border-divider bg-bg-surface"
         style={{
@@ -65,16 +65,16 @@ export default function ShowtimesScreen({
           borderBottomColor: 'var(--divider)',
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
-            className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70 transition-opacity"
+            className="p-1 -ml-1 flex items-center justify-center active:opacity-70"
             aria-label="Back"
           >
             <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
           </button>
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left min-w-0">
             <h1
               className="text-[17px] leading-[22px] font-medium truncate"
               style={{ color: 'var(--text-primary)' }}
@@ -90,20 +90,20 @@ export default function ShowtimesScreen({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70"
+            className="p-1.5 flex items-center justify-center active:opacity-70"
             aria-label="Search"
           >
-            <Search size={19} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
+            <Search size={20} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
           </button>
           <button
             type="button"
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70"
+            className="p-1.5 flex items-center justify-center active:opacity-70"
             aria-label="Filter showtimes"
           >
-            <SlidersHorizontal size={19} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
+            <SlidersHorizontal size={20} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
           </button>
         </div>
       </header>
@@ -268,7 +268,7 @@ export default function ShowtimesScreen({
             </div>
           </div>
 
-          {/* Showtime Pill: 110 x 39 pt, 15 pt centred time */}
+          {/* Showtime Pill: 110 x 39 pt, 15 pt weight 400 centred time */}
           <div className="flex items-center gap-2 pt-1">
             <ShowtimePill
               time="09:15 PM"
@@ -335,10 +335,11 @@ export default function ShowtimesScreen({
             </div>
           </div>
 
+          {/* Showtime Pill: 110 x 39 pt, subtitle "ENG" inline boxed icon */}
           <div className="flex items-center gap-2 pt-1">
             <ShowtimePill
               time="12:45 PM"
-              sublabel="ENG"
+              subtitle="ENG"
               onClick={showDemoToast}
             />
           </div>
@@ -411,10 +412,11 @@ export default function ShowtimesScreen({
             </div>
           </div>
 
+          {/* Showtime Pill: 110 x 39 pt, caption "LASER" underneath time */}
           <div className="flex items-center gap-2 pt-1">
             <ShowtimePill
               time="05:50 PM"
-              sublabel="LASER"
+              caption="LASER"
               onClick={showDemoToast}
             />
           </div>

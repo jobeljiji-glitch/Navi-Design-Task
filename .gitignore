@@ -11,6 +11,7 @@ shots/*
 !shots/03-*.png
 !shots/03b-*.png
 !shots/03c-*.png
+!shots/03d-*.png
 
 # Editor
 .vscode/
@@ -19,6 +20,8 @@ shots/*
 # OS
 .DS_Store
 Thumbs.db
+debug.log
+*.log
 
 # TypeScript
 *.tsbuildinfo
