@@ -12,9 +12,12 @@ export const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
 export const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 export const SEAT_LOCK_DURATION_MS = 5 * 60 * 1000; // 5 min
 export const GRACE_DURATION_MS = 10 * 60 * 1000;    // 10 min
-export const BLOCK_EXPIRY_AFTER_DEADLINE_MS = 30 * 60 * 1000; // 30 min
 export const HIGH_TIER_MAX_HOLD_PERCENT = 15;
-export const MAX_ACTIVE_HOLDS_PER_ACCOUNT = 2;
+export const MAX_ACTIVE_HOLDS_PER_ACCOUNT = 1; // UPI Reserve Pay: one active mandate per user (09)
+/** UPI Reserve Pay (SBMD) block cap: ₹10,000 in paise (09). */
+export const MAX_BLOCK_PAISE = 1_000_000;
+/** Late payments for kept seats close 15 min before the show (09), so nothing is pending at settlement. */
+export const LATE_PAY_CUTOFF_BEFORE_SHOW_MS = 15 * 60 * 1000;
 
 /**
  * Calculates deadline: min(createdAt + window, showStartsAt - 2h).
@@ -47,10 +50,25 @@ export function calculateGraceUntil(deadline: number): number {
 }
 
 /**
- * Calculates block expiry timestamp (deadline + 30 min).
+ * The block lasts until showtime (09): kept seats are charged and the rest is unblocked then, once.
  */
-export function calculateBlockExpiresAt(deadline: number): number {
-  return deadline + BLOCK_EXPIRY_AFTER_DEADLINE_MS;
+export function calculateBlockExpiresAt(showStartsAt: number): number {
+  return showStartsAt;
+}
+
+/** Last moment a friend can start paying for a kept seat: showtime − 15 min (9:00 PM). */
+export function latePayCutoff(showStartsAt: number): number {
+  return showStartsAt - LATE_PAY_CUTOFF_BEFORE_SHOW_MS;
+}
+
+/** Most seats a group hold can block under the ₹10,000 cap (never more than the group maximum). */
+export function maxSeatsForCap(perSeatPaise: number, capPaise: number = MAX_BLOCK_PAISE): number {
+  return Math.min(MAX_GROUP_SIZE, Math.floor(capPaise / perSeatPaise));
+}
+
+/** True when blocking `totalPaise` would exceed the cap. */
+export function isOverBlockCap(totalPaise: number, capPaise: number = MAX_BLOCK_PAISE): boolean {
+  return totalPaise > capPaise;
 }
 
 /**
@@ -75,7 +93,7 @@ export function isHighTierCapReached(tier: DemandTier, currentHoldPct: number): 
 }
 
 /**
- * Checks if user account active hold limit (2 holds) has been reached.
+ * Checks if user account active hold limit (1 hold, 09) has been reached.
  */
 export function isAccountHoldLimitReached(activeHoldsCount: number): boolean {
   return activeHoldsCount >= MAX_ACTIVE_HOLDS_PER_ACCOUNT;

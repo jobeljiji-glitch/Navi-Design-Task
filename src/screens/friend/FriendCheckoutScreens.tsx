@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
 import { AlertCircle, CreditCard, Check, MessageCircle } from 'lucide-react'
-import { AmountHeader, Band, Card, OtpInput, PaymentRow, PriceRow, PrimaryCTA, TicketCard, UpiMandateScreen } from '@/ds'
+import { AmountHeader, Band, Card, OtpInput, PaymentIconTile, PaymentMethodList, PaymentMethodRow, PinnedFooter, PriceRow, PrimaryCTA, TicketCard, UpiMandateScreen } from '@/ds'
 import { useDemoStore } from '@/store'
-import { selectShowtimeCheckout } from '@/logic/failureFlow'
+import { selectCutoffCheckout } from '@/logic/failureFlow'
 import { selectFriendCheckout, selectFriendTicket, type FriendName } from '@/logic/friendFlow'
 import { selectFriendSetLine, selectLatePage, selectTransferNote } from '@/logic/boardFlow'
 import FriendHeader from './FriendHeader'
@@ -70,18 +70,18 @@ export function FriendPhoneScreen({ name }: { name: FriendName }) {
         )}
       </div>
       {!isOtp && (
-        <div className="shrink-0 px-4 pt-3 cta-safe">
+        <PinnedFooter divider={false}>
           <PrimaryCTA variant="strong" size="lg" disabled={digits.length !== 10} onClick={() => dispatch({ type: 'FRIEND_PHONE_SUBMIT', name, phone })}>
             Continue
           </PrimaryCTA>
-        </div>
+        </PinnedFooter>
       )}
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Step 6b: "Pay ₹277.14 with" (ref 12 anatomy)
+// Step 6b: "Pay ₹277.14 with" (ref 12 anatomy, 09: the shared PaymentMethodRow list)
 // ---------------------------------------------------------------------------
 
 export function FriendUpiChoiceScreen({ name }: { name: FriendName }) {
@@ -97,26 +97,21 @@ export function FriendUpiChoiceScreen({ name }: { name: FriendName }) {
       </div>
       <AmountHeader amount={v.amount} />
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-        <p className="px-4 pt-4 pb-2 text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v.payWith}</p>
-        <div className="px-4 grid grid-cols-3 gap-2">
-          {UPI_APPS.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => choose(a.name)}
-              className="py-4 flex flex-col items-center justify-center gap-2 active:opacity-70"
-              style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--card-radius)', boxShadow: 'var(--card-shadow)' }}
-              data-testid={`upi-app-${a.id}`}
-            >
-              <span className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[14px] font-medium" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-secondary)' }}>
-                {a.initials}
-              </span>
-              <span className="text-[13px] leading-[16px]">{a.name}</span>
-            </button>
-          ))}
+        <div className="mt-3 px-4" style={{ backgroundColor: 'var(--bg-surface)' }}>
+          <PaymentMethodList label={v.payWith}>
+            {UPI_APPS.map((a) => (
+              <PaymentMethodRow key={a.id} icon={<PaymentIconTile>{a.initials}</PaymentIconTile>} title={a.name} subtitle="UPI app" onClick={() => choose(a.name)} testId={`upi-app-${a.id}`} divider />
+            ))}
+          </PaymentMethodList>
+          <PaymentMethodList label="Other payment options">
+            <PaymentMethodRow
+              icon={<PaymentIconTile><CreditCard size={18} strokeWidth={1.75} /></PaymentIconTile>}
+              title="Card or net banking"
+              subtitle="Credit, debit or net banking"
+              onClick={() => choose('Card or net banking')}
+            />
+          </PaymentMethodList>
         </div>
-        <p className="px-4 pt-5 pb-2 text-[13px] leading-[18px] uppercase tracking-[0.3px]" style={{ color: 'var(--text-secondary)' }}>Other payment options</p>
-        <PaymentRow icon={<CreditCard size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />} title="Card or net banking" onClick={() => choose('Card or net banking')} />
         <p className="px-4 pt-4 text-[12px] leading-[16px]" style={{ color: 'var(--text-secondary)' }}>{v.seats} is held for you while you pay.</p>
       </div>
     </div>
@@ -168,8 +163,8 @@ export function FriendPendingScreen({ name }: { name: FriendName }) {
   const dispatch = state.dispatch
   const v = selectFriendCheckout(state, name)
   const failed = state.friendFlow.sessions[name].screen === 'failed'
-  // 08: a late payment around showtime (10-min grace from 9:15 PM, then no retry)
-  const showtime = selectShowtimeCheckout(state, name)
+  // 09: a late payment after the 9:00 PM cut-off (10-min grace, then no retry)
+  const showtime = selectCutoffCheckout(state, name)
 
   return (
     <div className={page} style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid={failed ? 'friend-failed' : 'friend-pending'}>
@@ -191,17 +186,17 @@ export function FriendPendingScreen({ name }: { name: FriendName }) {
         </Card>
       </div>
       {failed && !showtime.canRetry && (
-        <div className="shrink-0 px-4 pt-3 cta-safe flex flex-col items-center">
+        <PinnedFooter>
           <PrimaryCTA variant="strong" size="lg" onClick={() => dispatch({ type: 'FRIEND_GOTO', name, screen: 'chat' })}>Back to the chat</PrimaryCTA>
-        </div>
+        </PinnedFooter>
       )}
       {failed && showtime.canRetry && (
-        <div className="shrink-0 px-4 pt-3 cta-safe flex flex-col items-center">
+        <PinnedFooter>
           <PrimaryCTA variant="strong" size="lg" onClick={() => dispatch({ type: 'FRIEND_RETRY', name })}>Try again</PrimaryCTA>
-          <button type="button" onClick={() => dispatch({ type: 'FRIEND_GOTO', name, screen: 'pay' })} className="h-11 px-4 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
+          <button type="button" onClick={() => dispatch({ type: 'FRIEND_GOTO', name, screen: 'pay' })} className="self-center h-11 px-4 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
             Pick another seat
           </button>
-        </div>
+        </PinnedFooter>
       )}
     </div>
   )
@@ -312,7 +307,8 @@ export function FriendEndedScreen({ name }: { name: FriendName }) {
         )}
       </div>
       {v.cta && (
-        <div className="shrink-0 px-4 pt-3 cta-safe" data-tour="late-pay-cta">
+        <PinnedFooter testId="late-footer">
+          <div data-tour="late-pay-cta">
           <PrimaryCTA
             variant="strong"
             size="lg"
@@ -326,7 +322,8 @@ export function FriendEndedScreen({ name }: { name: FriendName }) {
           >
             {v.cta}
           </PrimaryCTA>
-        </div>
+          </div>
+        </PinnedFooter>
       )}
       {toast && (
         <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">

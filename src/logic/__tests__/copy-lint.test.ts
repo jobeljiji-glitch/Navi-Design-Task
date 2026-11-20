@@ -2,13 +2,26 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { FRIENDS, hasPaid, selectFriendCheckout, selectFriendPage, selectFriendTicket, type FriendName } from '../friendFlow';
-import { selectFriendReminder, selectFriendSetLine, selectLatePage, selectTransferNote, withBoard } from '../boardFlow';
-import { selectShowtimeCheckout, failureFlowReducer, type FailureState } from '../failureFlow';
-import { SCRIPT_STEPS, applyStep, at, friendOpensLink, type Reduce } from '../script';
+import {
+  selectBoard,
+  selectFriendReminder,
+  selectFriendSetLine,
+  selectGroupReceipt,
+  selectLatePage,
+  selectOrderCard,
+  selectReleaseSheet,
+  selectT30Sheet,
+  selectTransferNote,
+  withBoard,
+} from '../boardFlow';
+import { selectHoldSheet, selectHoldSuccess } from '../holdFlow';
+import { selectCutoffCheckout, failureFlowReducer, type FailureState } from '../failureFlow';
+import { SCRIPT_STEPS, applyStep, at, beginHold, friendOpensLink, friendOpensOnly, type Reduce } from '../script';
+import { TOUR_STEPS } from '../tour';
 import { createInitialDemoState } from '../seed';
 
 /**
- * 08 copy lint: the words the user ruled out (memory + D-033, D-080, D-095) never appear in UI strings,
+ * 08/09 copy lint: the words the user ruled out (memory + D-033, D-080, D-095, 09 glossary) never appear in UI strings,
  * and 600/700 weights appear only in the logged exceptions (D-057, D-058, D-066).
  */
 
@@ -40,6 +53,11 @@ const BANNED: Array<[RegExp, string]> = [
   [/went back/i, '"went back" for set-aside money'],
   [/\b(?:unblock\w*|set aside|blocked)\b[^.]{0,40}\breturned\b|\breturned\b[^.]{0,40}\b(?:unblock\w*|set aside|blocked)\b/i, '"returned" for set-aside money'],
   [/most you could (?:still )?pay|most you(?:'|’)ll pay/i, 'worst-case framing (D-080)'],
+  // 09 glossary: "blocked" replaces "set aside" (money reserved, not charged)
+  [/\bset(?:s|ting)? aside\b/i, '"set aside" (09 glossary: say "blocked")'],
+  // 09: money is unblocked once, at showtime settlement (or cancellation) — never seat by seat
+  [/^(?![\s\S]*(?:showtime|settl|\bat\b|by BookMyShow|Unblocking|\bnow\b|\bin\. |cancel))(?!\W*…?\W*unblocked\W*$)[\s\S]*\bunblock(?:s|ed)?\b/i, '"unblocked" outside a settlement context (09)'],
+  [/unblocked seat by seat|unblocks as|as (?:each )?friends? pay[^.]{0,20}unblock/i, 'seat-by-seat unblocking (09)'],
   // "kept" means Rohan pays for an unpaid seat; never for a lock or a timer (08, user)
   [/\bkept\b[^.]{0,30}\b(?:min|mins|minutes|until|lock\w*|more)\b|\b(?:lock\w*|holding)\b[^.]{0,30}\bkept\b/i, '"kept" next to a lock/timer'],
 ];
@@ -79,7 +97,9 @@ describe('08 friend-facing screens never name unpaid friends', () => {
       s = applyStep(s, step, r) as FailureState;
       states.push([step, s]);
     }
-    states.push(['showtime', at(s, 21, 20, r) as FailureState]);
+    // 09: a friend who opened the link and entered a phone number, then left
+    states.splice(2, 0, ['opened', friendOpensOnly(states[1][1], 'Sana', r) as FailureState]);
+    states.push(['after-show', at(s, 21, 20, r) as FailureState]);
     for (const [step, base] of states) {
       for (const viewer of FRIENDS) {
         const st = friendOpensLink(base, viewer, r) as FailureState;
@@ -91,7 +111,7 @@ describe('08 friend-facing screens never name unpaid friends', () => {
           selectFriendSetLine(st, viewer),
           selectTransferNote(st, viewer),
           selectFriendReminder(st, viewer),
-          selectShowtimeCheckout(st, viewer),
+          selectCutoffCheckout(st, viewer),
         ]);
         for (const other of FRIENDS) {
           if (other === viewer || hasPaid(st, other)) continue;
@@ -100,5 +120,35 @@ describe('08 friend-facing screens never name unpaid friends', () => {
       }
     }
     expect(problems).toEqual([]);
+  });
+});
+
+describe('09 short copy: one idea per line, no on-screen sentence over 12 words', () => {
+  const r = failureFlowReducer as unknown as Reduce;
+  const MAX = 12;
+  // Longer explanatory paragraphs a user opens on purpose (sheets' body text), not glanceable lines.
+  const ALLOW = [/cancellation rules/, /can't be bought any more/];
+  const words = (x: string) => x.trim().split(/\s+/).filter((w) => /[A-Za-z0-9₹]/.test(w)).length;
+  const sentences = (x: string) => x.split(/(?<=[.!?])\s+|\s·\s|\n/).map((t) => t.trim()).filter(Boolean);
+  function collect(v: unknown, out: string[]) {
+    if (typeof v === 'string') out.push(v);
+    else if (Array.isArray(v)) v.forEach((x) => collect(x, out));
+    else if (v && typeof v === 'object') Object.entries(v).forEach(([k, x]) => k !== 'message' && k !== 'payLinkMessage' && k !== 'shareMessage' && collect(x, out));
+  }
+  it('board, sheets, receipt, notifications and tour bubbles', () => {
+    let s: FailureState = withBoard(createInitialDemoState());
+    const texts: string[] = [];
+    collect(selectHoldSheet(beginHold(s, r)), texts);
+    for (const step of SCRIPT_STEPS) {
+      s = applyStep(s, step, r) as FailureState;
+      collect([selectBoard(s), selectT30Sheet(s), selectReleaseSheet(s), selectGroupReceipt(s), selectOrderCard(s), selectHoldSuccess(s)], texts);
+      for (const f of FRIENDS) collect(selectLatePage(s, f), texts);
+    }
+    collect(s.notifications.map((n) => [n.title, n.body]), texts);
+    collect(TOUR_STEPS.map((t) => [t.text, t.why]), texts);
+    const long = [...new Set(texts)]
+      .filter((t) => !ALLOW.some((a) => a.test(t)))
+      .flatMap((t) => sentences(t).filter((x) => words(x) > MAX).map((x) => `${words(x)}w: ${x}`));
+    expect(long).toEqual([]);
   });
 });

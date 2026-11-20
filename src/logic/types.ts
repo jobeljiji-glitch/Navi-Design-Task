@@ -45,7 +45,11 @@ export interface Show {
 }
 
 export type PaymentRail = 'reserve_pay' | 'card_preauth' | 'pay_and_refund';
-export type HoldStatus = 'draft' | 'awaiting_upi' | 'active' | 'resolving' | 'settled' | 'cancelled' | 'failed';
+/**
+ * 09: `active` (friends pay) → deadline → `closed` (unpaid seats kept, not charged; late payers until 9:00 PM)
+ * → showtime → `settled` (kept seats charged, the rest unblocked once).
+ */
+export type HoldStatus = 'draft' | 'awaiting_upi' | 'active' | 'closed' | 'settled' | 'cancelled' | 'failed';
 
 export interface FriendPayment {
   id: string;
@@ -100,8 +104,9 @@ export interface Hold {
   blockExpiresAt: number;
   paymentRail: PaymentRail;
   blockAmount: number; // in paise
-  debited: number;     // in paise (owner seat + covered + kept + kept fees)
-  refunded: number;    // in paise
+  debited: number;     // in paise, actually charged: owner seat + covered; kept seats + fees kept only at showtime
+  refunded: number;    // in paise: pay-all-now rail and cinema cancellation only (09)
+  feesKept?: number;   // in paise: fees kept on seats released after the free window, charged at showtime
   status: HoldStatus;
   assignMode: 'friends_pick' | 'assigned';
   joinCode?: string;
@@ -117,6 +122,10 @@ export interface DemoSettings {
   showHoldsPct: number;
   is3HoursBeforeShow: boolean;
   userHasExistingHoldForShow: boolean;
+  /** ₹10,000 Reserve Pay cap, in paise (09). */
+  blockCapPaise?: number;
+  /** Demo only: a premium-priced show (row A ₹1,250) so a 10-seat group crosses the cap (09). */
+  premiumPricing?: boolean;
 }
 
 export interface SimulatedClock {

@@ -149,7 +149,7 @@ export default function KitPage() {
         {/* Floating Notification Demo */}
         <IosNotification
           title="Amit's in! 🎉"
-          body="He paid for D08. ₹277.14 unblocked from your account."
+          body="₹277.14 less for you to cover"
           visible={notifVisible}
           onDismiss={() => setNotifVisible(false)}
         />
@@ -585,21 +585,21 @@ export default function KitPage() {
 
               {/* GroupStatusList */}
               <GroupStatusList
-                paidMembers={[
-                  { name: 'Amit', seat: 'D08', status: 'paid' },
-                  { name: 'Sana', seat: 'D09', status: 'paid' },
+                rows={[
+                  { key: 'D05', seatId: 'D05', name: null, status: 'Not opened yet', kind: 'not_opened' },
+                  { key: 'D06', seatId: 'D06', name: 'Kabir', status: 'Opened, not paid', kind: 'opened' },
+                  { key: 'D07', seatId: 'D07', name: 'You', status: 'Paid', kind: 'you' },
+                  { key: 'D08', seatId: 'D08', name: 'Amit', status: 'Paid', kind: 'paid' },
+                  { key: 'D09', seatId: 'D09', name: 'Sana', status: 'Paid', kind: 'paid' },
+                  { key: 'D10', seatId: 'D10', name: 'Priya', status: 'Paying now', kind: 'paying' },
                 ]}
-                payingMembers={[
-                  { name: 'Priya', seat: 'D10', status: 'paying' },
-                ]}
-                declinedMembers={[
-                  { name: 'Neha', status: 'declined' },
-                ]}
-                waitingSeatsCount={2}
+                declinedNames={['Neha']}
+                waitingCount={2}
+                notOpenedCount={1}
                 onReleaseSeat={() => alert('Release seat')}
                 onKeepSeat={() => alert('Keep seat')}
                 onCoverSeats={() => alert('Cover seats')}
-                onSendReminder={() => alert('Reminder sent')}
+                onShareReminder={() => alert('Share a reminder')}
               />
 
               {/* KeepReleaseStepper */}
@@ -760,8 +760,8 @@ export default function KitPage() {
             <UpiMandateScreen
               amount="₹1,662.84"
               debitedNow="₹277.14"
-              furtherDebits="Only for seats you keep"
-              blockEnds="Today, 7:45 PM"
+              furtherDebits="Only kept seats, at 9:15 PM"
+              blockEnds="Today, 9:15 PM"
               onApprove={pin => {
                 setUpiScreenOpen(false)
                 alert(`Approved with PIN: ${pin}`)

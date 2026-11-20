@@ -17,10 +17,10 @@ import ChatScreen from '@/screens/chat/ChatScreen'
 import BoardScreen, { type BoardSheet } from './BoardScreen'
 import ReceiptScreen from './ReceiptScreen'
 import OrdersScreen from './OrdersScreen'
-import { selectShareDraft } from '@/logic/friendFlow'
+import { FRIENDS, selectShareDraft, type FriendName } from '@/logic/friendFlow'
 import { formatClockIST } from '@/logic/holdFlow'
 import { boardFlowReducer, selectRohanBanner, withBoard } from '@/logic/boardFlow'
-import { AT_PARAM, ist, runScriptTo } from '@/logic/script'
+import { AT_PARAM, friendOpensOnly, ist, runScriptTo } from '@/logic/script'
 import { createInitialDemoState } from '@/logic/seed'
 import { useInStage } from '@/demo/PhoneRouter'
 import { failureOf } from '@/logic/failureFlow'
@@ -89,7 +89,8 @@ export default function RohanFlow() {
   useEffect(() => {
     if (inStage) return // the stage owns state
     if (!holdPaths.includes(path)) return
-    // `?at=310|neha|t30|pending|deadline|grace|receipt|late|810`: replay the spec §1 script up to that step.
+    // `?at=310|neha|t30|pending|deadline|grace|kept|receipt|late|810|settled`: replay the spec §1 script up to that step.
+    // `&opened=sana`: that friend opened the link and entered a phone number, then left (09 board rows).
     const at = new URLSearchParams(location.search).get('at')
     if (at && AT_PARAM[at]) {
       const key = `${path}|${location.search}`
@@ -101,15 +102,18 @@ export default function RohanFlow() {
       if (clock && /^\d{4}$/.test(clock)) {
         next = boardFlowReducer(next, { type: 'SET_CLOCK', now: ist(Number(clock.slice(0, 2)), Number(clock.slice(2))) })
       }
+      const opened = new URLSearchParams(location.search).get('opened')
+      const openedName = opened ? (opened[0].toUpperCase() + opened.slice(1).toLowerCase()) as FriendName : null
+      if (openedName && (FRIENDS as readonly string[]).includes(openedName)) next = friendOpensOnly(next, openedName)
       setDemoState(next)
       // What the script produced is history: no banners for it
       seenNotif.current = selectRohanBanner(next)?.id ?? null
       seenSms.current = next.smsToasts.find((t) => SMS_KEYS.some((k) => t.id.startsWith(k)))?.id ?? null
-      // `&play=1`: let the clock reach the end of grace a moment later (settlement animation)
+      // `&play=1`: let the clock reach showtime a moment later (settlement animation)
       if (new URLSearchParams(location.search).get('play') === '1') {
         setTimeout(() => {
-          const h = useDemoStore.getState().hold
-          if (h) useDemoStore.getState().dispatch({ type: 'SET_CLOCK', now: h.graceUntil })
+          const s = useDemoStore.getState()
+          if (s.hold) s.dispatch({ type: 'SET_CLOCK', now: s.show.startsAt })
         }, 900)
       }
       return
@@ -129,7 +133,7 @@ export default function RohanFlow() {
         const d = selectShareDraft(useDemoStore.getState())
         if (d) s.dispatch({ type: 'SHARE_TO_GROUP', text: `${d.editable}\n${d.locked}` })
       }
-    } else if (path === '/rohan/hold' && (s.hold.status === 'active' || s.hold.status === 'resolving')) {
+    } else if (path === '/rohan/hold' && (s.hold.status === 'active' || s.hold.status === 'closed')) {
       navigate('/rohan/held', { replace: true })
     }
   }, [path, location.search]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -170,7 +174,7 @@ export default function RohanFlow() {
     nextBanner()
     if (b.app === 'sms') return
     if (b.kind === 't30') navigate('/rohan/board?sheet=t30')
-    else if (b.kind === 'settled' || b.kind === 'late_paid') navigate('/rohan/receipt')
+    else if (b.kind === 'settled' || b.kind === 'late_paid' || b.kind === 'kept') navigate(b.kind === 'kept' ? '/rohan/board' : '/rohan/receipt')
     else navigate('/rohan/board')
   }
 
@@ -248,8 +252,9 @@ export default function RohanFlow() {
             amount={holdView.upiAmount}
             debitedNow={holdView.leavesNow}
             blockEnds={holdView.blockEnds}
+            furtherDebits={`Only kept seats, at ${holdView.blockEnds.replace(/^\w+, /, '')}`}
             refundLine={`${holdView.perSeat} each time a friend pays`}
-            showDetails={`Group hold · ${DEMO_SHOW.filmTitle} · Fri 9:15 PM`}
+            showDetails={`Group hold · ${DEMO_SHOW.filmTitle} · Fri, 9:15 PM`}
             onApprove={(pin) => {
               const seatIds = holdSeatIds
               dispatch({ type: 'APPROVE_HOLD', pin })

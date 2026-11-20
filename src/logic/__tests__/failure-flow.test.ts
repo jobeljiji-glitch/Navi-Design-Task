@@ -10,11 +10,13 @@ import {
   selectHoldingLine,
   selectLadderNotice,
   selectSettledOutside,
-  selectShowtimeCheckout,
+  selectCutoffCheckout,
+  PREMIUM_ROW_A_PAISE,
   type FailureState,
 } from '../failureFlow';
 import { at, beginHold, ist, kabirOpens, runScriptTo, type Reduce } from '../script';
 import { selectFriendCheckout } from '../friendFlow';
+import { BLOCK_CAP_COPY } from '../reducer';
 
 const r = R as unknown as Reduce;
 const fresh = (): FailureState => ({ ...withBoard(createInitialDemoState()), failure: initialFailure() });
@@ -34,7 +36,8 @@ describe('08 payment fallback ladder (#4/#5)', () => {
     expect(v.ctaSub).toBe('₹277.14 charged now for your seat');
     expect(v.upiAmount).toBe('₹1,662.84');
     expect(v.leavesNow).toBe('₹277.14');
-    expect(selectLadderNotice(s)!.title).toBe("Your bank can't set money aside on UPI");
+    expect(selectLadderNotice(s)!.title).toBe("Your bank can't block money on UPI");
+    expect(v.blockEnds).toBe('Today, 9:15 PM');
     // Reserve Pay can't be picked by hand
     expect(R(s, { type: 'SET_PAYMENT_RAIL', rail: 'reserve_pay' }).hold!.paymentRail).toBe('card_preauth');
   });
@@ -53,7 +56,7 @@ describe('08 payment fallback ladder (#4/#5)', () => {
     const v = selectHoldSheet(s)!;
     expect(v.ctaTitle).toBe('Pay ₹1,662.84');
     expect(v.upiAmount).toBe('₹1,662.84');
-    expect(v.columns[1]).toMatchObject({ label: 'Refunded', price: '₹1,385.70', status: 'as each friend pays' });
+    expect(v.moneyLine).toBe('₹1,662.84 charged now · refunded as friends pay');
     expect(selectLadderNotice(s)!.body).toBe('Pay for all 6 now and get ₹277.14 back each time a friend pays.');
     s = R(R(s, { type: 'OPEN_UPI' }), { type: 'APPROVE_HOLD', pin: '0000' });
     expect(s.hold!.debited).toBe(s.hold!.blockAmount);
@@ -80,7 +83,7 @@ describe('08 Rohan approval failures', () => {
     let s = R(R(draft(), { type: 'SET_NEXT_APPROVAL', outcome: 'timeout' }), { type: 'OPEN_UPI' });
     s = R(s, { type: 'APPROVE_HOLD', pin: '0000' });
     expect(s.hold!.status).toBe('draft');
-    expect(s.errorMessage).toBe("Your bank didn't respond, so nothing was set aside or charged. Try again or pay for all 6.");
+    expect(s.errorMessage).toBe("Your bank didn't respond, so nothing was blocked or charged. Try again or pay for all 6.");
     expect(s.smsToasts).toHaveLength(0);
     s = R(R(s, { type: 'OPEN_UPI' }), { type: 'APPROVE_HOLD', pin: '0000' });
     expect(s.hold!.status).toBe('active');
@@ -92,7 +95,7 @@ describe('08 Rohan approval failures', () => {
     expect(s.hold).toBeNull();
     expect(s.smsToasts).toHaveLength(0);
     expect(Object.values(s.seats).some((x) => x.state === 'held' || x.state === 'paid_owner')).toBe(false);
-    expect(failureOf(s).alert).toBe("Your payment for D07 didn't go through. Nothing was set aside or charged — your seats are still selected.");
+    expect(failureOf(s).alert).toBe("Your payment for D07 didn't go through. Nothing was blocked or charged — your seats are still selected.");
     expect(failureOf(R(s, { type: 'DISMISS_ALERT' })).alert).toBeNull();
   });
 });
@@ -108,48 +111,66 @@ describe('08 hold limits', () => {
   it('15% cap on high tier', () =>
     expect(tryHold({ showHoldsPct: 15 }, 'high').errorMessage).toBe('Group holds are full for this show. Book now to keep these seats.'));
   it('second hold on the same show', () => expect(tryHold({ userHasExistingHoldForShow: true }).errorMessage).toBe("You're already holding seats for this show."));
-  it('2 holds per account, plain copy', () => expect(tryHold({ userAccountsActiveHoldCount: 2 }).errorMessage).toBe(ACCOUNT_LIMIT));
+  it('1 group hold per account (one Reserve Pay mandate)', () => {
+    expect(ACCOUNT_LIMIT).toBe('You already have a group hold running. Finish it or book these seats now.');
+    expect(tryHold({ userAccountsActiveHoldCount: 1 }).errorMessage).toBe(ACCOUNT_LIMIT);
+  });
+  it('₹10,000 cap: a premium 10-seat group is refused with the cap copy; 7 seats fit', () => {
+    let s = R(fresh(), { type: 'SET_DEMO_SETTINGS', patch: { premiumPricing: true } });
+    expect(s.seats.A05.price).toBe(PREMIUM_ROW_A_PAISE);
+    const ten = ['A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09', 'A10', 'A11', 'A12'];
+    const over = R(s, { type: 'BEGIN_GROUP_HOLD', seatIds: ten });
+    expect(over.errorMessage).toBe(BLOCK_CAP_COPY);
+    expect(over.errorMessage).toBe('Group holds can block up to ₹10,000. Pick fewer seats or pay now.');
+    expect(over.hold).toBeNull();
+    const seven = R(s, { type: 'BEGIN_GROUP_HOLD', seatIds: ten.slice(0, 7) });
+    expect(seven.hold!.status).toBe('draft');
+    s = R(seven, { type: 'SET_DEMO_SETTINGS', patch: { premiumPricing: false } });
+    expect(s.seats.A05.price).toBe(50000);
+  });
   it('no hold is created in any of them', () => expect(tryHold({ is3HoursBeforeShow: true }).hold).toBeNull());
 });
 
-describe('08 late payment pending at showtime', () => {
-  const pendingAtShowtime = () => {
+describe('09 payment pending at the 9:00 PM cut-off', () => {
+  const pendingAtCutoff = () => {
     let s = kabirOpens(runScriptTo(fresh(), 'grace', r), r) as FailureState;
-    s = at(s, 21, 14, r) as FailureState;
+    s = at(s, 20, 59, r) as FailureState;
     s = R(s, { type: 'FRIEND_LATE_PAY_START', name: 'Kabir' });
     if (s.friendFlow.sessions.Kabir.screen === 'phone') s = R(s, { type: 'FRIEND_PHONE_SUBMIT', name: 'Kabir', phone: '98765 43214' });
     if (s.friendFlow.sessions.Kabir.screen === 'otp') s = R(s, { type: 'FRIEND_OTP_OK', name: 'Kabir' });
     s = R(s, { type: 'FRIEND_CHOOSE_UPI', name: 'Kabir', app: 'Kite Pay' });
     s = R(s, { type: 'FRIEND_APPROVE', name: 'Kabir' });
-    return at(s, 21, 15, r) as FailureState;
+    return at(s, 21, 0, r) as FailureState;
   };
 
-  it('the seat stays his while the bank confirms', () => {
-    const s = pendingAtShowtime();
+  it('the seat stays his while the bank confirms, until 9:10 PM', () => {
+    const s = pendingAtCutoff();
     expect(s.friendFlow.sessions.Kabir.screen).toBe('pending');
-    expect(selectShowtimeCheckout(s, 'Kabir').pendingBody).toBe('The show has started, but D06 stays yours while your bank confirms, until 9:25 PM.');
+    expect(selectCutoffCheckout(s, 'Kabir').pendingBody).toBe('D06 stays yours while your bank confirms, until 9:10 PM.');
   });
 
-  it('clears in grace: ticket moves, Rohan refunded', () => {
-    const s = R(pendingAtShowtime(), { type: 'FRIEND_RESOLVE', name: 'Kabir', outcome: 'success' });
+  it('clears in grace: the ticket moves; D06 is never charged to Rohan', () => {
+    let s = R(pendingAtCutoff(), { type: 'FRIEND_RESOLVE', name: 'Kabir', outcome: 'success' });
     expect(s.seats.D06.state).toBe('paid_friend');
     expect(s.board.lateSeats).toContain('D06');
+    s = at(s, 21, 15, r) as FailureState;
+    expect(s.hold!.debited).toBe(27714);
   });
 
-  it('still pending at 9:25 PM: fails, not charged, Rohan keeps the ticket, no retry', () => {
-    let s = R(pendingAtShowtime(), { type: 'SET_CLOCK', now: ist(21, 25) });
+  it('still pending at 9:10 PM: fails, Kabir not charged, the seat stays kept, no retry', () => {
+    let s = R(pendingAtCutoff(), { type: 'SET_CLOCK', now: ist(21, 10) });
     expect(s.friendFlow.sessions.Kabir.screen).toBe('failed');
     expect(s.seats.D06.state).toBe('kept');
-    const v = selectShowtimeCheckout(s, 'Kabir');
+    const v = selectCutoffCheckout(s, 'Kabir');
     expect(v.canRetry).toBe(false);
-    expect(v.failedBody).toBe("Your bank didn't confirm before the show started, so you weren't charged. Rohan still has the ticket for D06.");
+    expect(v.failedBody).toBe("Your bank didn't confirm by 9:10 PM, so you weren't charged. Rohan still has D06.");
     s = R(s, { type: 'FRIEND_RETRY', name: 'Kabir' });
     expect(s.friendFlow.sessions.Kabir.screen).toBe('failed');
   });
 
-  it('before showtime the normal copy is used', () => {
+  it('before the cut-off the normal copy is used', () => {
     const s = runScriptTo(fresh(), 'priyaPending', r) as FailureState;
-    expect(selectShowtimeCheckout(s, 'Priya').pendingBody).toBeUndefined();
+    expect(selectCutoffCheckout(s, 'Priya').pendingBody).toBeUndefined();
     expect(selectFriendCheckout(s, 'Priya').pendingBody).toContain('even past the deadline');
   });
 });

@@ -1,162 +1,134 @@
 import { describe, it, expect } from 'vitest';
-import { stillBlocked, unblockedSoFar } from '../money';
+import { formatINR, stillBlocked, toCover, unblocked } from '../money';
 import { demoReducer } from '../reducer';
 import { selectBoardSummary, selectReceipt } from '../selectors';
 import { createInitialDemoState, DEMO_CLOCK_START_MS } from '../seed';
+import { selectMoney, withBoard, type BoardState } from '../boardFlow';
+import { applyStep, ist, SCRIPT_STEPS } from '../script';
+import { selectTourPayoff } from '../tour';
+import type { DemoState } from '../types';
 
-describe('Scripted Outcome (Spec §1 Tutorial Path)', () => {
-  it('reproduces the exact tutorial scenario down to every single paise and timer', () => {
-    let state = createInitialDemoState();
-    const fee = state.show.fee; // 2714 paise (₹27.14)
+/**
+ * Spec §1 scripted outcome, 09 money model: kept seats are charged at showtime, once; a late friend's
+ * payment means the kept seat is never charged to Rohan (no refund). Receipt at 9:15 PM:
+ * charged ₹277.14 (his own seat), unblocked ₹1,385.70.
+ */
 
-    // 1. Initial State: 1:10 PM
-    expect(state.clock.now).toBe(DEMO_CLOCK_START_MS);
+function invariant(s: BoardState) {
+  const m = selectMoney(s);
+  if (!m || m.fallback) return;
+  expect(m.charged + m.unblocked + m.stillBlocked).toBe(m.blockAmount);
+  expect(m.charged).toBe(s.hold!.debited);
+  expect(m.refunded).toBe(0);
+}
 
-    // Rohan selects 6 seats: D05, D06, D07, D08, D09, D10
-    const groupSeatIds = ['D05', 'D06', 'D07', 'D08', 'D09', 'D10'];
-    for (const seatId of groupSeatIds) {
-      state = demoReducer(state, { type: 'SELECT_SEAT', seatId });
+describe('Scripted outcome (spec §1) through the full reducer stack', () => {
+  it('every step adds up; Kabir pays late so D06 is never charged; one unblock at 9:15 PM', () => {
+    let s = withBoard(createInitialDemoState());
+    const seen: Partial<Record<(typeof SCRIPT_STEPS)[number], BoardState>> = {};
+    for (const step of SCRIPT_STEPS) {
+      s = applyStep(s, step);
+      invariant(s);
+      seen[step] = s;
     }
-    expect(state.selectedSeatIds).toEqual(groupSeatIds);
 
-    // 1:15 PM: Rohan starts hold
-    const holdStartTime = Date.UTC(2026, 10, 20, 7, 45, 0); // 1:15 PM IST
-    state = demoReducer(state, { type: 'SET_CLOCK', now: holdStartTime });
+    // 1:15 PM: block ₹1,662.84, own seat charged ₹277.14
+    const hold = seen.hold!;
+    expect(hold.hold!.blockAmount).toBe(166284);
+    expect(hold.hold!.debited).toBe(27714);
+    expect(hold.hold!.deadline).toBe(ist(19, 15));
+    expect(hold.hold!.freeReleaseUntil).toBe(ist(16, 15));
+    expect(hold.hold!.graceUntil).toBe(ist(19, 25));
+    expect(hold.hold!.blockExpiresAt).toBe(ist(21, 15)); // the block lasts until showtime
+    expect(selectMoney(hold)!).toMatchObject({ charged: 27714, toCover: 138570, stillBlocked: 138570, unblocked: 0 });
+
+    // Amit, Sana pay: less to cover, nothing unblocked yet
+    expect(selectMoney(seen.amit!)!).toMatchObject({ toCover: 110856, stillBlocked: 138570, unblocked: 0 });
+    expect(selectMoney(seen.sana!)!).toMatchObject({ toCover: 83142, stillBlocked: 138570, unblocked: 0 });
+
+    // Neha can't make it → D05 released free (before 4:15 PM)
+    expect(seen.release!.seats.D05.state).toBe('released');
+    expect(selectMoney(seen.release!)!).toMatchObject({ toCover: 55428, feesKept: 0, unblocked: 0 });
+
+    // 7:15 PM: Kabir's D06 kept (not charged); Priya's payment with the bank gets the grace
+    const dl = seen.deadline!;
+    expect(dl.hold!.status).toBe('closed');
+    expect(dl.seats.D06.state).toBe('kept');
+    expect(dl.seats.D10.state).toBe('paying');
+    expect(dl.hold!.debited).toBe(27714);
+
+    // 7:19 PM Priya clears; 7:25 PM grace over: one kept seat, still only ₹277.14 charged
+    expect(seen.priyaPaid!.seats.D10.state).toBe('paid_friend');
+    expect(selectMoney(seen.grace!)!).toMatchObject({ charged: 27714, keptSeats: 1, toCover: 27714, pendingCharge: 27714, stillBlocked: 138570 });
+
+    // 8:10 PM Kabir pays for the kept seat: ticket moves, D06 is never charged, no refund
+    const late = seen.kabirLate!;
+    expect(late.seats.D06).toMatchObject({ state: 'paid_friend', payerName: 'Kabir' });
+    expect(late.hold!.refunded).toBe(0);
+    expect(late.smsToasts.some((t) => /refund/i.test(t.text))).toBe(false);
+    expect(selectMoney(late)!).toMatchObject({ charged: 27714, keptSeats: 0, toCover: 0, pendingCharge: 0 });
+
+    // 9:15 PM settlement: charged ₹277.14, unblocked ₹1,385.70, once
+    const end = seen.showtime!;
+    expect(end.hold!.status).toBe('settled');
+    const m = selectMoney(end)!;
+    expect(formatINR(m.charged)).toBe('₹277.14');
+    expect(formatINR(m.unblocked)).toBe('₹1,385.70');
+    expect(m.stillBlocked).toBe(0);
+    expect(end.smsToasts.filter((t) => /unblocked/.test(t.text)).map((t) => t.text)).toEqual(['₹1,385.70 unblocked by BookMyShow.']);
+
+    // Done card
+    const p = selectTourPayoff(end)!;
+    expect(p.rows[0]).toEqual({ text: 'Rohan paid ₹277.14 — just his own seat', sub: 'Kabir paid late, so his seat was never charged to Rohan.' });
+  });
+
+  it('without Kabir: D06 is charged at showtime from the block', () => {
+    let s = withBoard(createInitialDemoState());
+    for (const step of SCRIPT_STEPS) {
+      if (step === 'kabirLate') continue;
+      s = applyStep(s, step);
+      invariant(s);
+    }
+    const m = selectMoney(s)!;
+    expect(s.seats.D06.state).toBe('kept');
+    expect(formatINR(m.charged)).toBe('₹554.28');
+    expect(formatINR(m.unblocked)).toBe('₹1,108.56');
+    expect(s.smsToasts[0].text).toBe('₹277.14 charged and ₹1,108.56 unblocked by BookMyShow.');
+  });
+});
+
+describe('Base reducer follows the same model', () => {
+  it('kept at the deadline, charged at showtime, no refund on a late payment', () => {
+    let state: DemoState = createInitialDemoState();
+    expect(state.clock.now).toBe(DEMO_CLOCK_START_MS);
+    for (const seatId of ['D05', 'D06', 'D07', 'D08', 'D09', 'D10']) state = demoReducer(state, { type: 'SELECT_SEAT', seatId });
+    state = demoReducer(state, { type: 'SET_CLOCK', now: ist(13, 15) });
     state = demoReducer(state, { type: 'START_HOLD_DRAFT' });
-    expect(state.hold).not.toBeNull();
-    expect(state.hold?.ownerSeatId).toBe('D05'); // default first tapped
-
-    // Set Rohan's seat to D07 as per spec
     state = demoReducer(state, { type: 'SET_HOLD_OWNER_SEAT', seatId: 'D07' });
-    expect(state.hold?.ownerSeatId).toBe('D07');
-
-    // Rohan submits UPI PIN
     state = demoReducer(state, { type: 'SUBMIT_UPI_PIN', pin: '1234' });
+    const fee = state.show.fee;
+    expect(stillBlocked(state.hold!)).toBe(138570);
 
-    // Verify initial hold figures:
-    // Block: 6 * 277.14 = ₹1,662.84 (166284 paise)
-    // Debited now: ₹277.14 (27714 paise) for D07
-    // Still blocked: 5 * 277.14 = ₹1,385.70 (138570 paise)
-    // Unblocked so far: ₹0.00
-    expect(state.hold?.status).toBe('active');
-    expect(state.hold?.blockAmount).toBe(166284);
-    expect(state.hold?.debited).toBe(27714);
-    expect(stillBlocked(state.hold!, state.seats, fee)).toBe(138570);
-    expect(unblockedSoFar(state.hold!, state.seats, fee)).toBe(0);
-
-    // Check deadlines from spec:
-    // Deadline: 7:15 PM IST = 19:15 IST
-    // Free release until: 4:15 PM IST = 16:15 IST
-    // Grace until: 7:25 PM IST = 19:25 IST
-    // Block expires: 7:45 PM IST = 19:45 IST
-    const expectedDeadline = Date.UTC(2026, 10, 20, 13, 45, 0);
-    const expectedFreeRelease = Date.UTC(2026, 10, 20, 10, 45, 0);
-    const expectedGrace = Date.UTC(2026, 10, 20, 13, 55, 0);
-    const expectedBlockExpiry = Date.UTC(2026, 10, 20, 14, 15, 0);
-
-    expect(state.hold?.deadline).toBe(expectedDeadline);
-    expect(state.hold?.freeReleaseUntil).toBe(expectedFreeRelease);
-    expect(state.hold?.graceUntil).toBe(expectedGrace);
-    expect(state.hold?.blockExpiresAt).toBe(expectedBlockExpiry);
-
-    // 2. Amit pays at 2:02 PM (14:02 IST) for D08
-    const time202PM = Date.UTC(2026, 10, 20, 8, 32, 0);
-    state = demoReducer(state, { type: 'TICK', now: time202PM });
+    state = demoReducer(state, { type: 'TICK', now: ist(14, 2) });
     state = demoReducer(state, { type: 'CONTROLLER_AMIT_PAYS' });
+    expect(toCover(state.hold!, state.seats, fee)).toBe(110856);
+    expect(unblocked(state.hold!)).toBe(0);
 
-    expect(state.seats['D08'].state).toBe('paid_friend');
-    expect(state.seats['D08'].payerName).toBe('Amit');
-    // Still blocked: 4 seats = ₹1,108.56 (110856 paise)
-    // Unblocked: 1 seat = ₹277.14 (27714 paise)
-    expect(stillBlocked(state.hold!, state.seats, fee)).toBe(110856);
-    expect(unblockedSoFar(state.hold!, state.seats, fee)).toBe(27714);
+    state = demoReducer(state, { type: 'TICK', now: ist(19, 15) });
+    expect(state.hold!.status).toBe('closed');
+    expect(state.seats.D06.state).toBe('kept');
+    expect(state.hold!.debited).toBe(27714);
 
-    // 3. Sana pays at 3:10 PM (15:10 IST) for D09
-    const time310PM = Date.UTC(2026, 10, 20, 9, 40, 0);
-    state = demoReducer(state, { type: 'TICK', now: time310PM });
-    state = demoReducer(state, { type: 'CONTROLLER_SANA_PAYS' });
-
-    expect(state.seats['D09'].state).toBe('paid_friend');
-    expect(state.seats['D09'].payerName).toBe('Sana');
-    // Still blocked: 3 seats = ₹831.42 (83142 paise)
-    // Unblocked: 2 seats = ₹554.28 (55428 paise)
-    expect(stillBlocked(state.hold!, state.seats, fee)).toBe(83142);
-    expect(unblockedSoFar(state.hold!, state.seats, fee)).toBe(55428);
-
-    // 4. Neha declines at 3:30 PM (15:30 IST) -> Rohan releases D05 (edge) free before 4:15 PM
-    const time330PM = Date.UTC(2026, 10, 20, 10, 0, 0);
-    state = demoReducer(state, { type: 'TICK', now: time330PM });
-    state = demoReducer(state, { type: 'CONTROLLER_NEHA_DECLINES' });
-    expect(state.declines.some((d) => d.name === 'Neha')).toBe(true);
-
-    // Rohan releases edge seat D05
-    state = demoReducer(state, { type: 'RELEASE_SEAT', seatId: 'D05' });
-    expect(state.seats['D05'].state).toBe('released');
-    // Free release before 4:15 PM -> no fee kept!
-    expect(state.hold?.debited).toBe(27714); // unchanged
-    // Still blocked: D06 and D10 (2 seats = ₹554.28)
-    // Unblocked: Amit (277.14) + Sana (277.14) + Released D05 (277.14) = ₹831.42 (83142 paise)
-    expect(stillBlocked(state.hold!, state.seats, fee)).toBe(55428);
-    expect(unblockedSoFar(state.hold!, state.seats, fee)).toBe(83142);
-
-    // 5. Priya pays at 7:13 PM (19:13 IST) -> Payment pending
-    const time713PM = Date.UTC(2026, 10, 20, 13, 43, 0);
-    state = demoReducer(state, { type: 'TICK', now: time713PM });
-    state = demoReducer(state, { type: 'CONTROLLER_PRIYA_PAYS_PENDING' });
-    expect(state.seats['D10'].state).toBe('paying');
-
-    // 6. Deadline arrives at 7:15 PM (19:15 IST)
-    const time715PM = expectedDeadline;
-    state = demoReducer(state, { type: 'TICK', now: time715PM });
-    // Since Priya is 'paying', hold status enters 'resolving' (grace period)
-    expect(state.hold?.status).toBe('resolving');
-
-    // 7. Priya payment succeeds at 7:19 PM (19:19 IST, within grace)
-    const time719PM = Date.UTC(2026, 10, 20, 13, 49, 0);
-    state = demoReducer(state, { type: 'TICK', now: time719PM });
-    state = demoReducer(state, { type: 'CONTROLLER_PRIYA_PAYS_SUCCESS' });
-    expect(state.seats['D10'].state).toBe('paid_friend');
-    expect(state.seats['D10'].payerName).toBe('Priya');
-    // Still blocked: only Kabir's seat D06 = ₹277.14 (27714 paise)
-    // Unblocked so far: 4 seats = ₹1,108.56 (110856 paise)
-    expect(stillBlocked(state.hold!, state.seats, fee)).toBe(27714);
-    expect(unblockedSoFar(state.hold!, state.seats, fee)).toBe(110856);
-
-    // 8. Grace expires at 7:25 PM (19:25 IST)
-    const time725PM = expectedGrace;
-    state = demoReducer(state, { type: 'TICK', now: time725PM });
-
-    // Kabir had no response -> D06 kept by default and charged to Rohan
-    expect(state.hold?.status).toBe('settled');
-    expect(state.seats['D06'].state).toBe('kept');
-    // Total Rohan paid: D07 (own) + D06 (kept) = ₹554.28 (55428 paise)
-    expect(state.hold?.debited).toBe(55428);
-    // Still blocked: 0
-    expect(stillBlocked(state.hold!, state.seats, fee)).toBe(0);
-    // Final unblocked amount: ₹1,108.56 (110856 paise)
-    expect(unblockedSoFar(state.hold!, state.seats, fee)).toBe(110856);
-
-    // Check final receipt from spec §1:
-    // "Receipt at 7:25 PM: Rohan paid ₹554.28 in total (own + kept), fees kept ₹0, unblocked ₹1,108.56."
-    const receipt = selectReceipt(state);
-    expect(receipt).not.toBeNull();
-    expect(receipt?.rohanPaidTotal).toBe('₹554.28');
-    expect(receipt?.feesKept).toBe('₹0.00');
-    expect(receipt?.unblockedAmount).toBe('₹1,108.56');
-
-    // 9. Kabir (late) opens link at 8:10 PM (20:10 IST) and pays for kept seat D06
-    const time810PM = Date.UTC(2026, 10, 20, 14, 40, 0);
-    state = demoReducer(state, { type: 'TICK', now: time810PM });
+    state = demoReducer(state, { type: 'TICK', now: ist(20, 10) });
     state = demoReducer(state, { type: 'CONTROLLER_KABIR_PAYS_LATE' });
+    expect(state.seats.D06.state).toBe('paid_friend');
+    expect(state.hold!.refunded).toBe(0);
 
-    // Ticket moves to Kabir; Rohan refunded ₹277.14
-    expect(state.seats['D06'].state).toBe('paid_friend');
-    expect(state.seats['D06'].payerName).toBe('Kabir');
-    expect(state.hold?.refunded).toBe(27714);
-    // Net amount paid by Rohan drops back to ₹277.14 (only his own seat)
-    expect(state.hold!.debited - state.hold!.refunded).toBe(27714);
-
-    const boardSummary = selectBoardSummary(state);
-    expect(boardSummary?.debited).toBe('₹277.14');
+    state = demoReducer(state, { type: 'TICK', now: ist(21, 15) });
+    expect(state.hold!.status).toBe('settled');
+    // D05, D09, D10 were still kept: 3 × ₹277.14 charged with the owner seat
+    expect(state.hold!.debited).toBe(4 * 27714);
+    expect(selectReceipt(state)).toEqual({ blocked: '₹1,662.84', charged: '₹1,108.56', unblocked: '₹554.28', final: true });
+    expect(selectBoardSummary(state)!.toCover).toBe('₹0.00');
   });
 });

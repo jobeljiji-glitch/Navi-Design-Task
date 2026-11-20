@@ -127,7 +127,7 @@ export function conflictCopy(seatId: string): string {
 
 function isHoldLive(state: DemoState): boolean {
   const h = state.hold;
-  return !!h && (h.status === 'active' || h.status === 'resolving');
+  return !!h && (h.status === 'active' || h.status === 'closed');
 }
 
 function perSeat(state: DemoState): number {
@@ -184,6 +184,18 @@ function openPayment(state: DemoState, name: string): FriendPayment | undefined 
 
 export function hasPaid(state: DemoState, name: string): boolean {
   return state.friendPayments.some((p) => p.name === name && p.status === 'success');
+}
+
+/**
+ * 09 board realism: BookMyShow knows a friend once they entered a phone number (or are logged in and
+ * started paying). Returns the seat they last picked, or null if BMS doesn't know them yet.
+ */
+export function openedSeat(state: AppState, name: FriendName): string | null {
+  const session = state.friendFlow.sessions[name];
+  const payment = state.friendPayments.find((p) => p.name === name);
+  const known = session.verified || !!session.phone || !!payment?.phone || (state.friendFlow.loggedIn && !!payment);
+  if (!known) return null;
+  return payment?.seatIds[0] ?? session.seatId;
 }
 
 export function hasDeclined(state: DemoState, name: string): boolean {
@@ -398,7 +410,7 @@ export function friendFlowReducer(state: AppState, action: AppAction): AppState 
         title: `${name}'s in! 🎉`,
         body: fallback
           ? `${name} paid for ${seatsText(payment.seatIds)}. ${amount} is on its way back to you.`
-          : `${name} paid for ${seatsText(payment.seatIds)}. ${amount} unblocked from your account.`,
+          : `${amount} less for you to cover`,
         at: now,
         read: false,
         type: 'friend_paid',
@@ -575,7 +587,7 @@ export function selectFriendPage(state: AppState, name: FriendName): FriendPageV
   const whoNames = joinNames(payers.map((p) => p.name));
 
   return {
-    live: hold.status === 'active' || hold.status === 'resolving',
+    live: hold.status === 'active',
     alreadyPaid: hasPaid(state, name),
     declined: hasDeclined(state, name),
     kicker: `${organiser} is holding seats for you`,
@@ -597,7 +609,7 @@ export function selectFriendPage(state: AppState, name: FriendName): FriendPageV
     // Failure #26 (draft copy)
     cancellationBody: `Your ticket follows the cinema's cancellation rules, like any BookMyShow booking. Cancel before ${deadline}${day ? ` ${day}` : ''} and your seat goes back to the group; after that it goes back on sale.`,
     cta: n ? `Pay ${amount} for ${seatsText(validIds)}` : 'Pick a seat',
-    ctaEnabled: n > 0 && (hold.status === 'active' || hold.status === 'resolving'),
+    ctaEnabled: n > 0 && hold.status === 'active',
     extra: n ? n - 1 : 0,
     maxExtra: session.seatId && !selectedTaken ? maxExtra(state, name) : 0,
     perSeat: formatINR(per),

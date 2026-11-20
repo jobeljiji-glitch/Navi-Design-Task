@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatINR, seatPrice, stillBlocked, unblockedSoFar } from '../money';
+import { formatINR, seatPrice, stillBlocked, toCover, unblocked } from '../money';
 import type { Hold, Seat } from '../types';
 
 describe('Money and formatINR', () => {
@@ -30,10 +30,10 @@ describe('Money and formatINR', () => {
     expect(seatPrice(seat, 2714)).toBe(27714);
   });
 
-  it('calculates stillBlocked and unblockedSoFar correctly', () => {
+  it('09: to cover, still blocked and unblocked (unblocked only once, at settlement)', () => {
     const seats: Record<string, Seat> = {
       D05: { id: 'D05', row: 'D', num: 5, tier: 'primePlus', price: 25000, state: 'held' },
-      D06: { id: 'D06', row: 'D', num: 6, tier: 'primePlus', price: 25000, state: 'held' },
+      D06: { id: 'D06', row: 'D', num: 6, tier: 'primePlus', price: 25000, state: 'kept' },
       D07: { id: 'D07', row: 'D', num: 7, tier: 'primePlus', price: 25000, state: 'paid_owner' },
       D08: { id: 'D08', row: 'D', num: 8, tier: 'primePlus', price: 25000, state: 'paid_friend' },
     };
@@ -58,9 +58,22 @@ describe('Money and formatINR', () => {
       events: [],
     };
 
-    // D05 and D06 are held (2 seats = 55428 paise still blocked)
-    expect(stillBlocked(hold, seats, 2714)).toBe(55428);
-    // Unblocked so far = 110856 - 27714 - 55428 = 27714 (for D08 which was paid by friend)
-    expect(unblockedSoFar(hold, seats, 2714)).toBe(27714);
+    // To cover: D05 (held) + D06 (kept) = 55428. Still blocked: block − charged = 83142. Nothing unblocked yet.
+    expect(toCover(hold, seats, 2714)).toBe(55428);
+    expect(stillBlocked(hold)).toBe(83142);
+    expect(unblocked(hold)).toBe(0);
+    expect(hold.debited + unblocked(hold) + stillBlocked(hold)).toBe(hold.blockAmount);
+
+    // Settled at showtime with D06 charged: charged 55428, unblocked 55428, nothing blocked.
+    const settled: Hold = { ...hold, status: 'settled', debited: 55428 };
+    expect(stillBlocked(settled)).toBe(0);
+    expect(unblocked(settled)).toBe(55428);
+    expect(toCover(settled, seats, 2714)).toBe(0);
+    expect(settled.debited + unblocked(settled) + stillBlocked(settled)).toBe(settled.blockAmount);
+
+    // Pay-all-now rail: nothing is blocked or unblocked (refunds instead).
+    const fb: Hold = { ...hold, paymentRail: 'pay_and_refund', debited: hold.blockAmount };
+    expect(stillBlocked(fb)).toBe(0);
+    expect(unblocked({ ...fb, status: 'settled' })).toBe(0);
   });
 });

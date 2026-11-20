@@ -1,173 +1,57 @@
-import { formatINR, mostYouCouldStillPay, seatPrice, stillBlocked, unblockedSoFar } from './money';
+import { formatINR, stillBlocked, toCover, unblocked } from './money';
 import type { DemoState, NotificationItem, Seat } from './types';
 
+/**
+ * Base selectors over the plain DemoState (the app uses the richer boardFlow selectors).
+ * 09 glossary: blocked / to cover / charged / unblocked (see money.ts).
+ */
 export interface BoardSummary {
-  mostYouCouldStillPay: string;
+  toCover: string;
   stillBlocked: string;
-  debited: string;
-  unblockedSoFar: string;
+  charged: string;
+  unblocked: string;
   totalGroupAmount: string;
   paidCount: number;
   totalCount: number;
   unpaidCount: number;
 }
 
+const PAID = new Set<Seat['state']>(['paid_owner', 'paid_friend', 'covered']);
+
 export function selectBoardSummary(state: DemoState): BoardSummary | null {
   const hold = state.hold;
   if (!hold) return null;
-
   const fee = state.show.fee;
-  const blockedPaise = stillBlocked(hold, state.seats, fee);
-  const unblockedPaise = unblockedSoFar(hold, state.seats, fee);
-  const mostPaise = mostYouCouldStillPay(hold, state.seats, fee);
-
-  const confirmedSeats = hold.seatIds
-    .map((id) => state.seats[id])
-    .filter((s): s is Seat => !!s && (s.state === 'paid_owner' || s.state === 'paid_friend' || s.state === 'kept' || s.state === 'covered'));
-
+  const paid = hold.seatIds.filter((id) => PAID.has(state.seats[id]?.state)).length;
+  const released = hold.seatIds.filter((id) => state.seats[id]?.state === 'released').length;
   return {
-    mostYouCouldStillPay: formatINR(mostPaise),
-    stillBlocked: formatINR(blockedPaise),
-    debited: formatINR(hold.debited - hold.refunded),
-    unblockedSoFar: formatINR(unblockedPaise),
+    toCover: formatINR(toCover(hold, state.seats, fee)),
+    stillBlocked: formatINR(stillBlocked(hold)),
+    charged: formatINR(hold.debited - hold.refunded),
+    unblocked: formatINR(unblocked(hold)),
     totalGroupAmount: formatINR(hold.blockAmount),
-    paidCount: confirmedSeats.length,
+    paidCount: paid,
     totalCount: hold.seatIds.length,
-    unpaidCount: hold.seatIds.length - confirmedSeats.length,
-  };
-}
-
-export interface WhoIsInItem {
-  seatId: string;
-  name: string;
-  state: Seat['state'];
-  amountFormatted: string;
-}
-
-export function selectWhoIsIn(state: DemoState): WhoIsInItem[] {
-  if (!state.hold) return [];
-
-  const items: WhoIsInItem[] = [];
-  for (const seatId of state.hold.seatIds) {
-    const seat = state.seats[seatId];
-    if (!seat) continue;
-
-    if (seat.state === 'paid_owner') {
-      items.push({
-        seatId: seat.id,
-        name: 'Rohan',
-        state: seat.state,
-        amountFormatted: formatINR(seatPrice(seat, state.show.fee)),
-      });
-    } else if (seat.state === 'paid_friend') {
-      items.push({
-        seatId: seat.id,
-        name: seat.payerName || 'Friend',
-        state: seat.state,
-        amountFormatted: formatINR(seatPrice(seat, state.show.fee)),
-      });
-    } else if (seat.state === 'kept') {
-      items.push({
-        seatId: seat.id,
-        name: 'Rohan (kept)',
-        state: seat.state,
-        amountFormatted: formatINR(seatPrice(seat, state.show.fee)),
-      });
-    }
-  }
-
-  return items;
-}
-
-export function selectUnpaidCount(state: DemoState): number {
-  if (!state.hold) return 0;
-  return state.hold.seatIds
-    .map((id) => state.seats[id])
-    .filter((s): s is Seat => !!s && (s.state === 'held' || s.state === 'locked' || s.state === 'paying')).length;
-}
-
-export interface LedgerLines {
-  leavesAccountNow: string;
-  blockedNotTaken: string;
-  mostYouCouldPay: string;
-  ctaText: string;
-}
-
-export function selectHoldSummaryLedger(state: DemoState): LedgerLines | null {
-  if (!state.hold) return null;
-  const fee = state.show.fee;
-  const ownerSeat = state.seats[state.hold.ownerSeatId];
-  if (!ownerSeat) return null;
-
-  const perSeatPrice = seatPrice(ownerSeat, fee);
-  const totalCount = state.hold.seatIds.length;
-  const friendSeatsCount = totalCount - 1;
-  const blockedAmount = friendSeatsCount * perSeatPrice;
-
-  return {
-    leavesAccountNow: formatINR(perSeatPrice),
-    blockedNotTaken: formatINR(blockedAmount),
-    mostYouCouldPay: formatINR(state.hold.blockAmount),
-    ctaText: `Pay ${formatINR(perSeatPrice)} and block ${formatINR(blockedAmount)}`,
+    unpaidCount: hold.seatIds.length - paid - released,
   };
 }
 
 export interface ReceiptSummary {
-  title: string;
-  totalBlockedAtStart: string;
-  rohanPaidTotal: string;
-  unblockedAmount: string;
-  feesKept: string;
-  seatBreakdown: Array<{
-    seatId: string;
-    payer: string;
-    status: string;
-    amount: string;
-  }>;
+  blocked: string;
+  charged: string;
+  unblocked: string;
+  final: boolean;
 }
 
+/** Final only after showtime settlement (09). */
 export function selectReceipt(state: DemoState): ReceiptSummary | null {
   const hold = state.hold;
   if (!hold) return null;
-
-  const fee = state.show.fee;
-  const unblocked = unblockedSoFar(hold, state.seats, fee);
-  const netPaid = hold.debited - hold.refunded;
-
-  const breakdown = hold.seatIds.map((id) => {
-    const seat = state.seats[id];
-    let payer = 'Unpaid';
-    let status: string = seat?.state || 'unknown';
-
-    if (seat?.state === 'paid_owner') {
-      payer = 'Rohan';
-      status = 'Confirmed';
-    } else if (seat?.state === 'paid_friend') {
-      payer = seat.payerName || 'Friend';
-      status = 'Confirmed';
-    } else if (seat?.state === 'kept') {
-      payer = 'Rohan (Kept)';
-      status = 'Charged to Rohan';
-    } else if (seat?.state === 'released') {
-      payer = '—';
-      status = 'Released';
-    }
-
-    return {
-      seatId: id,
-      payer,
-      status,
-      amount: formatINR(seat ? seatPrice(seat, fee) : 0),
-    };
-  });
-
   return {
-    title: 'Your group is set · 5 of 6 in',
-    totalBlockedAtStart: formatINR(hold.blockAmount),
-    rohanPaidTotal: formatINR(netPaid),
-    unblockedAmount: formatINR(unblocked),
-    feesKept: '₹0.00',
-    seatBreakdown: breakdown,
+    blocked: formatINR(hold.blockAmount),
+    charged: formatINR(hold.debited - hold.refunded),
+    unblocked: formatINR(unblocked(hold)),
+    final: hold.status === 'settled',
   };
 }
 

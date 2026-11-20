@@ -67,7 +67,7 @@ export default function FriendFlow() {
   const state = useDemoStore()
   const session = name ? state.friendFlow.sessions[name] : null
   const hold = state.hold
-  const live = !!hold && (hold.status === 'active' || hold.status === 'resolving')
+  const live = !!hold && (hold.status === 'active' || hold.status === 'closed')
 
   // Deep links and seeding. Lives here, not in screens: DeviceFrame mounts children twice (D-037).
   // The ref keeps it to once per URL, even when StrictMode runs effects twice in dev.
@@ -91,7 +91,7 @@ export default function FriendFlow() {
       return
     }
     let s = useDemoStore.getState()
-    const isLive = s.hold && (s.hold.status === 'active' || s.hold.status === 'resolving')
+    const isLive = s.hold && (s.hold.status === 'active' || s.hold.status === 'closed')
     if (!isLive) {
       dispatch({ type: 'BEGIN_GROUP_HOLD', seatIds: DEMO_GROUP })
       if (q.get('assigned') === '1') dispatch({ type: 'SET_ASSIGN_MODE', mode: 'assigned' })

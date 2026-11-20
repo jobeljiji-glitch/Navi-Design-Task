@@ -1,4 +1,5 @@
 import PrimaryCTA from './PrimaryCTA'
+import PinnedFooter from './PinnedFooter'
 
 /**
  * DualCtaBar (step 1b): "Hold for group" (outline) + "Pay ₹X" (filled).
@@ -27,14 +28,7 @@ export default function DualCtaBar({
   className = '',
 }: DualCtaBarProps) {
   return (
-    <div
-      className={`w-full border-t px-4 pt-2.5 flex items-center gap-3 shrink-0 ${className}`}
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderTopColor: 'var(--divider)',
-        paddingBottom: 'calc(var(--sab, 0px) + 9px)',
-      }}
-    >
+    <PinnedFooter layout="row" className={className}>
       <div className="flex-1 min-w-0" data-testid="hold-for-group">
         <PrimaryCTA variant="outline" size="xl" onClick={onLeftClick} subLabel={leftSub} disabled={disabled}>
           {leftText}
@@ -45,6 +39,6 @@ export default function DualCtaBar({
           {rightText}
         </PrimaryCTA>
       </div>
-    </div>
+    </PinnedFooter>
   )
 }

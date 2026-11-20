@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialDemoState } from '../seed';
-import { stillBlocked, unblockedSoFar } from '../money';
+import { stillBlocked, toCover, unblocked } from '../money';
 import {
   friendFlowReducer,
   withFriendFlow,
@@ -78,10 +78,10 @@ describe('friendFlow: share and chat', () => {
 });
 
 describe('friendFlow: Amit pays (acceptance)', () => {
-  it('chat → pay page → phone → OTP → UPI → ticket; Rohan’s block shrinks by ₹277.14', () => {
+  it('chat → pay page → phone → OTP → UPI → ticket; ₹277.14 less to cover, nothing unblocked yet', () => {
     const before = shared();
-    const blockedBefore = stillBlocked(before.hold!, before.seats, fee(before));
-    const unblockedBefore = unblockedSoFar(before.hold!, before.seats, fee(before));
+    const coverBefore = toCover(before.hold!, before.seats, fee(before));
+    const blockedBefore = stillBlocked(before.hold!);
 
     let s = run(before, { type: 'FRIEND_OPEN_LINK', name: 'Amit' });
     expect(s.friendFlow.sessions.Amit.screen).toBe('pay');
@@ -108,13 +108,15 @@ describe('friendFlow: Amit pays (acceptance)', () => {
     s = run(s, { type: 'FRIEND_RESOLVE', name: 'Amit' });
     expect(s.friendFlow.sessions.Amit.screen).toBe('ticket');
     expect(s.seats.D08.state).toBe('paid_friend');
-    expect(stillBlocked(s.hold!, s.seats, fee(s))).toBe(blockedBefore - 27714);
-    expect(unblockedSoFar(s.hold!, s.seats, fee(s))).toBe(unblockedBefore + 27714);
+    // 09: unused money is unblocked once, at showtime. A friend's payment lowers what's left to cover.
+    expect(toCover(s.hold!, s.seats, fee(s))).toBe(coverBefore - 27714);
+    expect(stillBlocked(s.hold!)).toBe(blockedBefore);
+    expect(unblocked(s.hold!)).toBe(0);
     expect(s.hold!.debited).toBe(before.hold!.debited);
 
     const notif = selectLatestFriendNotification(s)!;
     expect(notif.title).toBe("Amit's in! 🎉");
-    expect(notif.body).toBe('Amit paid for D08. ₹277.14 unblocked from your account.');
+    expect(notif.body).toBe('₹277.14 less for you to cover');
 
     const t = selectFriendTicket(s, 'Amit')!;
     expect(t.headline).toBe("You're in, next to Rohan");
@@ -214,7 +216,7 @@ describe('friendFlow: failures', () => {
     expect(s.friendFlow.sessions.Priya.screen).toBe('pending');
     expect(selectFriendCheckout(s, 'Priya').pendingBody).toBe('D10 stays yours while we wait, even past the deadline.');
     s = run(s, { type: 'SET_CLOCK', now: s.hold!.deadline - MIN }, { type: 'TICK', now: s.hold!.deadline + MIN });
-    expect(s.hold!.status).toBe('resolving');
+    expect(s.hold!.status).toBe('closed');
     expect(s.seats.D10.state).toBe('paying');
     s = run(s, { type: 'FRIEND_RESOLVE', name: 'Priya', outcome: 'success' });
     expect(s.seats.D10.state).toBe('paid_friend');
@@ -234,7 +236,7 @@ describe('friendFlow: more seats, assigned mode, restart', () => {
     s = payFlow(s, 'Sana');
     expect(s.seats.D10).toMatchObject({ state: 'paid_friend', payerName: 'Sana' });
     expect(selectFriendTicket(s, 'Sana')!.seatLine).toBe('D09, D10 · 2 tickets · Paid ₹554.28 · Sent to your SMS');
-    expect(selectLatestFriendNotification(s)!.body).toBe('Sana paid for D09, D10. ₹554.28 unblocked from your account.');
+    expect(selectLatestFriendNotification(s)!.body).toBe('₹554.28 less for you to cover');
   });
 
   it('assigned mode: "Which one is you?" with names on seats', () => {

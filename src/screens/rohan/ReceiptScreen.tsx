@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Check, ChevronLeft } from 'lucide-react'
-import { Band, BottomSheet, Card, Hairline, IosShareSheet, PrimaryCTA, PriceRow, StatusBadge, type IosShareContact } from '@/ds'
+import { Band, BottomSheet, Card, Hairline, IosShareSheet, PinnedFooter, PrimaryCTA, PriceRow, StatusBadge, type IosShareContact } from '@/ds'
 import { useDemoStore } from '@/store'
 import { selectGroupReceipt } from '@/logic/boardFlow'
 import { selectSettledOutside } from '@/logic/failureFlow'
 
 /**
  * Receipt (spec §4 step 9): who paid, what Rohan was charged, what was unblocked. Every amount from
- * `selectGroupReceipt`. Same surfaces as Group hold (04d): status card with a flush band, a seat list,
- * the ref-22 price card as the ledger, then the kept-seat actions (pay link / transfer, first wins).
+ * `selectGroupReceipt`. 09: provisional while seats are kept ("Kept · charged at 9:15 PM unless a friend
+ * pays"), final after the showtime settlement. No refund rows (refunds exist only on the pay-all-now rail).
+ * The kept-seat actions (pay link / transfer, first wins) sit in the pinned footer.
  */
 export interface ReceiptScreenProps {
   onBack?: () => void
@@ -114,15 +115,6 @@ export default function ReceiptScreen({ onBack }: ReceiptScreenProps) {
               <PriceRow key={l.key} label={l.label} value={l.value} sub={l.sub} testId={`ledger-${l.key}`} />
             ),
           )}
-          {r.refunds.length > 0 && (
-            <>
-              <Hairline className="my-1" />
-              {r.refunds.map((x) => (
-                <PriceRow key={x.key} label={x.label} value={x.value} testId={x.key} />
-              ))}
-              {r.netPaid && <PriceRow label={r.netPaid.label} value={r.netPaid.value} strong testId="ledger-net" />}
-            </>
-          )}
         </Card>
 
         {k?.note && <Band standalone title={k.note.title} testId="kept-note">{k.note.body}</Band>}
@@ -131,12 +123,17 @@ export default function ReceiptScreen({ onBack }: ReceiptScreenProps) {
         {outside.map((o) =>
           o.marked ? (
             <Band key={o.seatId} standalone title={`${o.seatId} · Settled outside BMS`} testId="settled-outside">
-              A label for your records only. Nothing was charged or refunded.
+              A label for your records only. It doesn't change what was charged.
             </Band>
           ) : null,
         )}
 
-        <div className="flex flex-col items-center gap-0.5 pt-1 cta-safe">
+        <div className="h-3" aria-hidden />
+      </div>
+
+      {/* 09: pinned footer */}
+      {(outside.some((o) => !o.marked) || (k && (k.payLinkEnabled || k.transferEnabled))) && (
+        <PinnedFooter testId="receipt-footer">
           {outside
             .filter((o) => !o.marked)
             .map((o) => (
@@ -152,14 +149,14 @@ export default function ReceiptScreen({ onBack }: ReceiptScreenProps) {
                 </PrimaryCTA>
               )}
               {k.transferEnabled && (
-                <button type="button" onClick={() => setTransferOpen(true)} className="px-3 py-2.5 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
+                <button type="button" onClick={() => setTransferOpen(true)} className="self-center min-h-[44px] px-3 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
                   Transfer ticket instead
                 </button>
               )}
             </>
           )}
-        </div>
-      </div>
+        </PinnedFooter>
+      )}
 
       {toast && (
         <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">
@@ -181,7 +178,7 @@ export default function ReceiptScreen({ onBack }: ReceiptScreenProps) {
         isOpen={transferOpen && !!k}
         onClose={() => setTransferOpen(false)}
         title={k ? `Transfer ${k.seatId}` : undefined}
-        subtitle="The ticket moves to them. You stay charged, so settle up outside BookMyShow. The pay link turns off."
+        subtitle={k?.transferSubtitle}
         footer={
           <PrimaryCTA
             variant="strong"

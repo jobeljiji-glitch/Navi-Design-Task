@@ -1,5 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react'
 import { motion, AnimatePresence, useDragControls, type PanInfo } from 'motion/react'
+import PinnedFooter from './PinnedFooter'
 
 /**
  * BottomSheet (ref 05 / 19 anatomy).
@@ -177,9 +178,7 @@ export default function BottomSheet({
 
             {/* Fixed footer */}
             {footer && (
-              <div className={`shrink-0 px-4 pt-2.5 cta-safe ${footerDivider ? 'border-t' : ''}`} style={{ borderTopColor: 'var(--divider)' }}>
-                {footer}
-              </div>
+              <PinnedFooter divider={footerDivider}>{footer}</PinnedFooter>
             )}
           </motion.div>
         </div>

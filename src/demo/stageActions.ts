@@ -238,7 +238,7 @@ export function jumpToMoment(id: MomentId) {
 /** A live group hold exists (most failures need one). */
 function ensureHold() {
   const h = demo().hold
-  if (h && (h.status === 'active' || h.status === 'resolving')) return
+  if (h && (h.status === 'active' || h.status === 'closed')) return
   replaceState(runScriptTo(freshState(), 'hold'))
 }
 

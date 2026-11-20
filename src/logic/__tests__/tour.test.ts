@@ -29,8 +29,10 @@ describe('07 guided tour', () => {
   it('uses the approved copy', () => {
     expect(TOUR_STEPS[1].text).toBe('Tap one seat and the whole group sits together. Then tap Hold for group — friends pay their own share.');
     expect(TOUR_STEPS[1].anchors.at(-1)).toBe('seat-map');
-    expect(TOUR_STEPS[2].text).toContain('The money stays in your account — it’s only set aside.');
-    expect(TOUR_STEPS[12].text).toBe('Rohan paid for his seat and one kept seat. ₹1,108.56 was never charged — it’s simply unblocked.');
+    expect(TOUR_STEPS[2].text).toBe('Only his seat is charged now. The rest is blocked in his account, not charged.');
+    expect(TOUR_STEPS[11].text).toBe('30 minutes left. Do nothing and unpaid seats are kept, charged at 9:15 PM.');
+    expect(TOUR_STEPS[12].text).toBe("7:15 PM. Kabir didn't answer, so D06 is kept. Nothing is charged yet.");
+    expect(TOUR_STEPS[13].text).toBe('Kabir pays before 9:00 PM. The ticket moves to him. D06 is never charged to Rohan.');
     expect(INTRO.problem).toBe("Rohan wants 6 seats for Friday. He shouldn't have to pay for everyone.");
   });
 
@@ -41,26 +43,26 @@ describe('07 guided tour', () => {
 
   it('time skips land on the spec times', () => {
     const labels = TOUR_STEPS.map((s) => s.nextLabel).filter(Boolean);
-    expect(labels).toEqual(['⏩ Skip to 3:30 PM', 'Release D05', '⏩ Skip to 4:15 PM', '⏩ Skip to 6:45 PM', '⏩ Skip to 7:15 PM', '⏩ Skip to 8:10 PM']);
+    expect(labels).toEqual(['⏩ Skip to 3:30 PM', 'Release D05', '⏩ Skip to 4:15 PM', '⏩ Skip to 6:45 PM', '⏩ Skip to 7:15 PM', '⏩ Skip to 8:10 PM', 'Pay and skip to 9:15 PM']);
   });
 
   it('walking every step reproduces the spec §1 outcome, the same as the script', () => {
     const end = tourStateAt(TOUR_LENGTH);
-    const script = runScriptTo(freshState(), 'kabirLate');
+    const script = runScriptTo(freshState(), 'showtime');
     const m = selectMoney(end)!;
     expect(m).toEqual(selectMoney(script));
-    expect(formatINR(m.rohanCharged)).toBe('₹554.28');
-    expect(formatINR(m.returned)).toBe('₹1,108.56');
+    expect(formatINR(m.charged)).toBe('₹277.14');
+    expect(formatINR(m.unblocked)).toBe('₹1,385.70');
     expect(end.board.lateSeats).toEqual(['D06']);
-    const r = selectGroupReceipt(end)!;
-    expect(r.refunds.map((x) => x.value)).toEqual(['₹277.14']);
+    expect(selectGroupReceipt(end)!.final).toBe(true);
   });
 
-  it('the receipt step shows the 7:25 PM receipt', () => {
+  it('step 13 (7:15 PM): D06 kept, nothing charged beyond his seat, receipt still provisional', () => {
     const s = tourStateAt(12);
-    const r = selectGroupReceipt(s)!;
-    expect(r.ledger.find((l) => l.key === 'paid')!.value).toBe('₹554.28');
-    expect(r.ledger.find((l) => l.key === 'unblocked')!.value).toBe('₹1,108.56');
+    expect(s.hold!.status).toBe('closed');
+    expect(s.seats.D06.state).toBe('kept');
+    expect(selectMoney(s)!.charged).toBe(27714);
+    expect(selectGroupReceipt(s)!.final).toBe(false);
   });
 
   it("each step's done() is false at its start and true after Next", () => {
@@ -89,11 +91,11 @@ describe('07 guided tour', () => {
   it('done card: Rohan paid just his own seat in the end, nobody chased, no empty seats', () => {
     const p = selectTourPayoff(tourStateAt(TOUR_LENGTH))!;
     expect(p.rows).toEqual([
-      { text: 'Rohan paid ₹277.14 — just his own seat', sub: "He covered Kabir's seat at 7:25 PM and got it back when Kabir paid." },
+      { text: 'Rohan paid ₹277.14 — just his own seat', sub: 'Kabir paid late, so his seat was never charged to Rohan.' },
       { text: 'Friends chased: 0' },
       { text: 'Seats left empty: 0' },
     ]);
-    // before Kabir pays (receipt step): the kept seat is still Rohan's
+    // before Kabir pays (step 14 start): the kept seat would still be charged at 9:15 PM
     expect(selectTourPayoff(tourStateAt(13))!.rows[0]).toEqual({ text: 'Rohan paid ₹554.28 — not ₹1,662.84' });
     expect(p.line).toBe('Every held seat ended up paid.');
   });

@@ -5,17 +5,22 @@
  * - the payment fallback ladder (#4/#5): UPI Reserve Pay → card pre-auth → pay all now, refunded per friend,
  * - Rohan's own approval outcomes: declined (#6), bank timeout, own payment fails while the block succeeds (#7),
  * - plain copy for the 2-holds-per-account limit,
- * - a late payment still with the bank when the show starts (10-min grace from showtime),
+ * - the cut-off checkout copy (late payments close at 9:00 PM; pending ones get 10 min, 09),
  * - "Settled outside BMS" labels for kept seats after showtime (spec §3, label only).
  *
  * Pure: no React, no Date.now(), no randomness. Time comes from state.clock.
  */
 import { formatINR, seatPrice } from './money';
 import { formatClockIST } from './holdFlow';
-import { boardFlowReducer, openLatePayment, type BoardFlowAction, type BoardState } from './boardFlow';
-import { FRIENDS, type FriendName } from './friendFlow';
+import { boardFlowReducer, cutoffOf, openLatePayment, type BoardFlowAction, type BoardState } from './boardFlow';
+import { type FriendName } from './friendFlow';
 import { GRACE_DURATION_MS } from './rules';
+import { ACCOUNT_LIMIT_COPY } from './reducer';
 import type { DemoSettings, PaymentRail } from './types';
+
+/** Demo only: premium-priced recliners (row A ₹1,250) so a 10-seat group crosses the ₹10,000 cap. */
+export const PREMIUM_ROW_A_PAISE = 125000;
+const ROW_A_PAISE = 50000;
 
 const MIN = 60 * 1000;
 /** Spec §5 #6: seats stay locked 10 more minutes after a declined block. */
@@ -59,9 +64,8 @@ export type FailureAction =
 
 export type FailureFlowAction = BoardFlowAction | FailureAction;
 
-export const ACCOUNT_LIMIT_BASE = 'You have reached the maximum active holds limit.';
-export const ACCOUNT_LIMIT = 'You already have 2 group holds running. Book these seats now, or finish a hold first.';
-export const TIMEOUT_PREFIX = "Your bank didn't respond, so nothing was set aside or charged.";
+export const ACCOUNT_LIMIT = ACCOUNT_LIMIT_COPY;
+export const TIMEOUT_PREFIX = "Your bank didn't respond, so nothing was blocked or charged.";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -113,20 +117,6 @@ function decline(state: FailureState, message: string, logText: string): Failure
   return log(s, 'UPI_DECLINED', logText);
 }
 
-/** A late payment still with the bank when the show starts gets 10 minutes, then fails (not charged). */
-function runShowtimeGrace(state: FailureState): FailureState {
-  const cutoff = state.show.startsAt + GRACE_DURATION_MS;
-  if (state.clock.now < cutoff) return state;
-  let s = state;
-  for (const name of FRIENDS) {
-    const p = openLatePayment(s, name);
-    if (!p || p.status !== 'pending') continue;
-    s = { ...s, friendPayments: s.friendPayments.map((x) => (x.id === p.id ? { ...x, status: 'failed' as const } : x)) };
-    s = { ...s, ...boardFlowReducer(s, { type: 'FRIEND_GOTO', name, screen: 'failed' }) };
-    s = log(s, 'LATE_PAY_EXPIRED', `${name}'s payment for ${p.seatIds.join(', ')} wasn't confirmed by ${formatClockIST(cutoff)}: not charged`);
-  }
-  return s;
-}
 
 // ---------------------------------------------------------------------------
 // Reducer
@@ -145,12 +135,19 @@ export function failureFlowReducer(state: FailureState, action: FailureFlowActio
       return withLadderRail(s);
     }
 
-    case 'SET_DEMO_SETTINGS':
-      return { ...state, settings: { ...state.settings, ...action.patch } };
+    case 'SET_DEMO_SETTINGS': {
+      let s: FailureState = { ...state, settings: { ...state.settings, ...action.patch } };
+      if (action.patch.premiumPricing !== undefined) {
+        const price = action.patch.premiumPricing ? PREMIUM_ROW_A_PAISE : ROW_A_PAISE;
+        const seats = { ...s.seats };
+        for (const id of Object.keys(seats)) if (seats[id].row === 'A') seats[id] = { ...seats[id], price };
+        s = { ...s, seats };
+      }
+      return s;
+    }
 
     case 'BEGIN_GROUP_HOLD': {
       let s: FailureState = { ...state, ...boardFlowReducer(state, action) };
-      if (s.errorMessage === ACCOUNT_LIMIT_BASE) s = { ...s, errorMessage: ACCOUNT_LIMIT };
       s = setFailure(s, { holdingUntil: null, alert: null });
       return withLadderRail(s);
     }
@@ -178,7 +175,7 @@ export function failureFlowReducer(state: FailureState, action: FailureFlowActio
       const owner = state.hold!.ownerSeatId;
       let s: FailureState = { ...state, hold: null, errorMessage: null };
       s = setFailure(s, {
-        alert: `Your payment for ${owner} didn't go through. Nothing was set aside or charged — your seats are still selected.`,
+        alert: `Your payment for ${owner} didn't go through. Nothing was blocked or charged — your seats are still selected.`,
         nextApproval: 'ok',
         holdingUntil: null,
       });
@@ -204,11 +201,6 @@ export function failureFlowReducer(state: FailureState, action: FailureFlowActio
       return s;
     }
 
-    case 'FRIEND_RETRY':
-      // After showtime a failed late payment can't be retried.
-      if (state.clock.now >= state.show.startsAt && openLatePayment(state, action.name)) return state;
-      return { ...state, ...boardFlowReducer(state, action) };
-
     case 'DISMISS_ALERT':
       return setFailure(state, { alert: null });
 
@@ -218,11 +210,6 @@ export function failureFlowReducer(state: FailureState, action: FailureFlowActio
       const s = setFailure(state, { settledOutside: [...failureOf(state).settledOutside, action.seatId] });
       return log(s, 'SETTLED_OUTSIDE', `Rohan labelled ${action.seatId} "Settled outside BMS"`);
     }
-
-    case 'TICK':
-    case 'SET_CLOCK':
-    case 'ADVANCE_CLOCK':
-      return runShowtimeGrace({ ...state, ...boardFlowReducer(state, action) });
 
     case 'RESTART_DEMO':
       return { ...boardFlowReducer(state, action), failure: initialFailure() };
@@ -248,7 +235,7 @@ export function selectLadderNotice(state: FailureState): LadderNotice | null {
   const n = hold.seatIds.length;
   const per = formatINR(seatPrice(state.seats[hold.ownerSeatId], state.show.fee));
   if (hold.paymentRail === 'card_preauth') {
-    return { title: "Your bank can't set money aside on UPI", body: `We'll hold ${formatINR(hold.blockAmount)} on your card instead. You're charged only for your seat and any seats you keep.` };
+    return { title: "Your bank can't block money on UPI", body: `We'll hold ${formatINR(hold.blockAmount)} on your card instead. You're charged only for your seat and kept seats.` };
   }
   return {
     title: failureOf(state).cardCanHold ? 'Paying for everyone now' : "Your bank and card can't hold money",
@@ -263,19 +250,21 @@ export function selectHoldingLine(state: FailureState): string | null {
   return `We're holding these seats for you until ${formatClockIST(until)}.`;
 }
 
-/** Overrides for the friend's pending / failed screen around showtime. */
-export function selectShowtimeCheckout(state: FailureState, name: FriendName): { pendingBody?: string; failedBody?: string; canRetry: boolean } {
-  const started = state.clock.now >= state.show.startsAt;
+/**
+ * Overrides for the friend's pending / failed screen after the 9:00 PM late-pay cut-off (09).
+ * A pending late payment keeps the seat until 9:10 PM; after that it fails and isn't charged.
+ */
+export function selectCutoffCheckout(state: FailureState, name: FriendName): { pendingBody?: string; failedBody?: string; canRetry: boolean } {
   const late = openLatePayment(state, name);
-  if (!started || !late) return { canRetry: true };
+  if (!late || state.clock.now < cutoffOf(state)) return { canRetry: true };
   const seats = late.seatIds.join(', ');
-  const cutoff = formatClockIST(state.show.startsAt + GRACE_DURATION_MS);
+  const until = formatClockIST(cutoffOf(state) + GRACE_DURATION_MS);
   const organiser = state.hold?.organiser.name ?? 'Rohan';
   if (late.status === 'pending') {
-    return { pendingBody: `The show has started, but ${seats} stays yours while your bank confirms, until ${cutoff}.`, canRetry: false };
+    return { pendingBody: `${seats} stays yours while your bank confirms, until ${until}.`, canRetry: false };
   }
   return {
-    failedBody: `Your bank didn't confirm before the show started, so you weren't charged. ${organiser} still has the ticket for ${seats}.`,
+    failedBody: `Your bank didn't confirm by ${until}, so you weren't charged. ${organiser} still has ${seats}.`,
     canRetry: false,
   };
 }

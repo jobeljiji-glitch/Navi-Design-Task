@@ -162,28 +162,30 @@ describe('Failure States (Spec §5)', () => {
 
     // Deadline hits
     state = demoReducer(state, { type: 'TICK', now: deadline });
-    // Hold status is 'resolving' (grace), NOT settled yet
-    expect(state.hold?.status).toBe('resolving');
+    // 09: the deadline closes the hold (unpaid seats kept); the paying seat keeps its 10-min grace
+    expect(state.hold?.status).toBe('closed');
     expect(state.seats['D10'].state).toBe('paying');
   });
 
-  it('Failure 20 ★: Nobody responds -> default keep charged from block', () => {
+  it('Failure 20 ★: Nobody responds -> seats kept at the deadline, charged from the block at showtime', () => {
     let state = setupActiveHold();
     const deadline = state.hold!.deadline;
 
-    // Fast-forward directly past deadline and grace period
     state = demoReducer(state, { type: 'TICK', now: deadline + 11 * 60 * 1000 });
-
-    expect(state.hold?.status).toBe('settled');
-    // All 5 friend seats kept by default
+    expect(state.hold?.status).toBe('closed');
     for (const seatId of ['D05', 'D06', 'D08', 'D09', 'D10']) {
       expect(state.seats[seatId].state).toBe('kept');
     }
-    // Total charged: all 6 seats = ₹1,662.84
+    // Kept, not charged yet
+    expect(state.hold?.debited).toBe(27714);
+
+    // Showtime: all 6 seats = ₹1,662.84 charged, nothing unblocked
+    state = demoReducer(state, { type: 'TICK', now: state.show.startsAt });
+    expect(state.hold?.status).toBe('settled');
     expect(state.hold?.debited).toBe(166284);
   });
 
-  it('Failure 23 ★: Late friend pays kept seat -> ticket moves, Rohan refunded', () => {
+  it('Failure 23 ★: Late friend pays kept seat -> ticket moves, never charged to Rohan', () => {
     let state = setupActiveHold();
     const deadline = state.hold!.deadline;
     // Fast-forward past deadline so D06 is kept
@@ -196,8 +198,11 @@ describe('Failure States (Spec §5)', () => {
 
     expect(state.seats['D06'].state).toBe('paid_friend');
     expect(state.seats['D06'].payerName).toBe('Kabir');
-    expect(state.hold?.refunded).toBe(27714);
-    expect(state.hold!.debited - state.hold!.refunded).toBe(initialDebit - 27714);
+    expect(state.hold?.refunded).toBe(0);
+    expect(state.hold!.debited).toBe(initialDebit);
+    // At showtime the 3 seats still kept are charged; D06 is not
+    state = demoReducer(state, { type: 'TICK', now: state.show.startsAt });
+    expect(state.hold!.debited).toBe(initialDebit + 4 * 27714);
   });
 
   it('Failure 27 ★: Cinema cancels show -> full refund including fees, block released', () => {

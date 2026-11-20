@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BadgeCheck, Delete, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
+import PinnedFooter from './PinnedFooter'
 
 /**
  * Generic bank UPI app (step 3). Deliberately NOT BookMyShow-styled:
@@ -42,12 +43,12 @@ export default function UpiMandateScreen({
   amount,
   mode = 'block',
   debitedNow = '₹277.14',
-  furtherDebits = 'Only for seats you keep',
-  blockEnds = 'Today, 7:45 PM',
+  furtherDebits = 'Only kept seats, at 9:15 PM',
+  blockEnds = 'Today, 9:15 PM',
   refundLine = '₹277.14 each time a friend pays',
   showDetails = 'Group hold · Monsoon Heist · Fri 9:15 PM',
   payerVpa = 'rohan@okbank',
-  plainNote = "This money stays in your account — it's only set aside. You're only charged for seats your friends don't pay for.",
+  plainNote = "Blocked, not charged. You're charged only for seats you keep.",
   cardLabel = 'ending 4021',
   slowBank = false,
   onApprove,
@@ -59,6 +60,7 @@ export default function UpiMandateScreen({
   const isCard = mode === 'card'
   const isBlock = mode === 'block' || isCard
   const [waiting, setWaiting] = useState(false)
+  const endsAt = blockEnds.replace(/^(Today|Tomorrow|Fri), /, '')
 
   const press = (key: string) => {
     if (key === 'del') {
@@ -91,7 +93,7 @@ export default function UpiMandateScreen({
         <span className="w-11" />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 pt-5 pb-4 flex flex-col">
         <h1 className="text-[22px] leading-[28px] font-normal text-balance">{isCard ? 'Approve a hold on your card' : isBlock ? 'Approve a block request' : 'Approve a payment'}</h1>
 
         {/* Merchant */}
@@ -155,16 +157,16 @@ export default function UpiMandateScreen({
         {mode !== 'pay' && (
           <p className="mt-3 text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
             {isCard
-              ? 'Unused money is unblocked automatically when the hold ends.'
+              ? `Unused money is unblocked at ${endsAt}.`
               : isBlock
-              ? 'Unused money is unblocked automatically. You can cancel this block from Mandates.'
-              : 'Each time a friend pays, their share comes back to this account.'}
+              ? `Unused money is unblocked at ${endsAt}. You can cancel this block from Mandates.`
+              : 'Each time a friend pays, their share is refunded here.'}
           </p>
         )}
       </div>
 
-      {/* Actions */}
-      <div className="shrink-0 px-4 pt-3 pb-3 flex gap-3 border-t" style={{ borderColor: 'var(--divider)' }}>
+      {/* Actions: pinned footer (09), never scrolls away */}
+      <PinnedFooter layout="row" testId="upi-footer">
         <button
           type="button"
           onClick={onDecline}
@@ -182,7 +184,7 @@ export default function UpiMandateScreen({
         >
           {isCard ? 'Approve with OTP' : 'Approve with PIN'}
         </button>
-      </div>
+      </PinnedFooter>
 
       {/* PIN pad */}
       <AnimatePresence>

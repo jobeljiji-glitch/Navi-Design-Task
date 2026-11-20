@@ -29,6 +29,7 @@ export const SCRIPT_STEPS = [
   'priyaPaid',
   'grace',
   'kabirLate',
+  'showtime',
 ] as const;
 export type ScriptStep = (typeof SCRIPT_STEPS)[number];
 
@@ -87,6 +88,18 @@ export function friendCompletesPay(
   return s;
 }
 
+/**
+ * A friend opens the link, picks a seat and enters a phone number, then leaves without paying
+ * (09: the board shows "Sana · D09 · Opened, not paid"). The 5-min lock runs out.
+ */
+export function friendOpensOnly(s: BoardState, name: FriendName, r: Reduce = R): BoardState {
+  s = r(s, { type: 'FRIEND_OPEN_LINK', name });
+  s = r(s, { type: 'FRIEND_PAY', name });
+  if (s.friendFlow.sessions[name].screen === 'phone') s = r(s, { type: 'FRIEND_PHONE_SUBMIT', name, phone: '98765 43211' });
+  s = r(s, { type: 'FRIEND_BACK', name });
+  return r(s, { type: 'ADVANCE_CLOCK', ms: 6 * 60 * 1000 });
+}
+
 /** Kabir opens the link at 8:10 PM (kept-seat page). */
 export function kabirOpens(s: BoardState, r: Reduce = R): BoardState {
   return r(at(s, 20, 10, r), { type: 'FRIEND_OPEN_LINK', name: 'Kabir' });
@@ -132,6 +145,9 @@ export function applyStep(s: BoardState, step: ScriptStep, r: Reduce = R): Board
       return at(s, 19, 25, r);
     case 'kabirLate':
       return kabirPays(kabirOpens(s, r), r);
+    case 'showtime':
+      // 9:15 PM: kept seats charged, the rest unblocked once (09)
+      return at(s, 21, 15, r);
   }
 }
 
@@ -156,7 +172,10 @@ export const AT_PARAM: Record<string, ScriptStep> = {
   pending: 'priyaPending',
   deadline: 'deadline',
   grace: 'priyaPaid',
+  kept: 'grace',
   receipt: 'grace',
   late: 'kabirLate',
   '810': 'grace',
+  settled: 'showtime',
+  showtime: 'showtime',
 };

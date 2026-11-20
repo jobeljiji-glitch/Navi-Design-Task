@@ -10,6 +10,7 @@ import {
   Hairline,
   IosShareSheet,
   KeepReleaseStepper,
+  PinnedFooter,
   PrimaryCTA,
   PriceRow,
   SeatTileRow,
@@ -31,11 +32,12 @@ import {
 } from '@/logic/boardFlow'
 
 /**
- * Group status board (spec §4 step 7) + T−30 sheet (step 8) + settlement animation (step 9).
+ * Group status board (spec §4 step 7) + T−30 sheet (step 8) + showtime settlement animation (step 9).
  * Same surfaces as the 04d Group hold screen: grey page, white 8 pt cards, flush ref-22 bands,
- * ref-22 price rows, the seat tiles, one strong-red CTA following the cards.
+ * ref-22 price rows, the seat tiles. 09: one row per seat (names only when BMS knows them),
+ * "Share a reminder" through Rohan's own apps, and the CTA in a pinned footer.
  */
-export type BoardSheet = 'release' | 't30' | 'cover' | 'reminder' | 'more' | 'shorten' | 'add' | 'cancel' | null
+export type BoardSheet = 'release' | 't30' | 'cover' | 'more' | 'shorten' | 'add' | 'cancel' | null
 
 export interface BoardScreenProps {
   onBack?: () => void
@@ -95,7 +97,7 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
   const [keep, setKeep] = useState<number | undefined>(undefined)
   const [cover, setCover] = useState(1)
   const [shortenTo, setShortenTo] = useState<number | null>(null)
-  const [shareOpen, setShareOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState<false | 'link' | 'reminder'>(false)
   const [ticketOpen, setTicketOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -144,6 +146,7 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
   const shortenOpts = selectShortenOptions(state)
   const pct = Math.round((v.paidCount / v.totalCount) * 100)
   const active = v.status === 'active'
+  const closed = v.status === 'closed'
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden relative select-none" style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid="board">
@@ -178,36 +181,36 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
             {v.t30.body}
           </Band>
         )}
-        {v.resolvingLine && (
-          <Band standalone tone="warning" testId="resolving-band" title={<span className="inline-flex items-center gap-2">{v.resolvingLine} <Dots /></span>}>
-            {v.resolvingBody}
+        {v.closedBand && (
+          <Band standalone tone="warning" testId="closed-band" title={<span className="inline-flex items-center gap-2">{v.closedBand.title} {v.closedBand.title.includes('progress') && <Dots />}</span>}>
+            {v.closedBand.body}
           </Band>
         )}
 
-        {/* Card 1: what's still set aside, the meter, the rules band */}
+        {/* Card 1: what's left to cover, the meter, the rules band */}
         <Card testId="board-money" className="flex flex-col gap-3" band={active ? <Band title={v.rulesTitle} testId="board-rules-band">{v.rulesBody}</Band> : undefined}>
           <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status="GROUP HOLD" />
-            <span className="text-[14px] leading-[20px] inline-flex items-center gap-1" style={{ color: active ? 'var(--text-warning)' : 'var(--text-secondary)' }} data-testid="pay-by">
+            <span className="text-[14px] leading-[20px] inline-flex items-center gap-1" style={{ color: v.pillTone === 'warning' ? 'var(--text-warning)' : 'var(--text-secondary)' }} data-testid="pay-by">
               <Clock size={14} strokeWidth={1.75} aria-hidden />
               {v.pill}
             </span>
           </div>
           <div data-tour="board-headline">
             <p className="text-[24px] leading-[30px] font-medium text-balance" data-testid="set-aside">
-              {v.setAside} {v.setAsideLabel}
+              {v.headline}
             </p>
-            <p className="text-[14px] leading-[20px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>{v.setAsideSub}</p>
+            <p className="text-[14px] leading-[20px] mt-0.5" style={{ color: 'var(--text-secondary)' }} data-testid="headline-sub">{v.headlineSub}</p>
           </div>
           <Hairline />
           <div data-tour="block-meter">
             <BlockMeter
-              youPaidPaise={v.meter.youPaid}
+              youPaidPaise={v.meter.charged}
               friendsPaidPaise={v.meter.friendsPaid}
-              stillBlockedPaise={v.meter.stillBlocked}
-              youPaidLabel={v.meter.youLabel}
+              stillBlockedPaise={v.meter.toCover}
+              youPaidLabel={v.meter.chargedLabel}
               friendsPaidLabel={v.meter.friendsLabel}
-              stillBlockedLabel={v.meter.blockedLabel}
+              stillBlockedLabel={v.meter.toCoverLabel}
             />
           </div>
         </Card>
@@ -227,19 +230,18 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
         {/* Card 3: status list with inline actions */}
         <Card testId="board-status" className="flex flex-col">
           <GroupStatusList
-            paidMembers={v.paid.map((p) => ({ name: p.name, seat: p.detail, status: 'paid' }))}
-            payingMembers={v.paying.map((p) => ({ name: p.name, seat: p.detail, status: 'paying' }))}
-            declinedMembers={v.declined.map((p) => ({ name: p.name, status: 'declined' }))}
-            waitingSeatsCount={active ? v.waitingCount : 0}
-            waitingLabel={v.waitingLabel}
+            rows={v.rows}
+            declinedNames={v.declined.map((d) => d.name)}
+            waitingCount={active ? v.waitingCount : 0}
+            notOpenedCount={v.notOpenedCount}
             canRelease={v.canRelease}
             onReleaseSeat={() => setSheet('release')}
             onKeepSeat={(name) => {
               dispatch({ type: 'DECLINE_KEEP', name })
-              flash('Kept. Someone else can still take it.')
+              flash('The seat stays in the group')
             }}
             onCoverSeats={v.canCover ? () => setSheet('cover') : undefined}
-            onSendReminder={() => setSheet('reminder')}
+            onShareReminder={v.canShareReminder ? () => setShareOpen('reminder') : undefined}
           />
           {active && v.canRelease && (
             <>
@@ -262,17 +264,25 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
           </button>
         </Card>
 
-        <div className="flex flex-col items-center gap-0.5 pt-1 cta-safe">
-          {active && (
-            <>
-              <PrimaryCTA variant="strong" size="lg" onClick={() => setShareOpen(true)}>Share link again</PrimaryCTA>
-              <button type="button" onClick={() => setSheet('more')} className="px-3 py-2.5 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
-                More
-              </button>
-            </>
-          )}
-        </div>
+        <div className="h-3" aria-hidden />
       </div>
+
+      {/* 09: pinned footer, the CTA never scrolls away */}
+      {active && (
+        <PinnedFooter layout="row" testId="board-footer">
+          <div className="w-[104px] shrink-0">
+            <PrimaryCTA variant="outline" size="lg" onClick={() => setSheet('more')}>More</PrimaryCTA>
+          </div>
+          <div className="flex-1 min-w-0">
+            <PrimaryCTA variant="strong" size="lg" onClick={() => setShareOpen('link')}>Share link again</PrimaryCTA>
+          </div>
+        </PinnedFooter>
+      )}
+      {closed && (
+        <PinnedFooter testId="board-footer" caption={v.closedFooterCaption}>
+          <PrimaryCTA variant="strong" size="lg" onClick={() => onSettled?.()}>View receipt</PrimaryCTA>
+        </PinnedFooter>
+      )}
 
       {toast && (
         <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">
@@ -314,7 +324,7 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
               isTappable={(t) => release.tiles.find((x) => x.id === t.id)?.tappable ?? false}
             />
             <SoftGroup className="flex flex-col gap-3">
-              <PriceRow label={release.setAsideRow.label} value={release.setAsideRow.value} />
+              <PriceRow label={release.blockedRow.label} value={release.blockedRow.value} />
               <PriceRow label={release.feeRow.label} value={release.feeRow.value} />
               <Hairline dashed />
               <PriceRow label={release.backRow.label} value={release.backRow.value} strong testId="release-back" />
@@ -408,32 +418,6 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
             </div>
           </SoftGroup>
         )}
-      </BottomSheet>
-
-      {/* Send reminder: BMS writes it, Rohan forwards it (max once per 2 h) */}
-      <BottomSheet
-        isOpen={sheet === 'reminder'}
-        onClose={close}
-        title="Send a reminder"
-        subtitle={v.reminder.note}
-        footer={
-          <PrimaryCTA
-            variant="strong"
-            size="lg"
-            disabled={!v.reminder.available}
-            onClick={() => {
-              dispatch({ type: 'SEND_ORGANISER_REMINDER' })
-              close()
-              flash('Reminder forwarded to Friday movie')
-            }}
-          >
-            Forward to Friday movie
-          </PrimaryCTA>
-        }
-      >
-        <SoftGroup>
-          <p className="text-[14px] leading-[20px] text-pretty">{v.reminder.message}</p>
-        </SoftGroup>
       </BottomSheet>
 
       {/* More */}
@@ -540,7 +524,7 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
         )}
       </BottomSheet>
 
-      {/* Settlement (7:15 → 7:25): steps tick off, then the receipt */}
+      {/* Settlement at showtime (9:15 PM): steps tick off, then the final receipt */}
       <BottomSheet isOpen={settling > 0} onClose={() => undefined} locked scrimClose={false} title="Settling your group hold" testId="settling-sheet">
         <ol className="flex flex-col gap-3 pb-2">
           {steps.map((s, i) => {
@@ -560,18 +544,28 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
         </ol>
       </BottomSheet>
 
+      {/* Share link again, or (09) "Share a reminder": a BMS-written progress card, no names, via Rohan's own apps */}
       <IosShareSheet
-        isOpen={shareOpen}
+        isOpen={!!shareOpen}
         onClose={() => setShareOpen(false)}
-        message={success.shareMessage.split('\n')[0]}
+        message={shareOpen === 'reminder' ? v.reminderShare.message : success.shareMessage.split('\n')[0]}
+        card={shareOpen === 'reminder' ? { title: v.reminderShare.cardTitle, body: v.reminderShare.cardBody, link: v.reminderShare.link } : undefined}
         contacts={SHARE_CONTACTS}
         onSelectContact={(c) => {
+          const reminder = shareOpen === 'reminder'
           setShareOpen(false)
-          if (c.isGroup) onOpenChat?.()
+          if (reminder) {
+            dispatch({ type: 'SEND_ORGANISER_REMINDER' })
+            flash(`Reminder shared with ${c.name}`)
+          } else if (c.isGroup) onOpenChat?.()
         }}
         onSelectApp={(app) => {
+          const reminder = shareOpen === 'reminder'
           setShareOpen(false)
-          if (app === 'WhatsApp') onOpenChat?.()
+          if (reminder) {
+            dispatch({ type: 'SEND_ORGANISER_REMINDER' })
+            flash('Reminder shared')
+          } else if (app === 'WhatsApp') onOpenChat?.()
         }}
         onCopy={() => {
           setShareOpen(false)

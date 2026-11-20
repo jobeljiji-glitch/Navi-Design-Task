@@ -8,7 +8,7 @@
  *
  * Pure: no React, no Date.now(), no randomness. Time comes from state.clock.
  */
-import { formatINR, seatPrice, stillBlocked } from './money';
+import { formatINR, seatPrice, toCover } from './money';
 import { demoReducer } from './reducer';
 import { DEMAND_WINDOWS } from './rules';
 import { DEMO_HOLD_START_MS } from './seed';
@@ -31,7 +31,7 @@ export type FlowAction = Action | HoldFlowAction;
 const ALREADY_HOLDING = "You're already holding seats for this show.";
 
 function isLiveHold(hold: Hold | null): boolean {
-  return !!hold && (hold.status === 'awaiting_upi' || hold.status === 'active' || hold.status === 'resolving');
+  return !!hold && (hold.status === 'awaiting_upi' || hold.status === 'active' || hold.status === 'closed');
 }
 
 function sortSeatIds(ids: string[], seats: Record<string, Seat>): string[] {
@@ -255,58 +255,6 @@ export function selectSelectionTotals(state: DemoState, seatIds: string[]): Sele
   };
 }
 
-export interface HoldSheetView {
-  title: string;
-  subtitle: string;
-  seatIds: string[];
-  ownerSeatId: string;
-  perSeat: string;
-  friendsCount: number;
-  friendsLabel: string;
-  coverCount: number;
-  maxCover: number;
-  ownNow: string;
-  friendsValue: string;
-  leavesNow: string;
-  blockedNotTaken: string;
-  mostYouCouldPay: string;
-  helper: string;
-  deadlineTime: string;
-  deadlineDay: string;
-  windowLabel: string;
-  freeReleaseUntil: string | null;
-  blockEnds: string;
-  assignMode: 'friends_pick' | 'assigned';
-  rail: Hold['paymentRail'];
-  fallback: boolean;
-  fallbackLine: string;
-  cta: string;
-  upiAmount: string;
-  status: Hold['status'];
-  // 04c picture → money rows → how it works → settings
-  tiles: SeatTileView[];
-  moneyRows: MoneyRow[];
-  moneyTotalLabel: string;
-  moneyTotal: string;
-  moneyCaption: string;
-  howDeadline: string;
-  howKeep: string;
-  howRelease: string;
-  ctaTitle: string;
-  ctaSub: string | null;
-  // 04d booking-flow patterns
-  columns: Array<{ key: string; label: string; price: string; status: string; tone: 'green' | 'grey' }>;
-  columnsCaption: string;
-  rulesTitle: string;
-  rulesBody: string;
-  settingsLine1: string;
-  settingsLine2: string;
-  seatsModeLabel: string;
-  coverLabel: string;
-  railLabel: string;
-  caption: string;
-}
-
 export interface SeatTileView {
   id: string;
   kind: 'owner' | 'paid' | 'covered' | 'held' | 'paying' | 'kept' | 'released';
@@ -318,12 +266,61 @@ export interface MoneyRow {
   label: string;
   value: string;
   sub?: string;
+  strong?: boolean;
+}
+
+export interface HoldRule {
+  key: 'deadline' | 'kept';
+  text: string;
+  /** "Shorten" on the deadline row when the deadline can still be brought forward */
+  action?: 'shorten';
+}
+
+/**
+ * 09 hold sheet: tiles → one money line (expands to the breakdown) → two rule rows → one settings row → CTA.
+ * Fits at 874 pt without scrolling.
+ */
+export interface HoldSheetView {
+  title: string;
+  subtitle: string;
+  seatIds: string[];
+  ownerSeatId: string;
+  perSeat: string;
+  friendsCount: number;
+  coverCount: number;
+  maxCover: number;
+  leavesNow: string;
+  deadlineTime: string;
+  deadlineDay: string;
+  freeReleaseUntil: string | null;
+  blockEnds: string;
+  assignMode: 'friends_pick' | 'assigned';
+  rail: Hold['paymentRail'];
+  fallback: boolean;
+  upiAmount: string;
+  status: Hold['status'];
+  tiles: SeatTileView[];
+  /** "₹1,662.84 blocked · ₹277.14 charged now" */
+  moneyLine: string;
+  breakdown: MoneyRow[];
+  rules: HoldRule[];
+  /** "Friends pick seats · No seats covered · UPI" */
+  settingsSummary: string;
+  ctaTitle: string;
+  ctaSub: string | null;
+  cta: string;
+  caption: string;
 }
 
 /** ₹250 for whole rupees, ₹27.14 otherwise (short form for fee breakdown sub-lines). */
 export function formatINRShort(paise: number): string {
   const full = formatINR(paise);
   return full.endsWith('.00') ? full.slice(0, -3) : full;
+}
+
+function dayLabel(ms: number, now: number): string {
+  const d = relativeDayIST(ms, now);
+  return d === 'today' ? 'Today' : d === 'tomorrow' ? 'Tomorrow' : 'Fri';
 }
 
 export function selectHoldSheet(state: DemoState): HoldSheetView | null {
@@ -334,7 +331,8 @@ export function selectHoldSheet(state: DemoState): HoldSheetView | null {
   const friends = n - 1;
   const cover = selectCoverCount(state);
   const fallback = hold.paymentRail === 'pay_and_refund';
-  const nowPaise = per * (1 + cover);
+  const isCard = hold.paymentRail === 'card_preauth';
+  const nowPaise = fallback ? hold.blockAmount : per * (1 + cover);
   const blockedPaise = per * (friends - cover);
   const now = state.clock.now;
   const show = state.show;
@@ -350,20 +348,31 @@ export function selectHoldSheet(state: DemoState): HoldSheetView | null {
   });
   const deadlineTime = formatClockIST(hold.deadline);
   const freeTime = hold.freeReleaseUntil !== null && show.tier !== 'low' ? formatClockIST(hold.freeReleaseUntil) : null;
-  const deadlineDay = relativeDayIST(hold.deadline, now);
-  const deadlineFull = `${deadlineTime}${deadlineDay ? ` ${deadlineDay}` : ''}`;
   const ownerSeat = state.seats[hold.ownerSeatId];
-  const feeLine = ownerSeat ? `${formatINRShort(ownerSeat.price)} ticket + ${formatINRShort(show.fee)} convenience fee` : undefined;
-  const moneyRows: MoneyRow[] = [{ key: 'own', label: `Your seat (${hold.ownerSeatId})`, value: formatINR(per), sub: feeLine }];
+  const feeLine = ownerSeat ? `${formatINRShort(ownerSeat.price)} ticket + ${formatINRShort(show.fee)} fee` : undefined;
+
+  const breakdown: MoneyRow[] = [{ key: 'own', label: `Your seat (${hold.ownerSeatId})`, value: formatINR(per), sub: `Charged now · ${feeLine}` }];
   if (cover > 0 && !fallback) {
-    moneyRows.push({ key: 'cover', label: `${cover} ${cover === 1 ? 'seat' : 'seats'} you cover`, value: formatINR(per * cover), sub: 'Charged now' });
+    breakdown.push({ key: 'cover', label: `${cover} ${cover === 1 ? 'seat' : 'seats'} you cover`, value: formatINR(per * cover), sub: 'Charged now' });
   }
   if (fallback) {
-    moneyRows.push({ key: 'friends', label: `${friends} friends' seats`, value: formatINR(per * friends), sub: 'Paid now, refunded as friends pay' });
+    breakdown.push({ key: 'friends', label: `${friends} friends' seats`, value: formatINR(per * friends), sub: 'Charged now · refunded as each pays' });
   } else if (holdCount > 0) {
-    moneyRows.push({ key: 'friends', label: `${holdCount} friends' seats`, value: formatINR(blockedPaise), sub: 'Blocked, not charged' });
+    breakdown.push({ key: 'friends', label: `${holdCount} friends' seats`, value: formatINR(blockedPaise), sub: 'Blocked, not charged' });
   }
-  const isCard = hold.paymentRail === 'card_preauth';
+  breakdown.push({
+    key: 'total',
+    label: fallback ? 'Charged now' : isCard ? 'Held on your card' : 'Blocked on UPI',
+    value: formatINR(hold.blockAmount),
+    strong: true,
+  });
+
+  const moneyLine = fallback
+    ? `${formatINR(hold.blockAmount)} charged now · refunded as friends pay`
+    : isCard
+      ? `${formatINR(hold.blockAmount)} held · ${formatINR(nowPaise)} charged now`
+      : `${formatINR(hold.blockAmount)} blocked · ${formatINR(nowPaise)} charged now`;
+
   const ctaTitle = fallback
     ? `Pay ${formatINR(hold.blockAmount)}`
     : blockedPaise === 0
@@ -377,98 +386,48 @@ export function selectHoldSheet(state: DemoState): HoldSheetView | null {
       : cover === 0
         ? `${formatINR(per)} charged now for your seat`
         : `${formatINR(nowPaise)} charged now for ${1 + cover} seats`;
+  const settle = formatClockIST(hold.blockExpiresAt);
 
   return {
     title: `Hold ${n} seats for your group`,
     subtitle: `${show.filmTitle} · Fri, ${startsAt} · ${formatSeatRange(hold.seatIds, state.seats)}`,
-    seatIds: sortSeatIds(hold.seatIds, state.seats),
+    seatIds: sorted,
     ownerSeatId: hold.ownerSeatId,
     perSeat: formatINR(per),
     friendsCount: friends,
-    friendsLabel: `${friends} friends' seats`,
     coverCount: cover,
     maxCover: friends,
-    ownNow: `${formatINR(per)} now`,
-    friendsValue:
-      cover === 0
-        ? `${formatINR(blockedPaise)} blocked`
-        : blockedPaise === 0
-          ? `${formatINR(per * cover)} now`
-          : `${formatINR(per * cover)} now · ${formatINR(blockedPaise)} blocked`,
     leavesNow: formatINR(nowPaise),
-    blockedNotTaken: formatINR(blockedPaise),
-    mostYouCouldPay: formatINR(hold.blockAmount),
-    helper: `Each time a friend pays, ${formatINR(per)} is unblocked. This money stays in your account — it's only set aside.`,
-    deadlineTime: formatClockIST(hold.deadline),
+    deadlineTime,
     deadlineDay: relativeDayIST(hold.deadline, now),
-    windowLabel: formatDuration(hold.deadline - hold.createdAt),
-    freeReleaseUntil: hold.freeReleaseUntil !== null && show.tier !== 'low' ? formatClockIST(hold.freeReleaseUntil) : null,
-    blockEnds: `${relativeDayIST(hold.blockExpiresAt, now) === 'today' ? 'Today' : 'Tomorrow'}, ${formatClockIST(hold.blockExpiresAt)}`,
+    freeReleaseUntil: freeTime,
+    blockEnds: `${dayLabel(hold.blockExpiresAt, now)}, ${settle}`,
     assignMode: hold.assignMode,
     rail: hold.paymentRail,
     fallback,
-    fallbackLine: `Pay ${formatINR(hold.blockAmount)} now · get ${formatINR(per)} back each time a friend pays`,
-    cta: ctaSub ? `${ctaTitle} · ${ctaSub}` : ctaTitle,
-    // The UPI block is always the full amount (incl. what's debited now) so CTA, money total and UPI screen agree
+    // The UPI block is always the full amount (incl. what's charged now) so CTA, money line and UPI screen agree
     upiAmount: formatINR(hold.blockAmount),
     status: hold.status,
     tiles,
-    moneyRows,
-    moneyTotalLabel: fallback ? 'Paid now' : isCard ? 'Held on your card' : 'Blocked on UPI',
-    moneyTotal: formatINR(hold.blockAmount),
-    moneyCaption: fallback ? `${formatINR(per)} comes back each time a friend pays.` : 'Unblocked seat by seat as friends pay.',
-    howDeadline: `Friends pay by ${deadlineFull}`,
-    howKeep: fallback
-      ? `Unpaid seats stay yours, already paid for. Release any before ${deadlineTime} to get that money back.`
-      : `Unpaid seats stay yours and are charged from the block. Release any before ${deadlineTime}.`,
-    howRelease: freeTime
-      ? `Release free until ${freeTime}. After that, the ${formatINR(show.fee)} fee per seat is kept.`
-      : `Release free anytime before ${deadlineTime}.`,
+    moneyLine,
+    breakdown,
+    rules: [
+      { key: 'deadline', text: `Friends pay by ${deadlineTime}`, action: 'shorten' },
+      { key: 'kept', text: freeTime ? `Unpaid seats are kept · release free till ${freeTime}` : 'Unpaid seats are kept · release free anytime' },
+    ],
+    settingsSummary: [
+      hold.assignMode === 'friends_pick' ? 'Friends pick seats' : 'You assign seats',
+      ...(fallback ? [] : [cover === 0 ? 'No seats covered' : `${cover} ${cover === 1 ? 'seat' : 'seats'} covered`]),
+      isCard ? 'Card' : fallback ? 'Pay all now' : 'UPI',
+    ].join(' · '),
     ctaTitle,
     ctaSub,
-    columns: fallback
-      ? [
-          { key: 'now', label: 'Paid now', price: formatINR(hold.blockAmount), status: `All ${n} seats`, tone: 'green' },
-          { key: 'aside', label: 'Refunded', price: formatINR(per * friends), status: 'as each friend pays', tone: 'grey' },
-        ]
-      : [
-          {
-            key: 'now',
-            label: 'Paid now',
-            price: formatINR(nowPaise),
-            status: cover === 0 ? `Your seat · ${hold.ownerSeatId}` : `${hold.ownerSeatId} + ${cover} covered`,
-            tone: 'green',
-          },
-          {
-            key: 'aside',
-            label: 'Set aside',
-            price: formatINR(blockedPaise),
-            status: holdCount === 0 ? 'No friends left to pay' : `${holdCount} ${holdCount === 1 ? 'friend' : 'friends'} · not charged`,
-            tone: 'grey',
-          },
-        ],
-    columnsCaption: fallback ? 'Refunded seat by seat as friends pay' : 'Unblocked seat by seat as friends pay',
-    rulesTitle: `Friends pay by ${deadlineFull}`,
-    rulesBody: freeTime
-      ? `Unpaid seats stay yours. Release free until ${freeTime}, then the ${formatINR(show.fee)} fee per seat is kept.`
-      : `Unpaid seats stay yours. Release free anytime before ${deadlineTime}.`,
-    settingsLine1: [
-      hold.assignMode === 'friends_pick' ? 'Friends pick their own seat' : 'You assign the seats',
-      ...(fallback ? [] : [cover === 0 ? 'No seats covered' : `${cover} ${cover === 1 ? 'seat' : 'seats'} covered`]),
-    ].join(' · '),
-    settingsLine2: isCard
-      ? 'Paying with your card ending 4021'
-      : fallback
-        ? `Paying for all seats with UPI · ${hold.organiser.upi}`
-        : `Paying with UPI · ${hold.organiser.upi}`,
-    seatsModeLabel: hold.assignMode === 'friends_pick' ? 'Friends pick their own' : 'You assign them',
-    coverLabel: cover === 0 ? 'None' : `${cover} ${cover === 1 ? 'seat' : 'seats'}`,
-    railLabel: hold.paymentRail === 'card_preauth' ? 'Card' : fallback ? 'UPI · pay all now' : `UPI ${hold.organiser.upi}`,
+    cta: ctaSub ? `${ctaTitle} · ${ctaSub}` : ctaTitle,
     caption: fallback
       ? 'One UPI PIN · Refunds come back to this account'
       : isCard
-        ? 'One card OTP · Unused money is unblocked automatically'
-        : 'One UPI PIN · Unused money is unblocked automatically',
+        ? `One card OTP · Unused money is unblocked at ${settle}`
+        : `One UPI PIN · Unused money is unblocked at ${settle}`,
   };
 }
 
@@ -520,7 +479,7 @@ export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
   if (!hold) return null;
   const n = hold.seatIds.length;
   const per = holdSeatPrice(state);
-  const blockedPaise = stillBlocked(hold, state.seats, state.show.fee);
+  const blockedPaise = toCover(hold, state.seats, state.show.fee);
   const unpaid = hold.seatIds.filter((id) => state.seats[id]?.state === 'held').length;
   const deadline = formatClockIST(hold.deadline);
   const day = relativeDayIST(hold.deadline, state.clock.now);
@@ -550,7 +509,7 @@ export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
     title: `${n} seats held for your group`,
     ticketLine: `Your ticket ${hold.ownerSeatId} is confirmed`,
     paid: formatINR(hold.debited),
-    blockedLabel: fallback ? `Back to you as ${unpaid} friends pay` : `Blocked for ${unpaid} friends`,
+    blockedLabel: fallback ? `Refunded as ${unpaid} friends pay` : `Blocked for ${unpaid} friends`,
     blocked: formatINR(fallback ? per * unpaid : blockedPaise),
     payBy: `${deadline}${day ? ` ${day}` : ''}`,
     fallback,
@@ -566,20 +525,20 @@ export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
     paidCount,
     totalCount: n,
     paidLine: `${paidCount} of ${n} paid`,
-    setAsideLabel: fallback ? `Back to you as ${unpaid} friends pay` : `Set aside for ${unpaid} ${unpaid === 1 ? 'friend' : 'friends'}`,
-    setAsideCaption: fallback ? `${formatINR(per)} comes back each time a friend pays` : 'Unblocks as friends pay',
+    setAsideLabel: fallback ? `Refunded as ${unpaid} friends pay` : `Blocked for ${unpaid} ${unpaid === 1 ? 'friend' : 'friends'}`,
+    setAsideCaption: fallback ? `${formatINR(per)} refunded each time a friend pays` : `Unblocked at ${formatClockIST(hold.blockExpiresAt)}`,
     ticketsLabel: `Ticket(s) price · ${n} tickets`,
     ticketsPrice: formatINR(hold.seatIds.reduce((sum, id) => sum + (state.seats[id]?.price ?? 0), 0)),
     feesPrice: formatINR(state.show.fee * n),
     orderTotal: formatINR(hold.blockAmount),
     splitPaidLabel: coveredCount > 0 ? `Paid by you · ${hold.ownerSeatId} + ${coveredCount} covered` : `Paid by you · ${hold.ownerSeatId}`,
     splitWaitingLabel: `Waiting on ${unpaid} ${unpaid === 1 ? 'friend' : 'friends'}`,
-    splitWaitingSub: fallback ? 'Paid by you now, refunded as each friend pays' : 'Set aside in your account, unblocks as each friend pays',
+    splitWaitingSub: fallback ? 'Charged now · refunded as each friend pays' : `Blocked, not charged · unblocked at ${formatClockIST(hold.blockExpiresAt)}`,
     rulesBand: freeTime
-      ? `Unpaid seats stay yours at ${deadline} · Release free until ${freeTime}`
+      ? `Unpaid seats are kept at ${deadline} · release free till ${freeTime}`
       : state.show.tier === 'low'
-        ? `Unpaid seats stay yours at ${deadline} · Release free anytime before then`
-        : `Unpaid seats stay yours at ${deadline} · Releasing now keeps the ${formatINR(state.show.fee)} fee per seat`,
+        ? `Unpaid seats are kept at ${deadline} · release free anytime`
+        : `Unpaid seats are kept at ${deadline} · releasing keeps the ${formatINR(state.show.fee)} fee`,
     paidLabel: coveredCount > 0 ? `You paid for ${1 + coveredCount} seats` : `Your ticket (${hold.ownerSeatId})`,
     paidSub:
       coveredCount > 0
@@ -587,14 +546,14 @@ export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
         : ownerSeat
           ? `${formatINRShort(ownerSeat.price)} + ${formatINRShort(state.show.fee)} fee`
           : '',
-    setAsideSub: fallback ? 'Paid now, refunded as friends pay' : 'Blocked, not charged',
+    setAsideSub: fallback ? 'Charged now · refunded as friends pay' : 'Blocked, not charged',
     mostLabel: 'Blocked on UPI',
-    most: formatINR(hold.debited + (fallback ? 0 : blockedPaise)),
+    most: formatINR(hold.blockAmount),
     moneyNote: freeTime
-      ? `Unpaid seats stay yours at ${deadline}. Release free until ${freeTime}.`
+      ? `Unpaid seats are kept at ${deadline}. Release free till ${freeTime}.`
       : state.show.tier === 'low'
-        ? `Unpaid seats stay yours at ${deadline}. Release free anytime before then.`
-        : `Unpaid seats stay yours at ${deadline}. Releasing now keeps the ${formatINR(state.show.fee)} fee per seat.`,
+        ? `Unpaid seats are kept at ${deadline}. Release free anytime.`
+        : `Unpaid seats are kept at ${deadline}. Releasing keeps the ${formatINR(state.show.fee)} fee.`,
     ownerSeatId: hold.ownerSeatId,
     ticketSeat: `${tierCode}-${hold.ownerSeatId}`,
     ticketAmount: formatINR(per),

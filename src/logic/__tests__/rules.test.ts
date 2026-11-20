@@ -5,6 +5,9 @@ import {
   calculateFreeReleaseUntil,
   calculateGraceUntil,
   isAccountHoldLimitReached,
+  isOverBlockCap,
+  latePayCutoff,
+  maxSeatsForCap,
   isGroupSizeEligible,
   isHighTierCapReached,
   isThreeHoursBeforeShow,
@@ -46,10 +49,11 @@ describe('Domain Rules', () => {
       expect(lowFree).toBeNull();
     });
 
-    it('calculates grace window (deadline + 10 min) and block expiry (deadline + 30 min)', () => {
+    it('grace = deadline + 10 min; the block ends at showtime; late payments close 15 min before', () => {
       const deadline = calculateDeadline(createdAt, showStartsAt, 'medium');
       expect(calculateGraceUntil(deadline)).toBe(deadline + 10 * 60 * 1000);
-      expect(calculateBlockExpiresAt(deadline)).toBe(deadline + 30 * 60 * 1000);
+      expect(calculateBlockExpiresAt(showStartsAt)).toBe(showStartsAt);
+      expect(latePayCutoff(showStartsAt)).toBe(new Date('2026-11-20T21:00:00+05:30').getTime());
     });
   });
 
@@ -79,10 +83,17 @@ describe('Domain Rules', () => {
       expect(isHighTierCapReached('medium', 20)).toBe(false);
     });
 
-    it('enforces max active holds per account', () => {
+    it('enforces 1 active group hold per account (one Reserve Pay mandate per user)', () => {
       expect(isAccountHoldLimitReached(0)).toBe(false);
-      expect(isAccountHoldLimitReached(1)).toBe(false);
-      expect(isAccountHoldLimitReached(2)).toBe(true);
+      expect(isAccountHoldLimitReached(1)).toBe(true);
+    });
+
+    it('caps the block at ₹10,000 and sizes the group by amount', () => {
+      expect(isOverBlockCap(166284)).toBe(false);
+      expect(isOverBlockCap(1_000_000)).toBe(false);
+      expect(isOverBlockCap(1_000_001)).toBe(true);
+      expect(maxSeatsForCap(127714)).toBe(7); // ₹1,250 + ₹27.14 premium recliner
+      expect(maxSeatsForCap(27714)).toBe(10); // never above the group maximum
     });
   });
 });

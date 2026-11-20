@@ -1,5 +1,5 @@
 /**
- * MoneyLedger: now / blocked / most you could pay.
+ * MoneyLedger (kit only): charged now / blocked / total block.
  * Visual language copied from the price card in ref 11/22: grey 14 pt labels,
  * values right-aligned, dashed divider, total row in primary text weight 500.
  */
@@ -31,7 +31,7 @@ export default function MoneyLedger({
   debitedNow,
   blockedAmount,
   mostPayable,
-  helperText = `Each time a friend pays, ${debitedNow} is unblocked. This money stays in your account — it's only set aside.`,
+  helperText = 'Blocked, not charged. Unused money is unblocked at showtime.',
   fallbackMode = false,
   fallbackLine,
   className = '',
@@ -47,12 +47,12 @@ export default function MoneyLedger({
     >
       {fallbackMode ? (
         <p className="text-[15px] leading-[20px]" style={{ color: 'var(--text-primary)' }} data-testid="fallback-line">
-          {fallbackLine ?? `Pay ${mostPayable} now · get ${debitedNow} back each time a friend pays`}
+          {fallbackLine ?? `Pay ${mostPayable} now · ${debitedNow} refunded each time a friend pays`}
         </p>
       ) : (
         <>
-          <Row label="Leaves your account now" value={debitedNow} />
-          <Row label="Blocked, not taken" value={blockedAmount} />
+          <Row label="Charged now" value={debitedNow} />
+          <Row label="Blocked, not charged" value={blockedAmount} />
           <Dashed />
           <div className="flex items-center justify-between text-[15px] leading-[20px] font-medium" style={{ color: 'var(--text-primary)' }}>
             <span>Blocked on UPI</span>

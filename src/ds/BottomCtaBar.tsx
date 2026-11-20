@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import PrimaryCTA from './PrimaryCTA'
+import PinnedFooter from './PinnedFooter'
 
 export interface BottomCtaBarProps {
   totalLabel?: string
@@ -25,13 +26,7 @@ export default function BottomCtaBar({
   className = '',
 }: BottomCtaBarProps) {
   return (
-    <div
-      className={`w-full bg-bg-surface border-t border-divider px-4 pt-2.5 cta-safe flex items-center justify-between gap-4 shrink-0 ${className}`}
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderTopColor: 'var(--divider)',
-      }}
-    >
+    <PinnedFooter layout="row" className={`justify-between gap-4 ${className}`}>
       {children ? (
         children
       ) : (
@@ -67,6 +62,6 @@ export default function BottomCtaBar({
           </div>
         </>
       )}
-    </div>
+    </PinnedFooter>
   )
 }

@@ -70,7 +70,7 @@ export default function SeatLayoutScreen({
   const show = useDemoStore((st) => st.show)
   const hold = useDemoStore((st) => st.hold)
   const storeSeats = useDemoStore((st) => st.seats)
-  const holdLive = !!hold && (hold.status === 'active' || hold.status === 'resolving')
+  const holdLive = !!hold && (hold.status === 'active' || hold.status === 'closed')
   // 08 (#3): with a live hold, picking other seats shows the normal bar, so "Hold for group" can explain the limit
   const showHoldBar = holdLive && selectedSeatIds.every((id) => hold!.seatIds.includes(id))
   const banner = useMemo(() => selectDemandBanner(useDemoStore.getState()), [show]) // eslint-disable-line react-hooks/exhaustive-deps

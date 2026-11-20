@@ -1,5 +1,5 @@
 import { useRef, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react'
-import { X, Copy, Bookmark, BookOpen, Printer, Folder, FileText, Search, Mail, Users, MoreHorizontal } from 'lucide-react'
+import { X, Copy, Bookmark, BookOpen, Printer, Folder, FileText, Search, Mail, Users, MoreHorizontal, Ticket } from 'lucide-react'
 import { motion, AnimatePresence, useDragControls, type PanInfo } from 'motion/react'
 
 /**
@@ -27,6 +27,8 @@ export interface IosShareSheetProps {
   onSelectContact?: (contact: IosShareContact) => void
   onSelectApp?: (appName: string) => void
   onCopy?: () => void
+  /** 09: a BookMyShow-written progress card (no names) shown as the preview, e.g. the reminder */
+  card?: { title: string; body: string; link: string }
   className?: string
 }
 
@@ -99,6 +101,7 @@ export default function IosShareSheet({
   onSelectContact,
   onSelectApp,
   onCopy,
+  card,
   className = '',
 }: IosShareSheetProps) {
   const controls = useDragControls()
@@ -148,16 +151,31 @@ export default function IosShareSheet({
           >
             {/* Header (drag handle): 64 pt preview tile, one grey line, 45 pt close circle */}
             <div className="shrink-0 pl-8 pr-4 pt-4 flex items-start gap-4" onPointerDown={startDrag} style={{ touchAction: 'none' }}>
-              <div
-                className="mt-4 w-16 h-16 rounded-[14px] flex items-center justify-center shrink-0"
-                style={{ backgroundColor: 'var(--bg-surface)' }}
-                aria-hidden
-              >
-                <span className="text-[30px] leading-none font-normal" style={{ color: 'var(--ios-label-secondary)' }}>A|</span>
-              </div>
-              <p className="flex-1 min-w-0 mt-[38px] text-[15px] leading-[20px] truncate" style={{ color: 'var(--ios-label-secondary)' }}>
-                {message}
-              </p>
+              {card ? (
+                <div className="mt-4 flex-1 min-w-0 flex items-start gap-3 p-3 rounded-[14px]" style={{ backgroundColor: 'var(--bg-surface)' }} data-testid="share-card">
+                  <span className="w-11 h-11 rounded-[10px] flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--bms-red-strong)' }} aria-hidden>
+                    <Ticket size={22} strokeWidth={1.75} style={{ color: 'var(--text-on-brand)' }} />
+                  </span>
+                  <span className="flex-1 min-w-0 flex flex-col">
+                    <span className="text-[15px] leading-[20px] font-medium text-pretty" style={{ color: 'var(--text-primary)' }}>{card.title}</span>
+                    <span className="text-[13px] leading-[18px]" style={{ color: 'var(--ios-label-secondary)' }}>{card.body}</span>
+                    <span className="text-[13px] leading-[18px]" style={{ color: 'var(--ios-label-secondary)' }}>{card.link}</span>
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="mt-4 w-16 h-16 rounded-[14px] flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: 'var(--bg-surface)' }}
+                    aria-hidden
+                  >
+                    <span className="text-[30px] leading-none font-normal" style={{ color: 'var(--ios-label-secondary)' }}>A|</span>
+                  </div>
+                  <p className="flex-1 min-w-0 mt-[38px] text-[15px] leading-[20px] truncate" style={{ color: 'var(--ios-label-secondary)' }}>
+                    {message}
+                  </p>
+                </>
+              )}
               <button
                 type="button"
                 onClick={onClose}

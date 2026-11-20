@@ -12,7 +12,6 @@
 import { selectMoney, withBoard, type BoardState } from './boardFlow';
 import { createInitialDemoState } from './seed';
 import { formatINR } from './money';
-import { formatClockIST } from './holdFlow';
 import type { FriendName } from './friendFlow';
 import {
   applyStep,
@@ -79,7 +78,7 @@ export const TOUR_STEPS: TourStep[] = [
     persona: 'Rohan',
     anchors: ['pill-915', 'book-tickets'],
     text: "Rohan's planning Friday's movie with five friends. Not everyone has confirmed. He picks the 9:15 PM show.",
-    why: 'Today he would pay ₹1,662.84 up front and chase five people for their share.',
+    why: "Today he'd pay ₹1,662.84 up front, then chase five friends.",
     phases: [],
     after: '/rohan/seats',
     done: (_s, path) => path.startsWith('/rohan/seats'),
@@ -90,18 +89,18 @@ export const TOUR_STEPS: TourStep[] = [
     persona: 'Rohan',
     anchors: ['hold-for-group', 'seat-count-select', 'seat-row-D', 'seat-map'],
     text: 'Tap one seat and the whole group sits together. Then tap Hold for group — friends pay their own share.',
-    why: 'The seats lock now, so nobody has to say yes before they are ready.',
+    why: "Seats lock now. Nobody has to say yes before they're ready.",
     phases: [beginHold],
     after: '/rohan/hold',
     done: (s) => !!s.hold,
   },
   {
     id: 'money',
-    label: "Only his seat is paid",
+    label: "Only his seat is charged",
     persona: 'Rohan',
     anchors: ['money-ledger'],
-    text: 'Only his seat is paid now. The money stays in your account — it’s only set aside.',
-    why: 'Nothing leaves his account for a seat a friend ends up paying for.',
+    text: 'Only his seat is charged now. The rest is blocked in his account, not charged.',
+    why: 'Nothing is charged for a seat a friend ends up paying for.',
     phases: [openUpi],
     after: '/rohan/upi-opening',
     done: (s) => !!s.hold && s.hold.status !== 'draft',
@@ -111,8 +110,8 @@ export const TOUR_STEPS: TourStep[] = [
     label: "One UPI PIN",
     persona: 'Rohan',
     anchors: ['approve-with-pin'],
-    text: 'This is his bank app. One PIN: ₹1,662.84 set aside, ₹277.14 leaves now.',
-    why: 'One approval covers the whole group. No second PIN later.',
+    text: 'This is his bank app. One PIN: ₹1,662.84 blocked, ₹277.14 charged now.',
+    why: 'One approval covers the whole group. The block ends at showtime.',
     phases: [approveHold],
     after: '/rohan/held',
     done: (s) => s.hold?.status === 'active',
@@ -123,7 +122,7 @@ export const TOUR_STEPS: TourStep[] = [
     persona: 'Rohan',
     anchors: ['chat-send', 'send-to-group'],
     text: 'One link in the group chat replaces the poll.',
-    why: 'BookMyShow asks for the money from here on, so Rohan never has to.',
+    why: 'From here on BookMyShow asks for the money, not Rohan.',
     phases: [shareToGroup],
     after: '/rohan/chat',
     done: (s) => !!s.friendFlow.share?.sent,
@@ -153,11 +152,11 @@ export const TOUR_STEPS: TourStep[] = [
     done: (s) => Object.values(s.seats).some((x) => x.payerName === 'Amit' && paid(s, x.id)),
   },
   {
-    id: 'unblocked',
-    label: "₹277.14 unblocked",
+    id: 'less-to-cover',
+    label: "₹277.14 less to cover",
     persona: 'Rohan',
     anchors: ['block-meter'],
-    text: "Amit has his own ticket. On Rohan's phone, ₹277.14 just got unblocked.",
+    text: "Amit has his own ticket. On Rohan's phone, ₹277.14 less to cover.",
     why: 'Rohan sees each friend pay without asking anyone.',
     nextLabel: '⏩ Skip to 3:30 PM',
     phases: [(s) => applyStep(applyStep(s, 'sana'), 'neha')],
@@ -171,7 +170,7 @@ export const TOUR_STEPS: TourStep[] = [
     label: "Neha can't make it",
     persona: 'Rohan',
     anchors: ['release-sheet', 'cant-make-it-row'],
-    text: "Neha can't make it. Rohan releases a seat from the end of the row, free before 4:15 PM.",
+    text: "Neha can't make it. Rohan releases an end seat, free before 4:15 PM.",
     why: 'Sana paid at 3:10 PM too. The block shrinks as plans change.',
     nextLabel: 'Release D05',
     phases: [(s) => applyStep(s, 'release')],
@@ -183,7 +182,7 @@ export const TOUR_STEPS: TourStep[] = [
     label: "A seat goes back on sale",
     persona: 'Rohan',
     anchors: ['set-aside', 'pay-by'],
-    text: "D05 is back on sale and its ₹277.14 is unblocked. Free release ends at 4:15 PM.",
+    text: 'D05 is back on sale. ₹277.14 less to cover. Free release ends at 4:15 PM.',
     why: 'Rohan only ever carries seats that are still open.',
     nextLabel: '⏩ Skip to 4:15 PM',
     phases: [(s) => applyStep(s, 'halfway')],
@@ -205,7 +204,7 @@ export const TOUR_STEPS: TourStep[] = [
     label: "6:45 PM: 30 minutes left",
     persona: 'Rohan',
     anchors: ['t30-sheet'],
-    text: '30 minutes left. Do nothing and unpaid seats are kept.',
+    text: '30 minutes left. Do nothing and unpaid seats are kept, charged at 9:15 PM.',
     why: 'The default keeps the group together. Every held seat ends up paid.',
     nextLabel: '⏩ Skip to 7:15 PM',
     phases: [
@@ -213,16 +212,15 @@ export const TOUR_STEPS: TourStep[] = [
       (s) => applyStep(applyStep(s, 'priyaPaid'), 'grace'),
     ],
     phaseDelayMs: 1400,
-    liveAfter: '/rohan/board',
-    after: '/rohan/receipt',
+    after: '/rohan/board',
   },
   {
-    id: 'receipt',
-    label: "7:25 PM: the receipt",
+    id: 'kept',
+    label: "7:15 PM: seats kept",
     persona: 'Rohan',
-    anchors: ['receipt-ledger'],
-    text: 'Rohan paid for his seat and one kept seat. ₹1,108.56 was never charged — it’s simply unblocked.',
-    why: "Priya's payment was still with her bank at 7:15 PM, so she got 10 more minutes.",
+    anchors: ['kept-row', 'board-headline'],
+    text: "7:15 PM. Kabir didn't answer, so D06 is kept. Nothing is charged yet.",
+    why: "Priya's payment was still with the bank. It got 10 more minutes.",
     nextLabel: '⏩ Skip to 8:10 PM',
     phases: [kabirOpens],
     after: '/friend/kabir',
@@ -232,9 +230,10 @@ export const TOUR_STEPS: TourStep[] = [
     label: "8:10 PM: Kabir pays late",
     persona: 'Kabir',
     anchors: ['late-pay-cta', 'late-title'],
-    text: 'Kabir pays late, before the show. The ticket moves to him and Rohan is refunded.',
-    why: 'Rohan only pays for a seat until someone takes it.',
-    phases: [kabirPays],
+    text: 'Kabir pays before 9:00 PM. The ticket moves to him. D06 is never charged to Rohan.',
+    why: 'At 9:15 PM kept seats are charged. The rest is unblocked once.',
+    nextLabel: 'Pay and skip to 9:15 PM',
+    phases: [kabirPays, (s) => applyStep(s, 'showtime')],
     after: '/rohan/receipt',
     path: '/friend/kabir',
     done: (s) => s.board.lateSeats.includes('D06'),
@@ -296,7 +295,7 @@ export function selectTourPayoff(s: BoardState): TourPayoff | null {
     const st = s.seats[id]?.state;
     return st !== 'paid_owner' && st !== 'paid_friend' && st !== 'covered' && st !== 'kept' && st !== 'released';
   }).length;
-  // What Rohan paid in the end (after late payers' refunds), D-105.
+  // What Rohan paid in the end (09: kept seats a friend took are never charged).
   const ownOnly = m.netPaid === m.perSeat;
   const paidRow: TourPayoffRow = {
     text: ownOnly
@@ -305,8 +304,8 @@ export function selectTourPayoff(s: BoardState): TourPayoff | null {
   };
   const late = s.board.lateSeats[0];
   const lateName = late ? s.seats[late]?.payerName : undefined;
-  if (lateName && s.board.settledAt) {
-    paidRow.sub = `He covered ${lateName}'s seat at ${formatClockIST(s.board.settledAt)} and got it back when ${lateName} paid.`;
+  if (lateName) {
+    paidRow.sub = `${lateName} paid late, so his seat was never charged to Rohan.`;
   }
   return {
     rows: [paidRow, { text: `Friends chased: ${chased}` }, { text: `Seats left empty: ${empty}` }],
@@ -319,9 +318,10 @@ export const MOMENTS = [
   { id: 'board', label: 'Group board', step: 'amit', path: '/rohan/board' },
   { id: 'release', label: 'Release a seat', step: 'neha', path: '/rohan/board?sheet=release' },
   { id: 't30', label: 'T−30 decision', step: 't30', path: '/rohan/board?sheet=t30' },
-  { id: 'settlement', label: 'Settlement', step: 'priyaPaid', path: '/rohan/board', settle: true },
-  { id: 'receipt', label: 'Receipt', step: 'grace', path: '/rohan/receipt' },
+  { id: 'kept', label: '7:15 PM: seats kept', step: 'grace', path: '/rohan/board' },
   { id: 'late', label: 'Late payer', step: 'grace', path: '/friend/kabir', late: true },
+  { id: 'settlement', label: 'Showtime settlement', step: 'kabirLate', path: '/rohan/board', settle: true },
+  { id: 'receipt', label: 'Final receipt', step: 'showtime', path: '/rohan/receipt' },
 ] as const;
 export type MomentId = (typeof MOMENTS)[number]['id'];
 
@@ -332,5 +332,6 @@ export const CLOCK_SKIPS: Array<{ label: string; h: number; m: number }> = [
   { label: '7:15 PM', h: 19, m: 15 },
   { label: '7:25 PM', h: 19, m: 25 },
   { label: '8:10 PM', h: 20, m: 10 },
+  { label: '9:00 PM', h: 21, m: 0 },
   { label: '9:15 PM', h: 21, m: 15 },
 ];

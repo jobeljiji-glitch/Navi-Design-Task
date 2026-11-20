@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronRight, Minus, Plus } from 'lucide-react'
-import { AvatarStack, Band, BottomSheet, Card, Hairline, PrimaryCTA, PriceRow, SeatTileRow } from '@/ds'
+import { AvatarStack, Band, BottomSheet, Card, Hairline, PinnedFooter, PrimaryCTA, PriceRow, SeatTileRow } from '@/ds'
 import { useDemoStore } from '@/store'
 import { selectFriendPage, type FriendName } from '@/logic/friendFlow'
 import FriendHeader from './FriendHeader'
@@ -97,16 +97,16 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
       </div>
 
       {/* Pinned footer (ref 22 bar: white + hairline) */}
-      <div className="shrink-0 px-4 pt-3 cta-safe flex flex-col items-center border-t" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--divider)' }}>
+      <PinnedFooter testId="friend-pay-footer">
         <div className="w-full" data-tour="friend-pay-cta">
           <PrimaryCTA variant="strong" size="lg" disabled={!v.ctaEnabled} onClick={() => dispatch({ type: 'FRIEND_PAY', name })}>
             {v.cta}
           </PrimaryCTA>
         </div>
-        <button type="button" onClick={() => setDeclineOpen(true)} className="h-11 px-4 text-[14px] font-medium active:opacity-70" style={{ color: 'var(--bms-red-text)' }} data-testid="cant-make-it">
+        <button type="button" onClick={() => setDeclineOpen(true)} className="self-center h-11 px-4 text-[14px] font-medium active:opacity-70" style={{ color: 'var(--bms-red-text)' }} data-testid="cant-make-it">
           Can't make it
         </button>
-      </div>
+      </PinnedFooter>
 
       <BottomSheet
         isOpen={declineOpen}
@@ -124,7 +124,7 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
                 dispatch({ type: 'FRIEND_CANT_MAKE_IT', name })
               }}
             >
-              Yes, let him know
+              Yes, let {organiser} know
             </PrimaryCTA>
             <button type="button" onClick={() => setDeclineOpen(false)} className="h-11 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
               Cancel

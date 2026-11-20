@@ -1,4 +1,4 @@
-import { seatPrice, unblockedSoFar, releaseFee } from './money';
+import { formatINR, seatPrice, unblocked, releaseFee } from './money';
 import {
   calculateBlockExpiresAt,
   calculateDeadline,
@@ -7,9 +7,15 @@ import {
   isAccountHoldLimitReached,
   isGroupSizeEligible,
   isHighTierCapReached,
+  isOverBlockCap,
   isThreeHoursBeforeShow,
+  MAX_BLOCK_PAISE,
   SEAT_LOCK_DURATION_MS,
 } from './rules';
+
+/** 09 limit copy (UPI Reserve Pay: one mandate per user, ₹10,000 cap). */
+export const ACCOUNT_LIMIT_COPY = 'You already have a group hold running. Finish it or book these seats now.';
+export const BLOCK_CAP_COPY = 'Group holds can block up to ₹10,000. Pick fewer seats or pay now.';
 import { createInitialDemoState } from './seed';
 import type { Action, DemoState, FriendPayment, Hold, HoldEvent, NotificationItem, Seat } from './types';
 
@@ -117,7 +123,7 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
         };
       }
 
-      if (state.settings.userHasExistingHoldForShow || (state.hold && state.hold.status === 'active')) {
+      if (state.settings.userHasExistingHoldForShow || (state.hold && (state.hold.status === 'active' || state.hold.status === 'closed'))) {
         return {
           ...state,
           errorMessage: "You're already holding seats for this show.",
@@ -127,18 +133,22 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
       if (isAccountHoldLimitReached(state.settings.userAccountsActiveHoldCount)) {
         return {
           ...state,
-          errorMessage: 'You have reached the maximum active holds limit.',
+          errorMessage: ACCOUNT_LIMIT_COPY,
         };
+      }
+
+      const ownerSeatId = state.selectedSeatIds[0] || 'D07';
+      const singleSeatPrice = seatPrice(state.seats[ownerSeatId], state.show.fee);
+      const blockAmount = state.selectedSeatIds.reduce((sum, id) => sum + seatPrice(state.seats[id], state.show.fee), 0);
+
+      if (isOverBlockCap(blockAmount, state.settings.blockCapPaise ?? MAX_BLOCK_PAISE)) {
+        return { ...state, errorMessage: BLOCK_CAP_COPY };
       }
 
       const deadline = calculateDeadline(now, state.show.startsAt, state.show.tier);
       const freeReleaseUntil = calculateFreeReleaseUntil(now, deadline, state.show.tier);
       const graceUntil = calculateGraceUntil(deadline);
-      const blockExpiresAt = calculateBlockExpiresAt(deadline);
-
-      const ownerSeatId = state.selectedSeatIds[0] || 'D07';
-      const singleSeatPrice = seatPrice(state.seats[ownerSeatId], state.show.fee);
-      const blockAmount = count * singleSeatPrice;
+      const blockExpiresAt = calculateBlockExpiresAt(state.show.startsAt);
 
       const newHold: Hold = {
         id: `hold-${now}`,
@@ -254,7 +264,6 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
           ...state.hold,
           deadline: action.newDeadline,
           graceUntil: calculateGraceUntil(action.newDeadline),
-          blockExpiresAt: calculateBlockExpiresAt(action.newDeadline),
           events: [
             ...state.hold.events,
             createEvent(now, 'DEADLINE_SHORTENED', `Deadline shortened to ${new Date(action.newDeadline).toLocaleTimeString()}`),
@@ -265,24 +274,16 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
 
     case 'SEND_ORGANISER_REMINDER': {
       if (!state.hold) return state;
+      // 09 (user): Rohan shares the reminder through his own apps, so there's no 2-hour limit here.
+      // The 2-hour spacing applies only to BookMyShow's automatic nudges.
       const now = state.clock.now;
-      // Max once per 2h
-      if (state.hold.lastRohanReminderAt && now - state.hold.lastRohanReminderAt < 2 * 60 * 60 * 1000) {
-        return state;
-      }
       return {
         ...state,
-        hold: { ...state.hold, lastRohanReminderAt: now },
-        notifications: [
-          {
-            id: `notif-reminder-${now}`,
-            title: "Your seat's waiting 🍿",
-            body: `Rohan's holding a seat for Monsoon Heist. Pay by 7:15 PM.`,
-            at: now,
-            read: false,
-          },
-          ...state.notifications,
-        ],
+        hold: {
+          ...state.hold,
+          lastRohanReminderAt: now,
+          events: [...state.hold.events, createEvent(now, 'REMINDER_SENT', 'Rohan shared a reminder')],
+        },
       };
     }
 
@@ -297,7 +298,8 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
       const updatedSeat: Seat = { ...seat, state: 'released', lockedBy: undefined, lockedUntil: undefined };
       const updatedHold: Hold = {
         ...state.hold,
-        debited: state.hold.debited + fee, // fee kept on released seats after free window
+        // fee kept on released seats after the free window: charged at showtime with the kept seats (09)
+        feesKept: (state.hold.feesKept ?? 0) + fee,
         events: [
           ...state.hold.events,
           createEvent(now, 'SEAT_RELEASED', `Seat ${seat.id} released. Fee kept: ₹${(fee / 100).toFixed(2)}`),
@@ -329,10 +331,9 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
         }
       }
 
-      const costPerSeat = seatPrice(state.seats[state.hold.ownerSeatId], state.show.fee);
+      // 09: kept seats aren't charged now; they're charged at showtime unless a friend pays first.
       const updatedHold: Hold = {
         ...state.hold,
-        debited: state.hold.debited + keptCount * costPerSeat,
         events: [
           ...state.hold.events,
           createEvent(now, 'SEATS_KEPT', `${keptCount} unpaid seats kept by Rohan`),
@@ -446,7 +447,7 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
       );
 
       const notifTitle = `${action.friendName}'s in! 🎉`;
-      const notifBody = `He paid for ${action.seatId}. ₹277.14 unblocked from your account.`;
+      const notifBody = `${formatINR(seatPrice(seat, state.show.fee))} less for you to cover`;
 
       return {
         ...state,
@@ -528,12 +529,14 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
         payerName: action.friendName,
       };
 
+      // 09: the kept seat is simply never charged to Rohan (no refund). Only the pay-all-now rail refunds.
+      const fallback = state.hold.paymentRail === 'pay_and_refund';
       const updatedHold: Hold = {
         ...state.hold,
-        refunded: state.hold.refunded + price,
+        refunded: state.hold.refunded + (fallback ? price : 0),
         events: [
           ...state.hold.events,
-          createEvent(now, 'LATE_PAYMENT', `${action.friendName} paid ₹${(price / 100).toFixed(2)} for kept seat ${seat.id}. Rohan refunded.`),
+          createEvent(now, 'LATE_PAYMENT', `${action.friendName} paid ${formatINR(price)} for kept seat ${seat.id}; never charged to Rohan.`),
         ],
       };
 
@@ -544,15 +547,15 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
         notifications: [
           {
             id: `notif-late-${now}`,
-            title: `${action.friendName} took his seat 🙌`,
-            body: `₹${(price / 100).toFixed(2)} is on its way back to you.`,
+            title: `${action.friendName} took ${seat.id} 🙌`,
+            body: fallback ? `${formatINR(price)} is on its way back to you.` : `${seat.id} won't be charged to you`,
             at: now,
             read: false,
           },
           ...state.notifications,
         ],
         controllerLog: [
-          createEvent(now, 'LATE_PAYMENT', `${action.friendName} paid late for ${seat.id}; Rohan refunded ₹${(price / 100).toFixed(2)}`),
+          createEvent(now, 'LATE_PAYMENT', `${action.friendName} paid late for ${seat.id}; it won't be charged to Rohan`),
           ...state.controllerLog,
         ],
       };
@@ -653,7 +656,7 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
 
       for (const seatId of state.hold.seatIds) {
         const s = updatedSeats[seatId];
-        if (s && (s.state === 'held' || s.state === 'locked' || s.state === 'paying')) {
+        if (s && (s.state === 'held' || s.state === 'locked' || s.state === 'paying' || s.state === 'kept')) {
           updatedSeats[seatId] = { ...s, state: 'released', lockedBy: undefined, lockedUntil: undefined };
           releasedCount++;
         }
@@ -739,7 +742,6 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
           deadline,
           freeReleaseUntil,
           graceUntil: calculateGraceUntil(deadline),
-          blockExpiresAt: calculateBlockExpiresAt(deadline),
         },
       };
     }
@@ -789,65 +791,60 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
         nextState = { ...nextState, seats: updatedSeats };
       }
 
-      // If hold is not active or resolving, no further timer processing
-      if (hold.status !== 'active' && hold.status !== 'resolving') {
+      // Timers run while friends can pay (active) or kept seats wait for showtime (closed).
+      if (hold.status !== 'active' && hold.status !== 'closed') {
         return nextState;
       }
 
-      // 2. Check 50% window reminder (medium/high)
-      const halfTime = hold.createdAt + Math.floor((hold.deadline - hold.createdAt) / 2);
-      if (now >= halfTime && !hold.reminder50Fired) {
-        const notif: NotificationItem = {
-          id: `notif-half-${now}`,
-          title: 'Halfway there ⏳',
-          body: '3 of 6 in · 3h left for friends to pay.',
-          at: now,
-          read: false,
-        };
-        nextState = {
-          ...nextState,
-          hold: { ...nextState.hold!, reminder50Fired: true },
-          notifications: [notif, ...nextState.notifications],
-        };
-      }
-
-      // 3. Check T-30 min reminder
-      const t30Time = hold.deadline - 30 * 60 * 1000;
-      if (now >= t30Time && !nextState.hold!.reminderT30Fired) {
-        const notif: NotificationItem = {
-          id: `notif-t30-${now}`,
-          title: '30 min left ⏰',
-          body: "2 seats unpaid. We'll keep them for you unless you release them.",
-          at: now,
-          read: false,
-        };
-        nextState = {
-          ...nextState,
-          hold: { ...nextState.hold!, reminderT30Fired: true },
-          notifications: [notif, ...nextState.notifications],
-        };
-      }
-
-      // 4. Check Deadline and Grace Period
-      const currentHold = nextState.hold!;
-      const hasPayingSeats = currentHold.seatIds.some((id) => nextState.seats[id]?.state === 'paying');
-
-      if (currentHold.status === 'active' && now >= currentHold.deadline) {
-        if (hasPayingSeats) {
-          // Transition to resolving (waiting for grace period)
-          nextState = {
-            ...nextState,
-            hold: { ...currentHold, status: 'resolving' },
+      if (hold.status === 'active') {
+        // 2. Halfway reminder
+        const halfTime = hold.createdAt + Math.floor((hold.deadline - hold.createdAt) / 2);
+        if (now >= halfTime && !hold.reminder50Fired) {
+          const paid = hold.seatIds.filter((id) => ['paid_owner', 'paid_friend', 'covered'].includes(nextState.seats[id]?.state)).length;
+          const notif: NotificationItem = {
+            id: `notif-half-${now}`,
+            title: 'Halfway there ⏳',
+            body: `${paid} of ${hold.seatIds.length} in · friends pay by the deadline.`,
+            at: now,
+            read: false,
           };
-        } else {
-          // No payments in progress -> settle immediately
-          nextState = settleHoldInternal(nextState, now);
+          nextState = { ...nextState, hold: { ...nextState.hold!, reminder50Fired: true }, notifications: [notif, ...nextState.notifications] };
         }
-      } else if (currentHold.status === 'resolving') {
-        if (!hasPayingSeats || now >= currentHold.graceUntil) {
-          // Grace period ended or pending payments concluded -> settle
-          nextState = settleHoldInternal(nextState, now);
+
+        // 3. T−30 reminder
+        const t30Time = hold.deadline - 30 * 60 * 1000;
+        if (now >= t30Time && !nextState.hold!.reminderT30Fired) {
+          const unpaid = hold.seatIds.filter((id) => ['held', 'locked', 'paying'].includes(nextState.seats[id]?.state)).length;
+          const notif: NotificationItem = {
+            id: `notif-t30-${now}`,
+            title: '30 min left ⏰',
+            body: `${unpaid} ${unpaid === 1 ? 'seat' : 'seats'} unpaid. They're kept at the deadline unless you release them.`,
+            at: now,
+            read: false,
+          };
+          nextState = { ...nextState, hold: { ...nextState.hold!, reminderT30Fired: true }, notifications: [notif, ...nextState.notifications] };
         }
+
+        // 4. Deadline: unpaid seats are kept (not charged). Payments with the bank keep their 10-min grace.
+        if (now >= hold.deadline) nextState = closeHoldInternal(nextState, now);
+      }
+
+      if (nextState.hold!.status === 'closed') {
+        const cur = nextState.hold!;
+        // 5. Grace ends: a payment still with the bank fails and its seat is kept.
+        if (now >= cur.graceUntil) {
+          const seats = { ...nextState.seats };
+          let changed = false;
+          for (const id of cur.seatIds) {
+            if (seats[id]?.state === 'paying') {
+              seats[id] = { ...seats[id], state: 'kept', lockedBy: undefined, lockedUntil: undefined };
+              changed = true;
+            }
+          }
+          if (changed) nextState = { ...nextState, seats };
+        }
+        // 6. Showtime: kept seats are charged and the rest is unblocked, once.
+        if (now >= nextState.show.startsAt) nextState = settleHoldInternal(nextState, now);
       }
 
       return nextState;
@@ -858,62 +855,56 @@ export function demoReducer(state: DemoState, action: Action): DemoState {
   }
 }
 
+/** Deadline: held / locked seats become kept (Rohan's, still blocked, not charged). */
+function closeHoldInternal(state: DemoState, now: number): DemoState {
+  const hold = state.hold!;
+  const seats = { ...state.seats };
+  let kept = 0;
+  for (const id of hold.seatIds) {
+    const s = seats[id];
+    if (s && (s.state === 'held' || s.state === 'locked')) {
+      seats[id] = { ...s, state: 'kept', lockedBy: undefined, lockedUntil: undefined };
+      kept++;
+    }
+  }
+  return {
+    ...state,
+    seats,
+    hold: { ...hold, status: 'closed', events: [...hold.events, createEvent(now, 'SEATS_KEPT', `${kept} unpaid seats kept`)] },
+  };
+}
+
 /**
- * Internal helper to settle an active or resolving hold at deadline/grace expiry:
- * - Defaults any unpaid seats to 'kept'
- * - Debits Rohan for kept seats
- * - Unblocks the remaining amount
- * - Sets hold status to 'settled'
- * - Dispatches final notifications and SMS toast
+ * Showtime settlement (09): charge the kept seats and any fees kept on late releases from the block,
+ * unblock everything else in one go, finalise the hold.
  */
 function settleHoldInternal(state: DemoState, now: number): DemoState {
   const hold = state.hold!;
-  const updatedSeats = { ...state.seats };
-  let newKeptCount = 0;
-  const costPerSeat = seatPrice(state.seats[hold.ownerSeatId], state.show.fee);
-
-  for (const seatId of hold.seatIds) {
-    const s = updatedSeats[seatId];
-    if (s && (s.state === 'held' || s.state === 'locked' || s.state === 'paying')) {
-      updatedSeats[seatId] = { ...s, state: 'kept', lockedBy: undefined, lockedUntil: undefined };
-      newKeptCount++;
-    }
-  }
-
-  const additionalDebit = newKeptCount * costPerSeat;
-  const finalDebited = hold.debited + additionalDebit;
-
+  const fallback = hold.paymentRail === 'pay_and_refund';
+  const kept = hold.seatIds.filter((id) => state.seats[id]?.state === 'kept');
+  const charge = fallback ? 0 : kept.reduce((sum, id) => sum + seatPrice(state.seats[id], state.show.fee), 0) + (hold.feesKept ?? 0);
   const settledHold: Hold = {
     ...hold,
     status: 'settled',
-    debited: finalDebited,
-    events: [
-      ...hold.events,
-      createEvent(now, 'HOLD_SETTLED', `Hold settled. ${newKeptCount} seats kept. Total debited: ₹${(finalDebited / 100).toFixed(2)}`),
-    ],
+    debited: hold.debited + charge,
+    events: [...hold.events, createEvent(now, 'HOLD_SETTLED', `Settled: ${kept.length} kept seats charged (${formatINR(charge)})`)],
   };
-
-  const unblockedAmount = unblockedSoFar(settledHold, updatedSeats, state.show.fee);
-  const smsToastText = `₹${(unblockedAmount / 100).toFixed(2)} unblocked by BookMyShow.`;
-
+  const freed = unblocked(settledHold);
+  const inCount = hold.seatIds.filter((id) => state.seats[id]?.state !== 'released').length;
   return {
     ...state,
-    seats: updatedSeats,
     hold: settledHold,
-    smsToasts: [{ id: `sms-settled-${now}`, text: smsToastText, at: now }, ...state.smsToasts],
+    smsToasts: fallback ? state.smsToasts : [{ id: `sms-settled-${now}`, text: `${formatINR(freed)} unblocked by BookMyShow.`, at: now }, ...state.smsToasts],
     notifications: [
       {
         id: `notif-settled-${now}`,
         title: 'Your group is set! 🎬',
-        body: `5 of 6 in. ₹${(unblockedAmount / 100).toFixed(2)} unblocked.`,
+        body: `${inCount} of ${hold.seatIds.length} in. ${formatINR(freed)} unblocked.`,
         at: now,
         read: false,
       },
       ...state.notifications,
     ],
-    controllerLog: [
-      createEvent(now, 'HOLD_SETTLED', `Hold settled. Rohan paid total ₹${(finalDebited / 100).toFixed(2)}, unblocked ₹${(unblockedAmount / 100).toFixed(2)}`),
-      ...state.controllerLog,
-    ],
+    controllerLog: [createEvent(now, 'HOLD_SETTLED', `Settled: Rohan charged ${formatINR(settledHold.debited)}, ${formatINR(freed)} unblocked`), ...state.controllerLog],
   };
 }
