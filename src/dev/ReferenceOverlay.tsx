@@ -35,7 +35,9 @@ function getBaseUrl(): string {
 
 export default function ReferenceOverlay() {
   const location = useLocation()
-  const params = new URLSearchParams(window.location.search)
+  // Support ?overlay=1 both before and after hash
+  const search = location.search || window.location.search
+  const params = new URLSearchParams(search)
   const isEnabled = params.get('overlay') === '1'
 
   const [visible, setVisible] = useState(false)
@@ -47,7 +49,7 @@ export default function ReferenceOverlay() {
     (e: KeyboardEvent) => {
       if (!isEnabled) return
       if (
-        e.key === 'o' || e.key === 'O' &&
+        (e.key === 'o' || e.key === 'O') &&
         !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
       ) {
         setVisible(v => !v)
