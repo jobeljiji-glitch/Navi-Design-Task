@@ -47,7 +47,8 @@ async function runWholeTour(page: Page) {
 
   const done = page.getByTestId('done-card')
   await expect(done).toBeVisible({ timeout: 10_000 })
-  await expect(page.getByTestId('payoff-0')).toHaveText('Rohan paid ₹554.28 — not ₹1,662.84')
+  await expect(page.getByTestId('payoff-0')).toHaveText('Rohan paid ₹277.14 — just his own seat')
+  await expect(page.getByTestId('payoff-0-sub')).toHaveText("He covered Kabir's seat at 7:25 PM and got it back when Kabir paid.")
   await expect(page.getByTestId('payoff-1')).toHaveText('Friends chased: 0')
   await expect(page.getByTestId('payoff-2')).toHaveText('Seats left empty: 0')
   await expect(done).toContainText('Every held seat ended up paid.')

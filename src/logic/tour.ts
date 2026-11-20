@@ -12,6 +12,7 @@
 import { selectMoney, withBoard, type BoardState } from './boardFlow';
 import { createInitialDemoState } from './seed';
 import { formatINR } from './money';
+import { formatClockIST } from './holdFlow';
 import type { FriendName } from './friendFlow';
 import {
   applyStep,
@@ -278,8 +279,13 @@ export function tourStateAt(i: number): BoardState {
 }
 
 /** The done card's three stat rows, derived from state. */
+export interface TourPayoffRow {
+  text: string;
+  /** 12 pt grey explanation under the row */
+  sub?: string;
+}
 export interface TourPayoff {
-  rows: string[];
+  rows: TourPayoffRow[];
   line: string;
 }
 export function selectTourPayoff(s: BoardState): TourPayoff | null {
@@ -290,12 +296,20 @@ export function selectTourPayoff(s: BoardState): TourPayoff | null {
     const st = s.seats[id]?.state;
     return st !== 'paid_owner' && st !== 'paid_friend' && st !== 'covered' && st !== 'kept' && st !== 'released';
   }).length;
+  // What Rohan paid in the end (after late payers' refunds), D-105.
+  const ownOnly = m.netPaid === m.perSeat;
+  const paidRow: TourPayoffRow = {
+    text: ownOnly
+      ? `Rohan paid ${formatINR(m.netPaid)} — just his own seat`
+      : `Rohan paid ${formatINR(m.netPaid)} — not ${formatINR(m.blockAmount)}`,
+  };
+  const late = s.board.lateSeats[0];
+  const lateName = late ? s.seats[late]?.payerName : undefined;
+  if (lateName && s.board.settledAt) {
+    paidRow.sub = `He covered ${lateName}'s seat at ${formatClockIST(s.board.settledAt)} and got it back when ${lateName} paid.`;
+  }
   return {
-    rows: [
-      `Rohan paid ${formatINR(m.rohanCharged)} — not ${formatINR(m.blockAmount)}`,
-      `Friends chased: ${chased}`,
-      `Seats left empty: ${empty}`,
-    ],
+    rows: [paidRow, { text: `Friends chased: ${chased}` }, { text: `Seats left empty: ${empty}` }],
     line: TOUR_DONE.line,
   };
 }

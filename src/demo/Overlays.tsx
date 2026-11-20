@@ -126,13 +126,15 @@ export function DoneCard({ wide }: { wide: boolean }) {
     >
       <ul className="flex flex-col">
         {payoff.rows.map((r, i) => (
-          <li
-            key={r}
-            className="py-2 text-[15px] leading-[20px] font-medium"
-            style={i ? { borderTop: '1px solid var(--divider)' } : undefined}
-            data-testid={`payoff-${i}`}
-          >
-            {r}
+          <li key={r.text} className="py-2 flex flex-col gap-0.5" style={i ? { borderTop: '1px solid var(--divider)' } : undefined}>
+            <span className="text-[15px] leading-[20px] font-medium" data-testid={`payoff-${i}`}>
+              {r.text}
+            </span>
+            {r.sub && (
+              <span className="text-[12px] leading-[16px]" style={{ color: 'var(--text-secondary)' }} data-testid={`payoff-${i}-sub`}>
+                {r.sub}
+              </span>
+            )}
           </li>
         ))}
       </ul>

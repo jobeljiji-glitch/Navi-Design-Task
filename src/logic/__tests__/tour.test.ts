@@ -86,9 +86,15 @@ describe('07 guided tour', () => {
     });
   });
 
-  it('done card: Rohan paid ₹554.28 — not ₹1,662.84, nobody chased, no empty seats', () => {
+  it('done card: Rohan paid just his own seat in the end, nobody chased, no empty seats', () => {
     const p = selectTourPayoff(tourStateAt(TOUR_LENGTH))!;
-    expect(p.rows).toEqual(['Rohan paid ₹554.28 — not ₹1,662.84', 'Friends chased: 0', 'Seats left empty: 0']);
+    expect(p.rows).toEqual([
+      { text: 'Rohan paid ₹277.14 — just his own seat', sub: "He covered Kabir's seat at 7:25 PM and got it back when Kabir paid." },
+      { text: 'Friends chased: 0' },
+      { text: 'Seats left empty: 0' },
+    ]);
+    // before Kabir pays (receipt step): the kept seat is still Rohan's
+    expect(selectTourPayoff(tourStateAt(13))!.rows[0]).toEqual({ text: 'Rohan paid ₹554.28 — not ₹1,662.84' });
     expect(p.line).toBe('Every held seat ended up paid.');
   });
 });
