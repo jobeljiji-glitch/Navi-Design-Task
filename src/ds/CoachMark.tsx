@@ -46,7 +46,7 @@ export default function CoachMark({
       {/* Header with step count and Skip */}
       <div className="flex items-center justify-between">
         <span
-          className="text-[12px] font-semibold uppercase tracking-wider"
+          className="text-[12px] font-medium uppercase tracking-wider"
           style={{ color: 'var(--bms-red)' }}
         >
           {stepNumber} of {totalSteps}
@@ -66,7 +66,7 @@ export default function CoachMark({
       {/* Body text */}
       {title && (
         <h4
-          className="text-[15px] font-semibold text-text-primary"
+          className="text-[15px] font-medium text-text-primary"
           style={{ color: 'var(--text-primary)' }}
         >
           {title}
@@ -98,7 +98,7 @@ export default function CoachMark({
           <button
             type="button"
             onClick={onNext}
-            className="text-[13px] font-semibold px-4 py-1.5 rounded-[6px] transition-opacity hover:opacity-90"
+            className="text-[13px] font-medium px-4 py-1.5 rounded-[6px] transition-opacity hover:opacity-90"
             style={{
               backgroundColor: 'var(--bms-red)',
               color: 'var(--text-on-brand)',

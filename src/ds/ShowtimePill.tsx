@@ -47,7 +47,7 @@ export default function ShowtimePill({
     <button
       type="button"
       onClick={onClick}
-      className={`relative w-[110px] h-[39px] bg-white rounded-[3px] flex items-center overflow-hidden transition-transform active:scale-95 border border-solid shadow-sm ${className}`}
+      className={`relative w-[110px] h-[39px] bg-white rounded-[3px] flex items-center overflow-hidden transition-transform active:scale-95 border border-solid ${className}`}
       style={{
         borderColor: 'var(--showtime-green)',
         backgroundColor: '#FFFFFF',

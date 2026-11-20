@@ -36,12 +36,12 @@ export default function DualCtaBar({
       }}
     >
       <div className="flex-1 min-w-0" data-testid="hold-for-group">
-        <PrimaryCTA variant="outline" size="lg" onClick={onLeftClick} subLabel={leftSub} disabled={disabled}>
+        <PrimaryCTA variant="outline" size="xl" onClick={onLeftClick} subLabel={leftSub} disabled={disabled}>
           {leftText}
         </PrimaryCTA>
       </div>
       <div className="flex-1 min-w-0">
-        <PrimaryCTA variant="strong" size="lg" onClick={onRightClick} subLabel={rightSub} disabled={disabled}>
+        <PrimaryCTA variant="strong" size="xl" onClick={onRightClick} subLabel={rightSub} disabled={disabled}>
           {rightText}
         </PrimaryCTA>
       </div>

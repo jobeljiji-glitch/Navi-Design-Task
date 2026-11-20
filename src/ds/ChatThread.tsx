@@ -41,13 +41,13 @@ export default function ChatThread({
         {/* Outgoing or Incoming bubble */}
         <div className="max-w-[85%] self-end flex flex-col gap-1.5">
           <div
-            className="p-3 rounded-[16px] rounded-br-[4px] shadow-sm flex flex-col gap-2.5"
+            className="p-3 rounded-[16px] rounded-br-[4px] flex flex-col gap-2.5"
             style={{
               backgroundColor: 'var(--bg-success)',
               color: 'var(--text-primary)',
             }}
           >
-            <span className="text-[11px] font-semibold text-text-success" style={{ color: 'var(--text-success)' }}>
+            <span className="text-[11px] font-medium text-text-success" style={{ color: 'var(--text-success)' }}>
               {senderName}
             </span>
             <p className="text-[13px] leading-[18px] whitespace-pre-wrap">

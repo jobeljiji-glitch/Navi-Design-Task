@@ -1,13 +1,14 @@
 import { useState, type ReactNode } from 'react'
-import { Minus, Plus } from 'lucide-react'
-import { BottomSheet, HoldTimeline, PrimaryCTA, SeatTileRow, SettingsGroup } from '@/ds'
+import { Clock, Minus, Plus, RotateCcw, Ticket, type LucideIcon } from 'lucide-react'
+import { BottomSheet, Hairline, PrimaryCTA, PriceRow, SeatTileRow, SettingsGroup, SoftGroup } from '@/ds'
 import { useDemoStore } from '@/store'
 import { selectHoldSheet, selectShortenOptions } from '@/logic/holdFlow'
 import type { PaymentRail } from '@/logic/types'
 
 /**
- * Step 2 hold sheet (04b): picture → timeline → settings → CTA.
- * Sheet anatomy from ref 05/19; every amount appears once; settings open small sheets.
+ * Step 2 hold sheet (04c): seats → money (Confirm-booking price rows in a soft grey group)
+ * → how the hold works (BMS info rows) → settings → two-line CTA.
+ * Sheet anatomy from ref 05/19: no outlined cards; sections split by full-width hairlines.
  */
 export interface HoldSummarySheetProps {
   isOpen: boolean
@@ -15,7 +16,7 @@ export interface HoldSummarySheetProps {
   onConfirm: () => void
 }
 
-type SubSheet = null | 'seats' | 'cover' | 'rail' | 'shorten' | 'keep'
+type SubSheet = null | 'seats' | 'cover' | 'rail' | 'shorten'
 
 const RAILS: Array<{ rail: PaymentRail; title: string; sub: (perSeat: string) => string }> = [
   { rail: 'reserve_pay', title: 'UPI · rohan@okbank', sub: () => 'Set money aside now, pay only for seats you keep' },
@@ -54,6 +55,16 @@ function OptionRow({ title, sub, on, onClick }: { title: string; sub: string; on
   )
 }
 
+function InfoRow({ icon: Icon, children, action }: { icon: LucideIcon; children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 py-3">
+      <Icon size={20} strokeWidth={1.75} className="shrink-0 mt-px" style={{ color: 'var(--text-secondary)' }} aria-hidden />
+      <p className="flex-1 text-[14px] leading-[20px] text-pretty" style={{ color: 'var(--text-primary)' }}>{children}</p>
+      {action}
+    </div>
+  )
+}
+
 function Body({ children }: { children: ReactNode }) {
   return <p className="text-[14px] leading-[20px] text-pretty pb-2" style={{ color: 'var(--text-secondary)' }}>{children}</p>
 }
@@ -83,8 +94,8 @@ export default function HoldSummarySheet({ isOpen, onClose, onConfirm }: HoldSum
 
   const footer = (
     <div className="flex flex-col gap-2" data-tour="hold-cta">
-      <PrimaryCTA size="lg" onClick={onConfirm}>
-        {v.cta}
+      <PrimaryCTA size="xl" onClick={onConfirm} subLabel={v.ctaSub ?? undefined}>
+        {v.ctaTitle}
       </PrimaryCTA>
       <p className="text-[12px] leading-[16px] text-center" style={{ color: 'var(--text-secondary)' }} data-testid="hold-caption">
         {v.caption}
@@ -92,16 +103,10 @@ export default function HoldSummarySheet({ isOpen, onClose, onConfirm }: HoldSum
     </div>
   )
 
-  const stops = v.timeline.map((s) => ({
-    ...s,
-    link: s.key === 'deadline' && shorten.length > 0 ? { label: 'Shorten', onClick: () => setSub('shorten') } : undefined,
-    onInfo: s.key === 'keep' ? () => setSub('keep') : undefined,
-  }))
-
   return (
     <>
       <BottomSheet isOpen={isOpen} onClose={onClose} header={header} footer={footer} title={v.title} testId="hold-sheet-root">
-        <div className="flex flex-col gap-5 pt-1 pb-1" data-testid="hold-sheet">
+        <div className="flex flex-col gap-5 pt-1" data-testid="hold-sheet">
           {errorMessage && (
             <div
               className="px-4 py-2.5 text-[14px] leading-[20px] text-pretty"
@@ -113,48 +118,58 @@ export default function HoldSummarySheet({ isOpen, onClose, onConfirm }: HoldSum
             </div>
           )}
 
-          {/* 1. Picture: seats + money as one visual */}
-          <section className="flex flex-col gap-2" data-tour="money-ledger" aria-label="Seats and money">
-            <SeatTileRow
-              tiles={v.tiles}
-              onTileClick={(id) => dispatch({ type: 'SET_HOLD_OWNER_SEAT', seatId: id })}
-            />
+          {/* a) Seats */}
+          <section className="flex flex-col gap-2" aria-label="Your group's seats">
+            <SeatTileRow tiles={v.tiles} onTileClick={(id) => dispatch({ type: 'SET_HOLD_OWNER_SEAT', seatId: id })} />
             <p className="text-[12px] leading-[16px] -mt-1" style={{ color: 'var(--text-secondary)' }}>
               Tap a seat to make it yours
             </p>
-            {v.fallback ? (
-              <p className="text-[14px] leading-[20px] text-pretty" style={{ color: 'var(--text-primary)' }} data-testid="fallback-line">
-                {v.fallbackLine}
-              </p>
-            ) : (
-              <>
-                <p className="text-[14px] leading-[20px] text-pretty" style={{ color: 'var(--text-primary)' }} data-testid="summary-line">
-                  <span className="font-medium">{v.summaryNow}</span> paid now
-                  {v.summaryAside && (
-                    <>
-                      {' · '}
-                      <span className="font-medium">{v.summaryAside}</span> set aside in your account
-                    </>
-                  )}
-                </p>
-                <p className="text-[13px] leading-[18px] text-pretty" style={{ color: 'var(--text-secondary)' }}>
-                  {/* keep "Most you could pay ₹…" on one line (no widow) */}
-                  {v.mostLine.split('. ').map((part, i, arr) => (
-                    <span key={i} className={i === arr.length - 1 ? 'whitespace-nowrap' : undefined}>
-                      {part}
-                      {i < arr.length - 1 ? '. ' : ''}
-                    </span>
-                  ))}
-                </p>
-              </>
-            )}
           </section>
 
-          {/* 2. Timeline */}
-          <HoldTimeline stops={stops} />
+          {/* b) Money: Confirm-booking price rows (ref 22) in a soft grey group */}
+          <section className="flex flex-col gap-2" data-tour="money-ledger" aria-label="Money">
+            <SoftGroup testId="money-summary" className="flex flex-col gap-3">
+              {v.moneyRows.map((r) => (
+                <PriceRow key={r.key} label={r.label} value={r.value} sub={r.sub} testId={`money-${r.key}`} />
+              ))}
+              <Hairline dashed />
+              <PriceRow label={v.moneyTotalLabel} value={v.moneyTotal} strong testId="money-total" />
+            </SoftGroup>
+            <p className="text-[12px] leading-[16px] text-pretty" style={{ color: 'var(--text-secondary)' }}>
+              {v.moneyCaption}
+            </p>
+          </section>
+
+          <Hairline bleed />
+
+          {/* c) How the hold works: BMS info rows */}
+          <section aria-label="How the hold works" data-testid="how-it-works">
+            <h3 className="text-[16px] leading-[22px] font-medium" style={{ color: 'var(--text-primary)' }}>How the hold works</h3>
+            <div className="mt-1">
+              <InfoRow
+                icon={Clock}
+                action={
+                  shorten.length > 0 ? (
+                    <button type="button" onClick={() => setSub('shorten')} className="text-[14px] leading-[20px] font-medium shrink-0 py-2.5 -my-2.5" style={{ color: 'var(--bms-red-text)' }}>
+                      Shorten
+                    </button>
+                  ) : undefined
+                }
+              >
+                {v.howDeadline}
+              </InfoRow>
+              <Hairline />
+              <InfoRow icon={Ticket}>{v.howKeep}</InfoRow>
+              <Hairline />
+              <InfoRow icon={RotateCcw}>{v.howRelease}</InfoRow>
+            </div>
+          </section>
+
+          <Hairline bleed />
 
           {/* 3. Settings */}
           <SettingsGroup
+            className="-mt-5 -mb-3"
             rows={[
               { key: 'seats', label: 'Seats', value: v.seatsModeLabel, onClick: () => setSub('seats') },
               ...(v.fallback ? [] : [{ key: 'cover', label: 'Cover a friend', value: v.coverLabel, onClick: () => setSub('cover') }]),
@@ -266,18 +281,6 @@ export default function HoldSummarySheet({ isOpen, onClose, onConfirm }: HoldSum
         </div>
       </BottomSheet>
 
-      <BottomSheet
-        isOpen={sub === 'keep'}
-        onClose={close}
-        title="If a friend doesn't pay"
-        testId="sub-keep"
-        footer={<PrimaryCTA size="lg" onClick={close}>Got it</PrimaryCTA>}
-      >
-        <Body>
-          At {v.deadlineTime} any unpaid seat stays yours and is paid from the money set aside. Until then you can release
-          seats from the end of the row{v.freeReleaseUntil ? `, free until ${v.freeReleaseUntil}` : ''}.
-        </Body>
-      </BottomSheet>
     </>
   )
 }

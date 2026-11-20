@@ -44,7 +44,7 @@ export default function InfoBanner({
       style={{ backgroundColor: bg }}
     >
       <span
-        className="text-[13px] leading-[18px] font-semibold"
+        className="text-[13px] leading-[18px] font-medium"
         style={{ color: titleColor }}
       >
         {title}

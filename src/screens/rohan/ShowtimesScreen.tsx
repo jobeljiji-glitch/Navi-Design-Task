@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react'
 import { DEMO_SHOW } from '@/logic/seed'
-import { DateStrip, ShowtimePill, preloadVehicleIllustrations } from '@/ds'
+import { Card, DateStrip, ShowtimePill, preloadVehicleIllustrations } from '@/ds'
 
 export interface ShowtimesScreenProps {
   onBack?: () => void
@@ -232,21 +232,17 @@ export default function ShowtimesScreen({
         ))}
       </div>
 
-      {/* Cinema listings: ONE continuous white panel on the grey page, 12 pt side margins */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-sab">
-        <div
-          className="mx-3 mt-3 px-3 pt-3 pb-3 flex flex-col gap-[22px]"
-          style={{ backgroundColor: 'var(--bg-surface)' }}
-        >
+      {/* Cinema listings: ONE white Card on the grey page (04c surface system: 16 pt margins, radius 8, no border/shadow) */}
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-sab px-4 pt-3">
+        <Card className="flex flex-col gap-[22px]">
           {cinemas.map((c) => (
             <div key={c.name} className="flex flex-col">
               {/* Row 1: logo tile + name + info + heart */}
               <div className="flex items-start gap-2.5">
                 <div
-                  className="w-[36px] h-[36px] rounded-[8px] border flex items-center justify-center font-bold text-[13px] shrink-0"
+                  className="w-[36px] h-[36px] rounded-[8px] flex items-center justify-center font-medium text-[13px] shrink-0"
                   style={{
-                    backgroundColor: 'var(--bg-surface)',
-                    borderColor: 'var(--divider)',
+                    backgroundColor: 'var(--bg-muted)',
                     color: 'var(--text-primary)',
                   }}
                 >
@@ -287,7 +283,7 @@ export default function ShowtimesScreen({
                 </div>
                 {c.visited && (
                   <span
-                    className="-mr-3 text-[12px] leading-[16px] font-normal px-2 py-px shrink-0"
+                    className="-mr-4 text-[12px] leading-[16px] font-normal px-2 py-px shrink-0"
                     style={{ backgroundColor: 'var(--bg-visited)', color: 'var(--text-visited)' }}
                   >
                     Visited
@@ -308,7 +304,7 @@ export default function ShowtimesScreen({
               </div>
             </div>
           ))}
-        </div>
+        </Card>
       </div>
 
       {/* Floating Demo Toast */}
@@ -323,14 +319,14 @@ export default function ShowtimesScreen({
       {/* Bottom Subtitle Language Toast Bar */}
       {isSubtitleNoticeVisible && (
         <div
-          className="w-full px-4 py-2 bg-bg-surface border-t border-divider flex items-center justify-between shrink-0 shadow-sm"
+          className="w-full px-4 py-2 bg-bg-surface border-t border-divider flex items-center justify-between shrink-0"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderTopColor: 'var(--divider)',
           }}
         >
           <div className="flex items-center gap-2 text-[12px] text-text-secondary">
-            <span className="px-1 py-0.5 rounded border border-divider text-[10px] font-semibold leading-none">
+            <span className="px-1 py-0.5 rounded border border-divider text-[10px] font-medium leading-none">
               LAN
             </span>
             <span>indicates subtitle language, if available</span>

@@ -33,7 +33,7 @@ export default function SummaryCard({
 }: SummaryCardProps) {
   return (
     <div
-      className={`w-full bg-bg-surface rounded-[8px] flex flex-col border border-divider shadow-sm ${className}`}
+      className={`w-full bg-bg-surface rounded-[8px] flex flex-col ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--divider)',
@@ -97,7 +97,7 @@ export default function SummaryCard({
               style={{ borderColor: 'var(--bms-red-strong)' }}
             >
               <span
-                className="text-[11px] font-bold"
+                className="text-[11px] font-medium"
                 style={{ color: 'var(--bms-red-strong)' }}
               >
                 {ageRating}

@@ -20,7 +20,7 @@ export default function LinkPreviewCard({
   return (
     <div
       onClick={onClick}
-      className={`rounded-[12px] overflow-hidden border shadow-sm transition-transform active:scale-[0.98] cursor-pointer ${className}`}
+      className={`rounded-[12px] overflow-hidden border transition-transform active:scale-[0.98] cursor-pointer ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--divider)',
@@ -33,10 +33,10 @@ export default function LinkPreviewCard({
           background: 'linear-gradient(135deg, var(--trending-blue), var(--bms-red-strong))',
         }}
       >
-        <span className="text-[10px] font-bold uppercase tracking-wider text-white opacity-80">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-white opacity-80">
           BookMyShow · Group Hold
         </span>
-        <h4 className="text-[16px] font-bold text-white leading-tight truncate">
+        <h4 className="text-[16px] font-medium text-white leading-tight truncate">
           {filmTitle}
         </h4>
       </div>
@@ -44,7 +44,7 @@ export default function LinkPreviewCard({
       {/* Content */}
       <div className="p-3 flex flex-col gap-1">
         <span
-          className="text-[14px] leading-[18px] font-semibold text-text-primary line-clamp-2"
+          className="text-[14px] leading-[18px] font-medium text-text-primary line-clamp-2"
           style={{ color: 'var(--text-primary)' }}
         >
           {headline}

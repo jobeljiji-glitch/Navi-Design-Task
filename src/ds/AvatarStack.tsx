@@ -29,7 +29,7 @@ export default function AvatarStack({
       {visible.map((item, index) => (
         <div
           key={item.name}
-          className="rounded-full flex items-center justify-center font-semibold text-[11px] text-text-primary shadow-sm relative select-none"
+          className="rounded-full flex items-center justify-center font-medium text-[11px] text-text-primary relative select-none"
           style={{
             width: size,
             height: size,
@@ -47,7 +47,7 @@ export default function AvatarStack({
 
       {remaining > 0 && (
         <div
-          className="rounded-full flex items-center justify-center font-semibold text-[10px] text-text-secondary relative shadow-sm"
+          className="rounded-full flex items-center justify-center font-medium text-[10px] text-text-secondary relative"
           style={{
             width: size,
             height: size,

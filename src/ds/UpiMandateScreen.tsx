@@ -78,7 +78,7 @@ export default function UpiMandateScreen({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4 flex flex-col">
-        <h1 className="text-[22px] leading-[28px] font-medium">{isBlock ? 'Approve a block request' : 'Approve a payment'}</h1>
+        <h1 className="text-[22px] leading-[28px] font-normal text-balance">{isBlock ? 'Approve a block request' : 'Approve a payment'}</h1>
 
         {/* Merchant */}
         <div className="flex items-center gap-3 mt-4">

@@ -7,6 +7,7 @@ import {
   SummaryCard,
   PriceBreakdown,
   LoaderSheet,
+  Card,
 } from '@/ds'
 
 export interface ConfirmBookingScreenProps {
@@ -47,7 +48,7 @@ export default function ConfirmBookingScreen({
     <div
       className="w-full h-full flex flex-col justify-between overflow-hidden relative select-none"
       style={{
-        backgroundColor: '#F2F3F5',
+        backgroundColor: 'var(--bg-page)',
         color: 'var(--text-primary)',
         width: '100%',
         height: '100%',
@@ -56,7 +57,7 @@ export default function ConfirmBookingScreen({
       {/* Header: sits on same grey, no white bar, 20 pt wt 400 */}
       <header
         className="flex items-center px-3 h-[54px] shrink-0"
-        style={{ backgroundColor: '#F2F3F5' }}
+        style={{ backgroundColor: 'var(--bg-page)' }}
       >
         <button
           type="button"
@@ -75,7 +76,7 @@ export default function ConfirmBookingScreen({
       </header>
 
       {/* Scrollable Booking Details with 12 pt side margins (px-3) */}
-      <div className="flex-1 overflow-y-auto px-3 pb-6 flex flex-col gap-3 no-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-3 no-scrollbar">
         {/* Movie Summary Card with cancellation band inside (no fixed height, no clipping) */}
         <SummaryCard
           title={DEMO_SHOW.filmTitle}
@@ -106,13 +107,7 @@ export default function ConfirmBookingScreen({
         />
 
         {/* For Sending Booking Details Card */}
-        <div
-          className="w-full bg-bg-surface rounded-[8px] p-[14px] flex flex-col gap-1 border border-divider shadow-sm"
-          style={{
-            backgroundColor: 'var(--bg-surface)',
-            borderColor: 'var(--divider)',
-          }}
-        >
+        <Card className="flex flex-col gap-1" testId="sending-details">
           <div className="flex items-center justify-between">
             <span
               className="text-[16px] leading-[21px] font-medium"
@@ -141,7 +136,7 @@ export default function ConfirmBookingScreen({
           >
             Maharashtra (for GST purposes)
           </span>
-        </div>
+        </Card>
       </div>
 
       {/* Bottom Bar: Total (13 pt grey) / ₹1,662.84 (20 pt, wt 500) | Continue button ~46% wide, 48 pt high, radius 6, strong red */}
@@ -171,7 +166,7 @@ export default function ConfirmBookingScreen({
         <button
           type="button"
           onClick={onContinue}
-          className="w-[46%] h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white shadow-sm transition-transform active:scale-[0.99]"
+          className="w-[46%] h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white transition-transform active:scale-[0.99]"
           style={{ backgroundColor: 'var(--bms-red-strong)' }}
         >
           Continue

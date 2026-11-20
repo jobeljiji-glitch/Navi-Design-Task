@@ -31,7 +31,7 @@ export default function GroupStatusList({
 }: GroupStatusListProps) {
   return (
     <div
-      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-4 border border-divider shadow-sm ${className}`}
+      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-4 ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--divider)',
@@ -39,7 +39,7 @@ export default function GroupStatusList({
       }}
     >
       <h3
-        className="text-[15px] leading-[20px] font-semibold text-text-primary"
+        className="text-[15px] leading-[20px] font-medium text-text-primary"
         style={{ color: 'var(--text-primary)' }}
       >
         Group Member Status

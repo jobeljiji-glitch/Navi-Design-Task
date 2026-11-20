@@ -67,7 +67,7 @@ export default function TicketCard({
       {groupBannerText && (
         <div className="w-full px-5 pb-2.5">
           <div
-            className="w-full py-2 px-3 rounded-[8px] flex items-center justify-center gap-2 border shadow-xs"
+            className="w-full py-2 px-3 rounded-[8px] flex items-center justify-center gap-2 border"
             style={{
               backgroundColor: 'var(--bg-success)',
               borderColor: '#B3ECC1',
@@ -92,14 +92,14 @@ export default function TicketCard({
           <div className="p-4 flex gap-3 relative">
             {/* Poster thumbnail: ~80 x 104 pt, radius 8 */}
             <div
-              className="w-[80px] h-[104px] rounded-[8px] shrink-0 overflow-hidden flex flex-col justify-end p-2 relative shadow-xs"
+              className="w-[80px] h-[104px] rounded-[8px] shrink-0 overflow-hidden flex flex-col justify-end p-2 relative"
               style={{
                 background: 'linear-gradient(145deg, #1A1F36 0%, #B82538 100%)',
               }}
             >
               <div className="absolute inset-0 bg-black/15" />
               <div className="relative z-10 flex flex-col items-center text-center">
-                <span className="text-[10px] font-bold text-white uppercase leading-tight line-clamp-2">
+                <span className="text-[10px] font-medium text-white uppercase leading-tight line-clamp-2">
                   Monsoon Heist
                 </span>
                 <span className="text-[8px] text-white/80 mt-1 px-1.5 py-0.5 rounded-full bg-black/40">
@@ -207,7 +207,7 @@ export default function TicketCard({
         <button
           type="button"
           onClick={onViewGroup}
-          className="w-full py-3.5 px-4 bg-white rounded-[10px] shadow-xs flex items-center justify-between hover:bg-white/90 active:scale-[0.99] transition-all"
+          className="w-full py-3.5 px-4 bg-white rounded-[10px] flex items-center justify-between hover:bg-white/90 active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[var(--bg-info)] flex items-center justify-center text-[var(--bms-red)]">

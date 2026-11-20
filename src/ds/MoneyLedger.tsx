@@ -38,10 +38,10 @@ export default function MoneyLedger({
 }: MoneyLedgerProps) {
   return (
     <div
-      className={`w-full px-4 py-3.5 flex flex-col gap-3 border ${className}`}
+      className={`w-full px-4 py-3.5 flex flex-col gap-3 ${className}`}
       style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--divider)',
+        // 04c surface system: soft grey group (used inside white sheets), no border
+        backgroundColor: 'var(--bg-muted)',
         borderRadius: 'var(--card-radius)',
       }}
     >

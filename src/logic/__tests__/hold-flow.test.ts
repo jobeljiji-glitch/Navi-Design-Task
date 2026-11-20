@@ -50,12 +50,20 @@ describe('holdFlow: begin', () => {
     expect(v.windowLabel).toBe('6h');
     expect(v.freeReleaseUntil).toBe('4:15 PM');
     expect(v.blockEnds).toBe('Today, 7:45 PM');
-    expect(v.cta).toBe('Pay ₹277.14 · Hold 5 seats');
-    expect(v.summaryNow).toBe('₹277.14');
-    expect(v.summaryAside).toBe('₹1,385.70');
-    expect(v.mostLine).toBe('Unblocked seat by seat as friends pay. Most you could pay ₹1,662.84');
+    expect(v.ctaTitle).toBe('Block ₹1,662.84 on UPI');
+    expect(v.ctaSub).toBe('₹277.14 charged now for your seat');
+    expect(v.upiAmount).toBe('₹1,662.84'); // CTA amount = UPI screen amount
+    expect(v.moneyRows).toEqual([
+      { key: 'own', label: 'Your seat (D07)', value: '₹277.14', sub: '₹250 ticket + ₹27.14 convenience fee' },
+      { key: 'friends', label: "5 friends' seats", value: '₹1,385.70', sub: 'Blocked, not charged' },
+    ]);
+    expect(v.moneyTotalLabel).toBe('Blocked on UPI');
+    expect(v.moneyTotal).toBe('₹1,662.84');
+    expect(v.moneyCaption).toBe('Unblocked seat by seat as friends pay.');
+    expect(v.howDeadline).toBe('Friends pay by 7:15 PM today');
+    expect(v.howKeep).toBe('Unpaid seats stay yours and are charged from the block. Release any before 7:15 PM.');
+    expect(v.howRelease).toBe('Release free until 4:15 PM. After that, the ₹27.14 fee per seat is kept.');
     expect(v.caption).toBe('One UPI PIN · Unused money is unblocked automatically');
-    expect(v.timeline.map((t) => `${t.label} ${t.detail}`)).toEqual(['Now Seats held', 'Free release ends 4:15 PM', 'Friends pay by 7:15 PM', 'Unpaid seats you keep']);
     expect(v.tiles.map((t) => t.kind)).toEqual(['held', 'held', 'owner', 'held', 'held', 'held']);
   });
 
@@ -65,7 +73,14 @@ describe('holdFlow: begin', () => {
     expect(v.coverCount).toBe(2);
     expect(v.leavesNow).toBe('₹831.42');
     expect(v.blockedNotTaken).toBe('₹831.42');
-    expect(v.cta).toBe('Pay ₹831.42 · Hold 3 seats');
+    expect(v.ctaTitle).toBe('Block ₹1,662.84 on UPI');
+    expect(v.ctaSub).toBe('₹831.42 charged now for 3 seats');
+    expect(v.moneyRows.map((r) => [r.label, r.value])).toEqual([
+      ['Your seat (D07)', '₹277.14'],
+      ['2 seats you cover', '₹554.28'],
+      ["3 friends' seats", '₹831.42'],
+    ]);
+    expect(v.moneyTotal).toBe('₹1,662.84');
     expect(v.coverLabel).toBe('2 seats');
     expect(v.tiles.filter((t) => t.kind === 'covered').map((t) => t.id)).toEqual(['D05', 'D10']);
   });
@@ -80,6 +95,7 @@ describe('holdFlow: begin', () => {
     expect(v.fallback).toBe(true);
     expect(v.fallbackLine).toBe('Pay ₹1,662.84 now · get ₹277.14 back each time a friend pays');
     expect(v.cta).toBe('Pay ₹1,662.84');
+    expect(v.ctaSub).toBeNull();
     const a = run(s, { type: 'OPEN_UPI' }, { type: 'APPROVE_HOLD', pin: '1234' });
     expect(a.hold?.debited).toBe(166284);
     expect(a.smsToasts[0].text).toBe('₹1,662.84 debited by BookMyShow.');
@@ -118,6 +134,11 @@ describe('holdFlow: approve / decline', () => {
     expect(ok.tiles.find((t) => t.id === 'D07')?.caption).toBe('You ✓');
     expect(ok.ticketSeat).toBe('PP-D07');
     expect(ok.blocked).toBe('₹1,385.70');
+    expect(ok.paidLabel).toBe('Your ticket (D07)');
+    expect(ok.paidSub).toBe('₹250 + ₹27.14 fee');
+    expect(ok.setAsideSub).toBe('Blocked, not charged');
+    expect(ok.most).toBe('₹1,662.84');
+    expect(ok.moneyNote).toBe('Unpaid seats stay yours at 7:15 PM. Release free until 4:15 PM.');
     expect(ok.payBy).toBe('7:15 PM today');
     expect(ok.shareMessage).toContain('Pay by 7:15 PM today · bms.link/g/k7Qx2');
   });
@@ -162,6 +183,7 @@ describe('holdFlow: demand tier', () => {
     expect(selectHoldSheet(s)!.windowLabel).toBe('2h');
     s = run(s, { type: 'CONTROLLER_SET_DEMAND_TIER', tier: 'low' });
     expect(selectDemandBanner(s)).toEqual({ tier: 'low', holdHours: 24 });
+    expect(selectHoldSheet(s)!.howRelease).toBe('Release free anytime before 7:15 PM.');
     expect(selectHoldSheet(s)!.freeReleaseUntil).toBeNull();
   });
 });

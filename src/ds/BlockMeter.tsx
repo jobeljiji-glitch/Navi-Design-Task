@@ -26,7 +26,7 @@ export default function BlockMeter({
 
   return (
     <div
-      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 border border-divider shadow-sm ${className}`}
+      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--divider)',

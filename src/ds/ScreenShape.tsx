@@ -15,7 +15,7 @@ export default function ScreenShape({
           viewBox="0 0 300 32"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full drop-shadow-sm"
+          className="w-full h-full"
           aria-hidden="true"
         >
           <path
@@ -29,7 +29,7 @@ export default function ScreenShape({
       </div>
 
       <span
-        className="text-[14px] leading-[20px] font-bold text-text-primary mt-2"
+        className="text-[14px] leading-[20px] font-medium text-text-primary mt-2"
         style={{ color: 'var(--text-primary)' }}
       >
         {label}

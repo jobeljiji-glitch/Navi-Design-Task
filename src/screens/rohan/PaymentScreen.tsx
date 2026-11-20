@@ -42,7 +42,7 @@ export default function PaymentScreen({
           <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
         </button>
         <h1
-          className="text-[17px] leading-[22px] font-medium ml-1"
+          className="text-[20px] leading-[26px] font-normal ml-1"
           style={{ color: 'var(--text-primary)' }}
         >
           Payment
@@ -68,7 +68,7 @@ export default function PaymentScreen({
 
         <div className="flex flex-col bg-bg-surface border-y border-divider">
           <PaymentRow
-            icon={<span className="font-bold text-[13px] text-blue-900 tracking-tighter">VISA</span>}
+            icon={<span className="font-medium text-[13px] text-blue-900 tracking-tighter">VISA</span>}
             title="ICICI Bank Credit Card | ****5004"
             subtitle="Enter CVV to complete payment"
             lastUsed
@@ -76,7 +76,7 @@ export default function PaymentScreen({
           />
           <PaymentRow
             icon={
-              <div className="w-6 h-6 rounded-full bg-cyan-500 text-white flex items-center justify-center text-[9px] font-bold">
+              <div className="w-6 h-6 rounded-full bg-cyan-500 text-white flex items-center justify-center text-[9px] font-medium">
                 pay
               </div>
             }

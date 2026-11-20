@@ -43,7 +43,7 @@ export default function PriceBreakdown({
   if (items && items.length > 0) {
     return (
       <div
-        className={`w-full bg-bg-surface rounded-[8px] p-[14px] flex flex-col gap-3 border border-divider shadow-sm ${className}`}
+        className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 ${className}`}
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--divider)',
@@ -116,7 +116,7 @@ export default function PriceBreakdown({
   // Modern fidelity matching reference 22
   return (
     <div
-      className={`w-full bg-bg-surface rounded-[8px] p-[14px] flex flex-col gap-3 border border-divider shadow-sm ${className}`}
+      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--divider)',

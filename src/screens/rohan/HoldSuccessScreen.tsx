@@ -1,8 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import {
   BottomSheet,
+  Card,
+  Hairline,
+  PriceRow,
   IosNotification,
   IosShareSheet,
   PrimaryCTA,
@@ -15,7 +18,7 @@ import { useDemoStore } from '@/store'
 import { selectHoldSuccess } from '@/logic/holdFlow'
 
 /**
- * "Group hold" success screen (04b). Grey page + white 8 pt cards (ref 22),
+ * "Group hold" success screen (04b/04c). Grey page + white 8 pt cards (ref 22),
  * badge + status line (ref 14), "who's in" as seat tiles, money card in Confirm-booking style,
  * ticket row opening the M-Ticket (ref 16 / 02b).
  */
@@ -32,18 +35,6 @@ const SHARE_CONTACTS: IosShareContact[] = [
 
 const SMS_DELAY_MS = 600
 const SMS_SHOW_MS = 4000
-
-function Card({ children, className = '', testId }: { children: ReactNode; className?: string; testId?: string }) {
-  return (
-    <section
-      className={`w-full overflow-hidden ${className}`}
-      style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--card-radius)' }}
-      data-testid={testId}
-    >
-      {children}
-    </section>
-  )
-}
 
 export default function HoldSuccessScreen({ onBack }: HoldSuccessScreenProps) {
   const state = useDemoStore()
@@ -97,7 +88,7 @@ export default function HoldSuccessScreen({ onBack }: HoldSuccessScreenProps) {
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col gap-3 no-scrollbar" style={{ overscrollBehavior: 'contain' }}>
         {/* Card 1: status */}
-        <Card testId="status-card">
+        <Card padded={false} testId="status-card">
           <div className="p-4 flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <StatusBadge status="GROUP HOLD" />
@@ -115,7 +106,7 @@ export default function HoldSuccessScreen({ onBack }: HoldSuccessScreenProps) {
         </Card>
 
         {/* Card 2: who's in (focus) */}
-        <Card testId="whos-in">
+        <Card padded={false} testId="whos-in">
           <div className="p-4 flex flex-col gap-3">
             <div className="flex items-baseline justify-between">
               <h3 className="text-[16px] leading-[22px] font-medium">Who's in</h3>
@@ -136,24 +127,21 @@ export default function HoldSuccessScreen({ onBack }: HoldSuccessScreenProps) {
           </div>
         </Card>
 
-        {/* Card 3: money (Confirm-booking price rows) */}
-        <Card testId="money-card">
-          <div className="p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between text-[14px] leading-[20px]">
-              <span style={{ color: 'var(--text-secondary)' }}>Paid</span>
-              <span>{v.paid}</span>
-            </div>
-            <div className="flex items-center justify-between text-[14px] leading-[20px]">
-              <span style={{ color: 'var(--text-secondary)' }}>{v.setAsideLabel}</span>
-              <span>{v.blocked}</span>
-            </div>
-            <div className="w-full border-t border-dashed" style={{ borderColor: 'var(--bg-tag)' }} />
-            <p className="text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>{v.setAsideCaption}</p>
-          </div>
-        </Card>
+        {/* Card 3: money — Confirm-booking price rows (ref 22) */}
+        <div className="flex flex-col gap-2">
+          <Card testId="money-card" className="flex flex-col gap-3">
+            <PriceRow label={v.paidLabel} value={v.paid} sub={v.paidSub} testId="money-paid" />
+            <PriceRow label={v.setAsideLabel} value={v.blocked} sub={v.setAsideSub} testId="money-aside" />
+            <Hairline dashed />
+            <PriceRow label={v.mostLabel} value={v.most} strong testId="money-most" />
+          </Card>
+          <p className="px-1 text-[12px] leading-[16px] text-pretty" style={{ color: 'var(--text-secondary)' }} data-testid="money-note">
+            {v.moneyNote}
+          </p>
+        </div>
 
         {/* Ticket row */}
-        <Card>
+        <Card padded={false}>
           <button
             type="button"
             onClick={() => setTicketOpen(true)}

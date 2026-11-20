@@ -55,7 +55,7 @@ export default function OtpInput({
           value={value[idx] ?? ''}
           onChange={e => handleChange(e, idx)}
           onKeyDown={e => handleKeyDown(e, idx)}
-          className="w-11 h-12 rounded-[8px] text-[20px] font-bold text-center border focus:outline-none transition-all shadow-sm"
+          className="w-11 h-12 rounded-[8px] text-[20px] font-medium text-center border focus:outline-none transition-all"
           style={{
             borderColor: value[idx] ? 'var(--bms-red)' : 'var(--divider)',
             backgroundColor: 'var(--bg-surface)',

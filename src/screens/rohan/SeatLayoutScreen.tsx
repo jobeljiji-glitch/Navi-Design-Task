@@ -232,7 +232,7 @@ export default function SeatLayoutScreen({
       <div
         className="px-4 py-2.5 flex flex-col gap-2 border-b border-divider shrink-0"
         style={{
-          backgroundColor: 'var(--bg-header-strip, #F2F3F5)',
+          backgroundColor: 'var(--bg-header-strip)',
           borderBottomColor: 'var(--divider)',
         }}
       >
@@ -309,7 +309,7 @@ export default function SeatLayoutScreen({
 
           {/* Static Club Banner */}
           <div
-            className="mx-4 my-2 px-4 py-2.5 rounded-[6px] flex items-center justify-between border border-divider shadow-sm"
+            className="mx-4 my-2 px-4 py-2.5 rounded-[6px] flex items-center justify-between"
             style={{
               backgroundColor: 'var(--bg-club, #FFFBEB)',
               borderColor: '#FDE68A',
@@ -317,8 +317,8 @@ export default function SeatLayoutScreen({
           >
             <div className="flex flex-col text-left pr-2">
               <div className="flex items-center gap-1">
-                <span className="text-[10px] font-semibold text-text-secondary leading-none">bookmyshow</span>
-                <span className="text-[11px] font-black tracking-wider text-amber-900 leading-none">CLUB</span>
+                <span className="text-[10px] font-medium text-text-secondary leading-none">bookmyshow</span>
+                <span className="text-[11px] font-medium tracking-wider text-amber-900 leading-none">CLUB</span>
               </div>
               <span
                 className="text-[12px] leading-[15px] font-medium mt-0.5"
@@ -330,7 +330,7 @@ export default function SeatLayoutScreen({
 
             <button
               type="button"
-              className="px-3 py-1.5 rounded-[4px] bg-white border border-amber-500 text-[12px] font-medium text-amber-900 shrink-0 shadow-sm"
+              className="px-3 py-1.5 rounded-[4px] bg-white border border-amber-500 text-[12px] font-medium text-amber-900 shrink-0"
             >
               Add Club
             </button>
@@ -393,7 +393,7 @@ export default function SeatLayoutScreen({
 
       {!holdLive && selectedSeatIds.length > 0 && !(totals.canHold && onHoldForGroup) && (
         <div
-          className="w-full px-4 py-2.5 bg-bg-surface border-t border-divider shrink-0 shadow-lg flex items-center justify-center"
+          className="w-full px-4 py-2.5 bg-bg-surface border-t border-divider shrink-0 flex items-center justify-center"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderTopColor: 'var(--divider)',
@@ -403,7 +403,7 @@ export default function SeatLayoutScreen({
           <button
             type="button"
             onClick={handlePayClick}
-            className="w-full h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white shadow-sm transition-transform active:scale-[0.99]"
+            className="w-full h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white transition-transform active:scale-[0.99]"
             style={{ backgroundColor: 'var(--bms-red-strong)' }}
           >
             Pay ₹{totalRupees.toLocaleString('en-IN')}

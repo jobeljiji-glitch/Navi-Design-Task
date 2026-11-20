@@ -57,7 +57,7 @@ export default function MovieDetailScreen({
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6 flex flex-col gap-3.5 no-scrollbar">
         {/* Generated Abstract Movie Poster */}
         <div
-          className="w-full h-[200px] rounded-[12px] relative overflow-hidden shadow-sm flex flex-col justify-between shrink-0"
+          className="w-full h-[200px] rounded-[12px] relative overflow-hidden flex flex-col justify-between shrink-0"
           style={{
             background: 'linear-gradient(145deg, #0f2b38 0%, #153b50 35%, #1e293b 70%, #0f172a 100%)',
           }}
@@ -74,7 +74,7 @@ export default function MovieDetailScreen({
           {/* Title Graphic */}
           <div className="relative z-10 p-4 flex flex-col items-center justify-center flex-1 text-center">
             <span
-              className="text-[28px] leading-[32px] font-black uppercase tracking-tight text-white drop-shadow-md"
+              className="text-[28px] leading-[32px] font-medium uppercase tracking-tight text-white drop-shadow-md"
               style={{ fontFamily: 'system-ui, sans-serif' }}
             >
               MONSOON HEIST
@@ -109,7 +109,7 @@ export default function MovieDetailScreen({
               style={{ color: 'var(--bms-star)' }}
             />
             <span
-              className="text-[15px] font-bold"
+              className="text-[15px] font-medium"
               style={{ color: 'var(--text-primary)' }}
             >
               {DEMO_SHOW.rating}
@@ -206,7 +206,7 @@ export default function MovieDetailScreen({
         <button
           type="button"
           onClick={onBookTickets}
-          className="w-full h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white shadow-sm transition-transform active:scale-[0.99]"
+          className="w-full h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white transition-transform active:scale-[0.99]"
           style={{ backgroundColor: 'var(--bms-red-strong)' }}
         >
           Book tickets

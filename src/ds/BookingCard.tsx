@@ -41,7 +41,7 @@ export default function BookingCard({
       {/* Main card */}
       <div
         onClick={onClick}
-        className="w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 border border-divider shadow-sm cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden"
+        className="w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 cursor-pointer relative overflow-hidden"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--divider)',
@@ -52,13 +52,13 @@ export default function BookingCard({
         <div className="flex gap-3">
           {/* Fictional abstract poster thumb (72 x 96 pt, radius 4) */}
           <div
-            className="w-[72px] h-[96px] rounded-[4px] shrink-0 flex flex-col justify-end p-2 relative overflow-hidden shadow-xs"
+            className="w-[72px] h-[96px] rounded-[4px] shrink-0 flex flex-col justify-end p-2 relative overflow-hidden"
             style={{
               background: 'linear-gradient(145deg, #2D142C, #801336, #C72C41)',
             }}
           >
             <div className="absolute inset-0 bg-black/15" />
-            <span className="relative z-10 text-[9px] font-bold text-white uppercase leading-tight line-clamp-2">
+            <span className="relative z-10 text-[9px] font-medium text-white uppercase leading-tight line-clamp-2">
               {movieTitle}
             </span>
           </div>

@@ -27,7 +27,7 @@ export default function KeepReleaseStepper({
 
   return (
     <div
-      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-4 border border-divider shadow-sm ${className}`}
+      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-4 ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--divider)',
@@ -36,7 +36,7 @@ export default function KeepReleaseStepper({
     >
       <div className="flex flex-col gap-1">
         <h3
-          className="text-[16px] leading-[22px] font-semibold text-text-primary"
+          className="text-[16px] leading-[22px] font-medium text-text-primary"
           style={{ color: 'var(--text-primary)' }}
         >
           Keep or Release Unpaid Seats
@@ -79,7 +79,7 @@ export default function KeepReleaseStepper({
               <Minus size={14} strokeWidth={2} />
             </button>
             <span
-              className="text-[18px] font-bold text-text-primary"
+              className="text-[18px] font-medium text-text-primary"
               style={{ color: 'var(--text-primary)' }}
             >
               {keepCount}
@@ -122,7 +122,7 @@ export default function KeepReleaseStepper({
           </span>
           <div className="flex items-center justify-center h-8">
             <span
-              className="text-[18px] font-bold text-text-primary"
+              className="text-[18px] font-medium text-text-primary"
               style={{ color: 'var(--text-primary)' }}
             >
               {releaseCount}

@@ -38,7 +38,7 @@ export default function NavBar({
         )}
         <div className="flex flex-col min-w-0 text-left">
           <h1
-            className="text-[17px] leading-[22px] font-medium truncate text-text-primary"
+            className="text-[17px] leading-[22px] font-normal truncate text-text-primary"
             style={{ color: 'var(--text-primary)' }}
           >
             {title}
