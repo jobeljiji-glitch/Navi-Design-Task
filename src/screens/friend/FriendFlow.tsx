@@ -1,9 +1,13 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import DeviceFrame from '@/demo/DeviceFrame'
 import { useDemoStore } from '@/store'
 import { formatClockIST } from '@/logic/holdFlow'
-import { friendFromParam, selectShareDraft, suggestedSeat, type AppAction, type FriendName, type FriendScreen } from '@/logic/friendFlow'
+import { friendFromParam, selectShareDraft, suggestedSeat, type FriendName, type FriendScreen } from '@/logic/friendFlow'
+import { boardFlowReducer, openLatePayment, selectFriendReminder, withBoard, type BoardFlowAction } from '@/logic/boardFlow'
+import { AT_PARAM, ist, runScriptTo } from '@/logic/script'
+import { createInitialDemoState } from '@/logic/seed'
+import { IosNotification } from '@/ds'
 import ChatScreen from '@/screens/chat/ChatScreen'
 import FriendPayScreen from './FriendPayScreen'
 import {
@@ -21,7 +25,7 @@ const DEMO_GROUP = ['D05', 'D06', 'D07', 'D08', 'D09', 'D10']
 /** Simulated bank round-trip before a pending payment resolves (real time). */
 const BANK_MS = 1600
 
-type Dispatch = (a: AppAction) => void
+type Dispatch = (a: BoardFlowAction) => void
 
 /** Runs a friend's whole payment (used by `?after=` to set up "Amit already paid"). */
 function payAll(dispatch: Dispatch, name: FriendName) {
@@ -74,6 +78,16 @@ export default function FriendFlow() {
     seededFor.current = key
     const q = new URLSearchParams(location.search)
     const { dispatch } = useDemoStore.getState()
+    // `?at=grace|receipt|810|showtime|late`: replay the spec §1 script, then open the link (late payer pages).
+    const at = q.get('at')
+    if (at && (AT_PARAM[at] || at === 'showtime')) {
+      let next = runScriptTo(withBoard(createInitialDemoState()), at === 'showtime' ? 'grace' : AT_PARAM[at])
+      if (at === '810') next = boardFlowReducer(next, { type: 'SET_CLOCK', now: ist(20, 10) })
+      if (at === 'showtime') next = boardFlowReducer(next, { type: 'SET_CLOCK', now: ist(21, 20) })
+      useDemoStore.setState(next)
+      dispatch({ type: 'FRIEND_OPEN_LINK', name })
+      return
+    }
     let s = useDemoStore.getState()
     const isLive = s.hold && (s.hold.status === 'active' || s.hold.status === 'resolving')
     if (!isLive) {
@@ -114,6 +128,22 @@ export default function FriendFlow() {
     return () => clearTimeout(t)
   }, [name, screen, nextOutcome])
 
+  // BookMyShow's reminder ("Your seat's waiting 🍿") to a friend who entered a phone number and hasn't paid.
+  const reminder = name ? selectFriendReminder(state, name) : null
+  const seenReminder = useRef<string | null | undefined>(undefined)
+  const [reminderVisible, setReminderVisible] = useState(false)
+  useEffect(() => {
+    const id = reminder?.id ?? null
+    if (seenReminder.current === undefined) {
+      seenReminder.current = id
+      return
+    }
+    if (id && id !== seenReminder.current) {
+      seenReminder.current = id
+      setReminderVisible(true)
+    }
+  }, [reminder?.id])
+
   const time = formatClockIST(state.clock.now).replace(/ [AP]M$/, '')
 
   const render = () => {
@@ -138,7 +168,9 @@ export default function FriendFlow() {
       default:
         break
     }
-    if (!live) return <FriendEndedScreen name={name} />
+    // After the deadline only a late payment for a kept seat can use the checkout screens.
+    if (!live && !openLatePayment(state, name)) return <FriendEndedScreen name={name} />
+    if (!live && session.screen === 'pay') return <FriendEndedScreen name={name} />
     switch (session.screen) {
       case 'phone':
       case 'otp':
@@ -153,5 +185,23 @@ export default function FriendFlow() {
     }
   }
 
-  return <DeviceFrame time={time}>{render()}</DeviceFrame>
+  return (
+    <DeviceFrame time={time}>
+      {render()}
+      {reminder && name && (
+        <IosNotification
+          inFrameOverlay
+          app="bms"
+          title={reminder.title}
+          body={reminder.body}
+          visible={reminderVisible}
+          onDismiss={() => setReminderVisible(false)}
+          onClick={() => {
+            setReminderVisible(false)
+            state.dispatch({ type: 'FRIEND_OPEN_LINK', name })
+          }}
+        />
+      )}
+    </DeviceFrame>
+  )
 }

@@ -475,6 +475,9 @@ export function boardFlowReducer(state: BoardState, action: BoardFlowAction): Bo
         s = ensureBoard(friendFlowReducer(s, { type: 'RELEASE_SEAT', seatId: id }));
         s = setBoard(s, { feesKeptPaise: s.board.feesKeptPaise + fee });
         s = log(s, 'SEAT_RELEASED', `Rohan released ${id}${fee ? ` (${formatINR(fee)} fee kept)` : ' (free)'}`);
+        // A released seat answers one open "Can't make it" (oldest first).
+        const open = [...s.declines].reverse().find((d) => !s.board.declineAcks.includes(d.name) && !hasPaid(s, d.name));
+        if (open) s = setBoard(s, { declineAcks: [...s.board.declineAcks, open.name] });
       }
       return s;
     }
@@ -700,6 +703,7 @@ export interface BoardView {
   freeReleaseLine: string;
   t30: { title: string; body: string } | null;
   resolvingLine: string | null;
+  resolvingBody: string;
   ownerSeatId: string;
   reminder: { available: boolean; note: string; message: string };
   canAddSeat: boolean;
@@ -767,7 +771,17 @@ export function selectBoard(state: BoardState): BoardView | null {
       ? { title: `30 min left · ${plural(unpaid, 'seat', 'seats')} unpaid`, body: `Unpaid seats stay yours at ${deadline} unless you release them.` }
       : null;
   const resolvingPayments = seats.filter((s) => s.state === 'paying').length;
-  const resolvingLine = hold.status === 'resolving' ? `Waiting for ${plural(Math.max(resolvingPayments, 1), 'payment', 'payments')} in progress…` : null;
+  const grace = formatClockIST(hold.graceUntil);
+  const resolving = hold.status === 'resolving';
+  const resolvingLine = !resolving
+    ? null
+    : resolvingPayments > 0
+      ? `Waiting for ${plural(resolvingPayments, 'payment', 'payments')} in progress…`
+      : `Settling at ${grace}`;
+  const resolvingBody =
+    resolvingPayments > 0
+      ? `${resolvingPayments === 1 ? 'It stays' : 'They stay'} theirs until ${grace}. Unpaid seats stay yours.`
+      : `${plural(unpaid, 'unpaid seat stays', 'unpaid seats stay')} yours, charged from your block.`;
 
   const lastRem = hold.lastRohanReminderAt;
   const remAvailable = !lastRem || now - lastRem >= 2 * HOUR;
@@ -785,9 +799,15 @@ export function selectBoard(state: BoardState): BoardView | null {
     setAside: formatINR(m.stillBlocked),
     setAsideLabel: m.fallback ? 'still to come back' : 'still set aside',
     setAsideSub:
-      unpaid > 0
-        ? `Waiting on ${plural(unpaid, 'friend', 'friends')} · ${m.fallback ? 'refunded' : 'unblocks'} as each pays`
-        : 'Everyone has paid',
+      hold.status === 'settled' || hold.status === 'cancelled'
+        ? `Settled · ${formatINR(m.returned)} ${m.fallback ? 'refunded' : 'unblocked'}`
+        : unpaid === 0
+        ? 'Everyone has paid'
+        : resolving
+          ? resolvingPayments > 0
+            ? `${plural(resolvingPayments, 'payment', 'payments')} in progress · the rest is charged at ${grace}`
+            : `Charged from your block at ${grace}`
+          : `Waiting on ${plural(unpaid, 'friend', 'friends')} · ${m.fallback ? 'refunded' : 'unblocks'} as each pays`,
     meter: {
       youPaid: m.rohanCharged,
       friendsPaid: m.friendsPaid,
@@ -812,6 +832,7 @@ export function selectBoard(state: BoardState): BoardView | null {
     freeReleaseLine,
     t30,
     resolvingLine,
+    resolvingBody,
     ownerSeatId: hold.ownerSeatId,
     reminder: {
       available: remAvailable,
@@ -1079,7 +1100,8 @@ export function selectGroupReceipt(state: BoardState): GroupReceiptView | null {
     return { seatId: s.id, who: '—', status: 'Unpaid', amount: p, tone: 'kept' };
   });
   const yourSeats = seats.filter((s) => s.state === 'paid_owner' || s.state === 'covered' || s.state === 'kept' || state.board.transfers[s.id] || state.board.lateSeats.includes(s.id));
-  const yourSub = yourSeats
+  const yourSub = [...yourSeats]
+    .sort((a, b) => Number(b.state === 'paid_owner') - Number(a.state === 'paid_owner'))
     .map((s) => (s.state === 'paid_owner' ? s.id : s.state === 'covered' ? `covered ${s.id}` : `kept ${s.id}`))
     .join(' + ');
   const ledger: GroupReceiptView['ledger'] = [
@@ -1164,6 +1186,7 @@ export interface LatePageView {
   availability: string;
   film: string;
   meta: string;
+  price: string;
 }
 
 export function selectLatePage(state: BoardState, name: FriendName): LatePageView | null {
@@ -1174,7 +1197,7 @@ export function selectLatePage(state: BoardState, name: FriendName): LatePageVie
   const organiser = hold.organiser.name;
   const start = formatClockIST(state.show.startsAt);
   const p = formatINR(per(state));
-  const base = { film: state.show.filmTitle, meta: `Fri, ${start} · ${state.show.cinemaName}` };
+  const base = { film: state.show.filmTitle, meta: `Fri, ${start} · ${state.show.cinemaName}`, price: p };
   if (view === 'started') {
     return { ...base, view, kicker: '', title: 'This show has started.', seatId: null, body: '', cta: '', availability: '' };
   }

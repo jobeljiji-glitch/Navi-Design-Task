@@ -29,6 +29,8 @@ export interface HoldSuccessScreenProps {
   onOpenChat?: () => void
   /** Bank SMS banner on mount (off on the board stand-in so it doesn't repeat) */
   showSms?: boolean
+  /** The M-Ticket's group strip ("View group ›") opens the status board (06) */
+  onViewGroup?: () => void
 }
 
 const SHARE_CONTACTS: IosShareContact[] = [
@@ -41,7 +43,7 @@ const SHARE_CONTACTS: IosShareContact[] = [
 const SMS_DELAY_MS = 600
 const SMS_SHOW_MS = 4000
 
-export default function HoldSuccessScreen({ onBack, onOpenChat, showSms = true }: HoldSuccessScreenProps) {
+export default function HoldSuccessScreen({ onBack, onOpenChat, showSms = true, onViewGroup }: HoldSuccessScreenProps) {
   const state = useDemoStore()
   const v = selectHoldSuccess(state)
   const sms = showSms ? state.smsToasts[0] : undefined
@@ -223,7 +225,10 @@ export default function HoldSuccessScreen({ onBack, onOpenChat, showSms = true }
             ticketCount="1 Ticket(s)"
             groupBannerText={v.ticketBanner}
             className="min-h-full"
-            onViewGroup={() => setTicketOpen(false)}
+            onViewGroup={() => {
+              setTicketOpen(false)
+              onViewGroup?.()
+            }}
             onClose={() => setTicketOpen(false)}
             onShare={() => {
               setTicketOpen(false)

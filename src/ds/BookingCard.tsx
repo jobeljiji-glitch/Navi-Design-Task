@@ -1,4 +1,5 @@
 import StatusBadge, { type BookingStatus } from './StatusBadge'
+import PosterArt from './PosterArt'
 
 export interface BookingCardProps {
   movieTitle: string
@@ -35,14 +36,20 @@ export default function BookingCard({
         className="text-[13px] leading-[17px] text-text-secondary px-0.5"
         style={{ color: 'var(--text-secondary)' }}
       >
-        Ordered on: {orderedDate}
+        Ordered on: <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{orderedDate}</span>
       </span>
 
       {/* Main card */}
       <div
         onClick={onClick}
-        className="w-full shrink-0 bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 cursor-pointer relative"
+        onKeyDown={(e) => {
+          if (onClick && (e.key === 'Enter' || e.key === ' ')) onClick()
+        }}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        className="w-full shrink-0 bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 cursor-pointer relative active:opacity-90"
         data-card
+        data-testid="booking-card"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderRadius: 'var(--card-radius)',
@@ -52,17 +59,7 @@ export default function BookingCard({
         {/* Top section: Poster + Details */}
         <div className="flex gap-3">
           {/* Fictional abstract poster thumb (72 x 96 pt, radius 4) */}
-          <div
-            className="w-[72px] h-[96px] rounded-[4px] shrink-0 flex flex-col justify-end p-2 relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(145deg, #2D142C, #801336, #C72C41)',
-            }}
-          >
-            <div className="absolute inset-0 bg-black/15" />
-            <span className="relative z-10 text-[9px] font-medium text-white uppercase leading-tight line-clamp-2">
-              {movieTitle}
-            </span>
-          </div>
+          <PosterArt title={movieTitle} titleSize={11} className="w-[72px] h-[96px] rounded-[4px] shrink-0" />
 
           {/* Details column */}
           <div className="flex-1 flex flex-col justify-between min-w-0">

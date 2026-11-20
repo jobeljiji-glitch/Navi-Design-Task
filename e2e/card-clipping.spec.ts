@@ -17,6 +17,20 @@ const SCREENS: Array<{ route: string; name: string; shot?: string }> = [
   { route: '#/rohan/confirm', name: 'Confirm booking', shot: '04e-confirm' },
   { route: '#/rohan/showtimes', name: 'Showtimes' },
   { route: '#/rohan/hold', name: 'Hold sheet', shot: '04e-hold-sheet' },
+  // 06
+  { route: '#/rohan/board?at=310', name: 'Board (3:10 PM)', shot: '06e-board' },
+  { route: '#/rohan/board?at=neha', name: "Board (Neha can't make it)" },
+  { route: '#/rohan/board?at=t30', name: 'Board (T−30 band)' },
+  { route: '#/rohan/board?at=grace', name: 'Board (settling in grace)' },
+  { route: '#/rohan/board?at=310&clock=1630&sheet=release', name: 'Release sheet (fee kept)' },
+  { route: '#/rohan/board?at=t30&sheet=t30', name: 'T−30 sheet' },
+  { route: '#/rohan/receipt?at=receipt', name: 'Receipt', shot: '06e-receipt' },
+  { route: '#/rohan/receipt?at=late', name: 'Receipt (Kabir paid late)' },
+  { route: '#/rohan/orders?at=310', name: 'Your Bookings (group hold)' },
+  { route: '#/rohan/orders?at=late', name: 'Your Bookings (settled)' },
+  { route: '#/friend/kabir?at=810', name: 'Friend late page', shot: '06e-friend-late' },
+  { route: '#/friend/kabir?at=showtime', name: 'Friend: show started' },
+  { route: '#/friend/sana?at=receipt', name: 'Friend ticket (group set)' },
 ]
 
 async function zoomText(page: Page, factor = 1.1) {
@@ -84,6 +98,41 @@ for (const s of SCREENS) {
     }
   })
 }
+
+test('Confirm booking: the 16+ badge holds its text at larger sizes (min 22 pt)', async ({ page }) => {
+  await page.goto('#/rohan/confirm')
+  await page.waitForTimeout(900)
+  for (const f of [1, 1.3]) {
+    if (f !== 1) await zoomText(page, f)
+    const b = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('.device-frame-mobile [data-testid="age-badge"]')!
+      const text = el.firstElementChild!.getBoundingClientRect()
+      const box = el.getBoundingClientRect()
+      return { w: box.width, h: box.height, fits: text.left >= box.left - 0.5 && text.right <= box.right + 0.5 && text.top >= box.top - 0.5 && text.bottom <= box.bottom + 0.5 }
+    })
+    expect(b.w).toBeGreaterThanOrEqual(22)
+    expect(b.h).toBeGreaterThanOrEqual(22)
+    expect(b.fits, `16+ overflows its badge at ${f}×`).toBe(true)
+  }
+})
+
+test('Board: Neha can’t make it → release D05 free → receipt numbers', async ({ page }) => {
+  await page.goto('#/rohan/board?at=neha')
+  await page.waitForTimeout(900)
+  const frame = page.locator('.device-frame-mobile')
+  await frame.getByRole('button', { name: 'Release a seat', exact: true }).click()
+  await expect(frame.getByTestId('release-fee-band')).toHaveText('Free until 4:15 PM')
+  await frame.getByRole('button', { name: 'Release D05 · ₹277.14 back' }).click()
+  await expect(frame.getByTestId('declined-Neha')).toHaveCount(0)
+  await expect(frame.getByTestId('set-aside')).toHaveText('₹554.28 still set aside')
+
+  await page.goto('#/rohan/receipt?at=late')
+  await page.reload()
+  await page.waitForTimeout(900)
+  await expect(frame.getByTestId('ledger-paid')).toContainText('₹554.28')
+  await expect(frame.getByTestId('ledger-unblocked')).toContainText('₹1,108.56')
+  await expect(frame.getByTestId('refund-D06')).toContainText('₹277.14')
+})
 
 test('Group hold: content scrolls and the CTA follows the cards', async ({ page }) => {
   await page.goto('#/rohan/held')

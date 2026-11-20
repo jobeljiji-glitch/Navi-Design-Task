@@ -1,3 +1,9 @@
+import { formatINR } from '@/logic/money'
+
+/**
+ * BlockMeter (step 7): one stacked 8 pt bar (you paid · friends paid · still blocked) and a legend
+ * in the ref-22 price-row style (grey 14 pt label, value right). No card chrome: it sits inside a Card.
+ */
 export interface BlockMeterProps {
   youPaidPaise: number
   friendsPaidPaise: number
@@ -18,89 +24,49 @@ export default function BlockMeter({
   className = '',
 }: BlockMeterProps) {
   const total = youPaidPaise + friendsPaidPaise + stillBlockedPaise
-  const youPct = total > 0 ? (youPaidPaise / total) * 100 : 0
-  const friendsPct = total > 0 ? (friendsPaidPaise / total) * 100 : 0
-  const blockedPct = total > 0 ? (stillBlockedPaise / total) * 100 : 0
-
-  const formatAmount = (paise: number) => `₹${(paise / 100).toFixed(2)}`
+  const pct = (p: number) => (total > 0 ? (p / total) * 100 : 0)
+  const parts = [
+    { key: 'you', label: youPaidLabel, paise: youPaidPaise, color: 'var(--text-success)', dashed: false },
+    { key: 'friends', label: friendsPaidLabel, paise: friendsPaidPaise, color: 'var(--seat-selected)', dashed: false },
+    { key: 'blocked', label: stillBlockedLabel, paise: stillBlockedPaise, color: 'var(--seat-held-fill)', dashed: true },
+  ]
 
   return (
-    <div
-      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 ${className}`}
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--divider)',
-        borderRadius: 'var(--card-radius)',
-      }}
-    >
-      {/* Stacked Progress Bar */}
-      <div className="w-full h-3 rounded-full overflow-hidden flex bg-bg-muted">
-        {/* You paid segment */}
-        {youPct > 0 && (
-          <div
-            style={{
-              width: `${youPct}%`,
-              backgroundColor: 'var(--seat-selected)',
-            }}
-            title={`You paid: ${formatAmount(youPaidPaise)}`}
-          />
-        )}
-        {/* Friends paid segment */}
-        {friendsPct > 0 && (
-          <div
-            style={{
-              width: `${friendsPct}%`,
-              backgroundColor: 'var(--text-success)',
-            }}
-            title={`Friends paid: ${formatAmount(friendsPaidPaise)}`}
-          />
-        )}
-        {/* Still blocked segment */}
-        {blockedPct > 0 && (
-          <div
-            style={{
-              width: `${blockedPct}%`,
-              backgroundColor: 'var(--seat-held-border)',
-            }}
-            title={`Still blocked: ${formatAmount(stillBlockedPaise)}`}
-          />
-        )}
+    <div className={`w-full flex flex-col gap-3 ${className}`} data-testid="block-meter">
+      <div
+        className="w-full h-2 rounded-full flex gap-0.5"
+        style={{ backgroundColor: 'var(--bg-muted)' }}
+        role="img"
+        aria-label={parts.map((p) => `${p.label} ${formatINR(p.paise)}`).join(', ')}
+      >
+        {parts
+          .filter((p) => p.paise > 0)
+          .map((p) => (
+            <div
+              key={p.key}
+              className="h-full rounded-full first:rounded-l-full"
+              style={{
+                width: `${pct(p.paise)}%`,
+                backgroundColor: p.color,
+                border: p.dashed ? '1px dashed var(--seat-held-border)' : undefined,
+              }}
+            />
+          ))}
       </div>
-
-      {/* Legend with amounts */}
-      <div className="flex items-center justify-between text-[11px] leading-tight flex-wrap gap-2 pt-1">
-        {/* You paid */}
-        <div className="flex items-center gap-1.5">
-          <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: 'var(--seat-selected)' }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>
-            {youPaidLabel} ({formatAmount(youPaidPaise)})
-          </span>
-        </div>
-
-        {/* Friends paid */}
-        <div className="flex items-center gap-1.5">
-          <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: 'var(--text-success)' }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>
-            {friendsPaidLabel} ({formatAmount(friendsPaidPaise)})
-          </span>
-        </div>
-
-        {/* Still blocked */}
-        <div className="flex items-center gap-1.5">
-          <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: 'var(--seat-held-border)' }}
-          />
-          <span style={{ color: 'var(--text-secondary)' }}>
-            {stillBlockedLabel} ({formatAmount(stillBlockedPaise)})
-          </span>
-        </div>
+      <div className="flex flex-col gap-2">
+        {parts.map((p) => (
+          <div key={p.key} className="flex items-center justify-between gap-3 text-[14px] leading-[20px]" data-testid={`meter-${p.key}`}>
+            <span className="flex items-center gap-2 min-w-0" style={{ color: 'var(--text-secondary)' }}>
+              <span
+                className="w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: p.color, border: p.dashed ? '1px dashed var(--seat-held-border)' : undefined }}
+                aria-hidden
+              />
+              {p.label}
+            </span>
+            <span className="shrink-0" style={{ color: 'var(--text-primary)' }}>{formatINR(p.paise)}</span>
+          </div>
+        ))}
       </div>
     </div>
   )

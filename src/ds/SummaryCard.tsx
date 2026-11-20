@@ -93,12 +93,14 @@ export default function SummaryCard({
         {/* Age Warning Row: 22 pt red circle, 13 pt black text on one line */}
         {ageRating && (
           <div className="flex items-center gap-2 pt-1">
+            {/* 06: sized to its content (pill once the text outgrows the 22 pt circle), never overflowing */}
             <div
-              className="w-[22px] h-[22px] rounded-full border border-bms-red-strong flex items-center justify-center shrink-0"
+              className="min-w-[22px] min-h-[22px] px-[3px] rounded-full border border-bms-red-strong flex items-center justify-center shrink-0"
               style={{ borderColor: 'var(--bms-red-strong)' }}
+              data-testid="age-badge"
             >
               <span
-                className="text-[11px] font-medium"
+                className="text-[11px] leading-[14px] font-medium whitespace-nowrap"
                 style={{ color: 'var(--bms-red-strong)' }}
               >
                 {ageRating}

@@ -1,5 +1,9 @@
-import { CheckCircle2, Clock, XCircle, Bell, ShieldCheck } from 'lucide-react'
+import type { ReactNode } from 'react'
 
+/**
+ * GroupStatusList (step 7): ref-22 list rows inside a Card. Paid · Paying now · Can't make it
+ * (Release a seat / Keep) · "N seats waiting" (Cover seats / Send reminder). Organiser view only.
+ */
 export interface GroupMemberItem {
   name: string
   seat?: string
@@ -11,11 +15,54 @@ export interface GroupStatusListProps {
   payingMembers: GroupMemberItem[]
   declinedMembers: GroupMemberItem[]
   waitingSeatsCount: number
-  onReleaseSeat?: () => void
-  onKeepSeat?: () => void
+  waitingLabel?: string
+  onReleaseSeat?: (name: string) => void
+  onKeepSeat?: (name: string) => void
   onCoverSeats?: () => void
   onSendReminder?: () => void
+  /** Release is only possible while an unpaid edge seat exists */
+  canRelease?: boolean
   className?: string
+}
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="text-[12px] leading-[16px] uppercase tracking-[0.5px]" style={{ color: 'var(--text-secondary)' }}>
+      {children}
+    </span>
+  )
+}
+
+function Action({ children, onClick, tone = 'neutral', disabled = false }: { children: ReactNode; onClick?: () => void; tone?: 'red' | 'neutral'; disabled?: boolean }) {
+  return (
+    // 44 pt hit area around a 32 pt outlined button
+    <button type="button" onClick={onClick} disabled={disabled} className="h-11 flex items-center disabled:opacity-40 active:opacity-70">
+      <span
+        className="h-8 px-3 rounded-[6px] flex items-center text-[13px] leading-none font-medium border whitespace-nowrap"
+        style={tone === 'red' ? { borderColor: 'var(--bms-red)', color: 'var(--bms-red-text)' } : { borderColor: 'var(--border-grey)', color: 'var(--text-primary)' }}
+      >
+        {children}
+      </span>
+    </button>
+  )
+}
+
+function Row({ name, detail, tone }: { name: string; detail?: string; tone: 'paid' | 'paying' }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5 text-[14px] leading-[20px]">
+      <span className="flex items-center gap-2 min-w-0">
+        <span
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{ backgroundColor: tone === 'paid' ? 'var(--seat-selected)' : 'var(--seat-held-border)' }}
+          aria-hidden
+        />
+        <span className="truncate" style={{ color: 'var(--text-primary)' }}>{name}</span>
+      </span>
+      <span className="shrink-0" style={{ color: tone === 'paid' ? 'var(--text-secondary)' : 'var(--text-warning)' }}>
+        {detail}
+      </span>
+    </div>
+  )
 }
 
 export default function GroupStatusList({
@@ -23,134 +70,72 @@ export default function GroupStatusList({
   payingMembers,
   declinedMembers,
   waitingSeatsCount,
+  waitingLabel,
   onReleaseSeat,
   onKeepSeat,
   onCoverSeats,
   onSendReminder,
+  canRelease = true,
   className = '',
 }: GroupStatusListProps) {
+  const hr = <div className="h-px" style={{ backgroundColor: 'var(--divider)' }} />
   return (
-    <div
-      className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-4 ${className}`}
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--divider)',
-        borderRadius: 'var(--card-radius)',
-      }}
-    >
-      <h3
-        className="text-[15px] leading-[20px] font-medium text-text-primary"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        Group Member Status
-      </h3>
-
-      <div className="flex flex-col gap-3">
-        {/* Paid members */}
-        {paidMembers.map(m => (
-          <div key={m.name} className="flex items-center justify-between text-[14px]">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} strokeWidth={2} style={{ color: 'var(--text-success)' }} />
-              <span className="font-medium text-text-primary" style={{ color: 'var(--text-primary)' }}>
-                {m.name}
-              </span>
-            </div>
-            <span
-              className="text-[12px] px-2 py-0.5 rounded font-medium"
-              style={{ backgroundColor: 'var(--bg-success)', color: 'var(--text-success)' }}
-            >
-              Seat {m.seat ?? 'Paid'}
-            </span>
-          </div>
+    <div className={`w-full flex flex-col ${className}`} data-testid="group-status-list">
+      <SectionLabel>Paid</SectionLabel>
+      <div className="flex flex-col pt-1 pb-2">
+        {paidMembers.map((m) => (
+          <Row key={`paid-${m.name}`} name={m.name} detail={m.seat} tone="paid" />
         ))}
-
-        {/* Paying members (locked) */}
-        {payingMembers.map(m => (
-          <div key={m.name} className="flex items-center justify-between text-[14px]">
-            <div className="flex items-center gap-2">
-              <Clock size={16} strokeWidth={2} style={{ color: 'var(--text-warning)' }} className="animate-spin" />
-              <span className="font-medium text-text-primary" style={{ color: 'var(--text-primary)' }}>
-                {m.name}
-              </span>
-            </div>
-            <span
-              className="text-[12px] px-2 py-0.5 rounded font-medium"
-              style={{ backgroundColor: 'var(--bg-warning)', color: 'var(--text-warning)' }}
-            >
-              Paying for {m.seat ?? 'seat'}…
-            </span>
-          </div>
-        ))}
-
-        {/* Declined members ("Can't make it") */}
-        {declinedMembers.map(m => (
-          <div key={m.name} className="flex flex-col gap-1.5 p-2 rounded bg-bg-muted">
-            <div className="flex items-center justify-between text-[13px]">
-              <div className="flex items-center gap-2">
-                <XCircle size={15} strokeWidth={2} style={{ color: 'var(--bms-red)' }} />
-                <span className="font-medium text-text-primary" style={{ color: 'var(--text-primary)' }}>
-                  {m.name} can't make it
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              {onReleaseSeat && (
-                <button
-                  type="button"
-                  onClick={onReleaseSeat}
-                  className="text-[12px] px-2.5 py-1 rounded font-medium border"
-                  style={{ borderColor: 'var(--bms-red)', color: 'var(--bms-red)' }}
-                >
-                  Release a seat
-                </button>
-              )}
-              {onKeepSeat && (
-                <button
-                  type="button"
-                  onClick={onKeepSeat}
-                  className="text-[12px] px-2.5 py-1 rounded font-medium border"
-                  style={{ borderColor: 'var(--divider)', color: 'var(--text-primary)' }}
-                >
-                  Keep
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {/* Waiting seats count */}
-        {waitingSeatsCount > 0 && (
-          <div className="flex items-center justify-between pt-2 border-t border-divider">
-            <span className="text-[13px] text-text-secondary" style={{ color: 'var(--text-secondary)' }}>
-              {waitingSeatsCount} {waitingSeatsCount === 1 ? 'seat' : 'seats'} waiting
-            </span>
-            <div className="flex items-center gap-2">
-              {onCoverSeats && (
-                <button
-                  type="button"
-                  onClick={onCoverSeats}
-                  className="flex items-center gap-1 text-[12px] px-2.5 py-1 rounded font-medium border"
-                  style={{ borderColor: 'var(--divider)', color: 'var(--text-primary)' }}
-                >
-                  <ShieldCheck size={13} strokeWidth={2} />
-                  <span>Cover seats</span>
-                </button>
-              )}
-              {onSendReminder && (
-                <button
-                  type="button"
-                  onClick={onSendReminder}
-                  className="flex items-center gap-1 text-[12px] px-2.5 py-1 rounded font-medium border"
-                  style={{ borderColor: 'var(--bms-red)', color: 'var(--bms-red)' }}
-                >
-                  <Bell size={13} strokeWidth={2} />
-                  <span>Send reminder</span>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {payingMembers.length > 0 && (
+        <>
+          {hr}
+          <div className="pt-3">
+            <SectionLabel>Paying now</SectionLabel>
+          </div>
+          {payingMembers.map((m) => (
+            <Row key={`paying-${m.name}`} name={m.name} detail={m.seat} tone="paying" />
+          ))}
+        </>
+      )}
+
+      {declinedMembers.map((m) => (
+        <div key={`declined-${m.name}`} data-testid={`declined-${m.name}`} data-tour="cant-make-it-row">
+          {hr}
+          <div className="pt-3 flex flex-col">
+            <span className="text-[14px] leading-[20px] font-medium" style={{ color: 'var(--text-primary)' }}>
+              {m.name} can't make it
+            </span>
+            <span className="text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
+              Release a seat, or keep it for someone else?
+            </span>
+            <div className="flex items-center gap-2">
+              {onReleaseSeat && (
+                <Action tone="red" onClick={() => onReleaseSeat(m.name)} disabled={!canRelease}>
+                  Release a seat
+                </Action>
+              )}
+              {onKeepSeat && <Action onClick={() => onKeepSeat(m.name)}>Keep</Action>}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {waitingSeatsCount > 0 && (
+        <>
+          {hr}
+          <div className="pt-3 flex flex-col" data-testid="waiting-row">
+            <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-primary)' }}>
+              {waitingLabel ?? `${waitingSeatsCount} ${waitingSeatsCount === 1 ? 'seat' : 'seats'} waiting`}
+            </span>
+            <div className="flex items-center gap-2">
+              {onCoverSeats && <Action onClick={onCoverSeats}>Cover seats</Action>}
+              {onSendReminder && <Action tone="red" onClick={onSendReminder}>Send reminder</Action>}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

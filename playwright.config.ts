@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
+/** E2E_PORT lets the suite use a fresh dev server when :5173 is busy with an older one. */
+const PORT = process.env.E2E_PORT ?? '5173'
+
 /**
  * Layout checks on real engines (04e). Card clipping showed up only in iOS Safari,
  * so the default project is WebKit with an iPhone descriptor.
@@ -11,15 +14,15 @@ export default defineConfig({
   fullyParallel: false,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:5173/Navi-Design-Task/',
+    baseURL: `http://localhost:${PORT}/Navi-Design-Task/`,
   },
   projects: [
     { name: 'webkit-iphone', use: { ...devices['iPhone 15'], browserName: 'webkit' } },
     { name: 'chromium-iphone', use: { ...devices['iPhone 15'], browserName: 'chromium' } },
   ],
   webServer: {
-    command: 'npm run dev -- --port 5173 --strictPort',
-    url: 'http://localhost:5173/Navi-Design-Task/',
+    command: `npm run dev -- --port ${PORT} --strictPort`,
+    url: `http://localhost:${PORT}/Navi-Design-Task/`,
     reuseExistingServer: true,
     timeout: 60_000,
   },

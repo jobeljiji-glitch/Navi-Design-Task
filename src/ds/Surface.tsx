@@ -54,18 +54,21 @@ export function Band({
   children,
   standalone = false,
   testId,
+  tone = 'success',
 }: {
   title: ReactNode
   action?: ReactNode
   children?: ReactNode
   standalone?: boolean
   testId?: string
+  /** success = ref 22 green; warning = amber (deadline, money still moving) */
+  tone?: 'success' | 'warning'
 }) {
   return (
     <div
       className="px-4 py-3 flex flex-col gap-0.5"
       style={{
-        backgroundColor: 'var(--bg-success)',
+        backgroundColor: tone === 'warning' ? 'var(--bg-warning)' : 'var(--bg-success)',
         // Standalone: fully rounded. In a Card's band slot: it is the card's bottom edge, so it rounds
         // its own bottom corners (the card no longer clips its children).
         ...(standalone

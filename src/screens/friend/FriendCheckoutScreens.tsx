@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
 import { AlertCircle, CreditCard, Check, MessageCircle } from 'lucide-react'
-import { AmountHeader, Card, OtpInput, PaymentRow, PrimaryCTA, TicketCard, UpiMandateScreen } from '@/ds'
+import { AmountHeader, Band, Card, OtpInput, PaymentRow, PriceRow, PrimaryCTA, TicketCard, UpiMandateScreen } from '@/ds'
 import { useDemoStore } from '@/store'
-import { selectFriendCheckout, selectFriendPage, selectFriendTicket, type FriendName } from '@/logic/friendFlow'
+import { selectFriendCheckout, selectFriendTicket, type FriendName } from '@/logic/friendFlow'
+import { selectFriendSetLine, selectLatePage, selectTransferNote } from '@/logic/boardFlow'
 import FriendHeader from './FriendHeader'
 
 /** Fictional UPI apps (initials only, no brand marks): D-070. */
@@ -206,10 +207,17 @@ export function FriendTicketScreen({ name }: { name: FriendName }) {
   const state = useDemoStore()
   const dispatch = state.dispatch
   const t = selectFriendTicket(state, name)
+  const setLine = selectFriendSetLine(state, name)
+  const transfer = selectTransferNote(state, name)
   const [kept, setKept] = useState(false)
   if (!t) return null
   return (
     <div className="w-full h-full overflow-y-auto no-scrollbar select-none" style={{ backgroundColor: 'var(--ticket-page-bg)' }} data-testid="friend-ticket" data-tour="friend-ticket">
+      {setLine && (
+        <div className="px-5 pt-4 -mb-2">
+          <Band standalone title={setLine} testId="group-set-band" />
+        </div>
+      )}
       <TicketCard
         headline={t.headline}
         filmTitle={`${t.film} (U/A)`}
@@ -220,8 +228,8 @@ export function FriendTicketScreen({ name }: { name: FriendName }) {
         seat={t.seats}
         ticketCount={t.ticketCount}
         bookingId={t.bookingId}
-        cancellationText={t.seatLine}
-        totalAmount={t.amount}
+        cancellationText={transfer?.seatLine ?? t.seatLine}
+        totalAmount={transfer?.amount ?? t.amount}
         groupBannerText={t.groupLine}
         qrValue={t.qrValue}
         onClose={() => dispatch({ type: 'FRIEND_GOTO', name, screen: 'chat' })}
@@ -262,19 +270,58 @@ export function FriendDeclinedScreen({ name }: { name: FriendName }) {
   )
 }
 
+/**
+ * After the deadline (spec §4 step 9): the kept-seat page ("Rohan kept a seat for you"),
+ * "This hold has ended." (released / nothing kept) or "This show has started.".
+ * Never names a friend who hasn't paid.
+ */
 export function FriendEndedScreen({ name }: { name: FriendName }) {
   const state = useDemoStore()
   const dispatch = state.dispatch
-  const v = selectFriendPage(state, name)
+  const v = selectLatePage(state, name)
+  const [toast, setToast] = useState<string | null>(null)
+  if (!v) return null
+  const late = v.view === 'late'
   return (
-    <div className={page} style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid="friend-ended">
+    <div className={page} style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid={late ? 'friend-late' : 'friend-ended'} data-tour={late ? 'late-pay' : undefined}>
       <FriendHeader title="Group hold" onBack={() => dispatch({ type: 'FRIEND_GOTO', name, screen: 'chat' })} />
-      <div className="px-4 pt-2">
-        <Card className="flex flex-col gap-1">
-          <h2 className="text-[18px] leading-[24px] font-medium">{v?.endedTitle ?? 'This hold has ended.'}</h2>
-          <p className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v?.film}</p>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 flex flex-col gap-3 no-scrollbar [&>*]:shrink-0">
+        <Card className="flex flex-col gap-3">
+          <div>
+            {v.kicker && <p className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v.kicker}</p>}
+            <h2 className="text-[18px] leading-[24px] font-medium mt-0.5 text-balance" data-testid="late-title">{v.title}</h2>
+            <p className="text-[14px] leading-[20px] mt-0.5 text-pretty" style={{ color: 'var(--text-secondary)' }}>{v.film} · {v.meta}</p>
+          </div>
         </Card>
+        {late && v.seatId && (
+          <Card className="flex flex-col gap-3" band={<Band title={v.availability} testId="late-band" />}>
+            <PriceRow label={`Your seat ${v.seatId}`} value={v.price} sub="incl. fees" testId="late-seat-row" />
+            <p className="text-[14px] leading-[20px] text-pretty" style={{ color: 'var(--text-secondary)' }}>{v.body}</p>
+          </Card>
+        )}
       </div>
+      {v.cta && (
+        <div className="shrink-0 px-4 pt-3 cta-safe">
+          <PrimaryCTA
+            variant="strong"
+            size="lg"
+            onClick={() => {
+              if (late) dispatch({ type: 'FRIEND_LATE_PAY_START', name })
+              else {
+                setToast('Opens this show in BookMyShow')
+                setTimeout(() => setToast(null), 2000)
+              }
+            }}
+          >
+            {v.cta}
+          </PrimaryCTA>
+        </div>
+      )}
+      {toast && (
+        <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">
+          <div className="bg-black/85 text-white px-4 py-2 rounded-full text-[13px] font-medium shadow-lg" role="status">{toast}</div>
+        </div>
+      )}
     </div>
   )
 }

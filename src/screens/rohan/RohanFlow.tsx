@@ -14,12 +14,23 @@ import { selectHoldSheet } from '@/logic/holdFlow'
 import { useDemoStore } from '@/store'
 import { IosNotification, LoaderSheet, UpiMandateScreen } from '@/ds'
 import ChatScreen from '@/screens/chat/ChatScreen'
-import { selectLatestFriendNotification, selectShareDraft } from '@/logic/friendFlow'
+import BoardScreen, { type BoardSheet } from './BoardScreen'
+import ReceiptScreen from './ReceiptScreen'
+import OrdersScreen from './OrdersScreen'
+import { selectShareDraft } from '@/logic/friendFlow'
+import { formatClockIST } from '@/logic/holdFlow'
+import { boardFlowReducer, selectRohanBanner, withBoard } from '@/logic/boardFlow'
+import { AT_PARAM, ist, runScriptTo } from '@/logic/script'
+import { createInitialDemoState } from '@/logic/seed'
 
 const DEMO_GROUP = ['D05', 'D06', 'D07', 'D08', 'D09', 'D10']
 const ALREADY_HOLDING = "You're already holding seats for this show."
 const UPI_OPENING_MS = 600
 const CHAT_TO_BOARD_MS = 900
+/** Bank SMS that reach Rohan as banners from here (the approval SMS is shown by the Group hold screen). */
+const SMS_KEYS = ['sms-settled-', 'sms-late-refund-', 'sms-add-seat-', 'sms-cancel-']
+
+type Banner = { id: string; app: 'bms' | 'sms'; title: string; body: string; kind?: string }
 
 export default function RohanFlow() {
   const location = useLocation()
@@ -27,11 +38,15 @@ export default function RohanFlow() {
   const state = useDemoStore()
   const { dispatch, hold } = state
   const holdView = selectHoldSheet(state)
-  const holdPaths = ['/rohan/hold', '/rohan/upi-opening', '/rohan/upi', '/rohan/held', '/rohan/chat', '/rohan/board']
-  const activePaths = ['/rohan/held', '/rohan/chat', '/rohan/board']
-  const friendNotif = selectLatestFriendNotification(state)
-  const [bannerId, setBannerId] = useState<string | null>(null)
+  const holdPaths = ['/rohan/hold', '/rohan/upi-opening', '/rohan/upi', '/rohan/held', '/rohan/chat', '/rohan/board', '/rohan/receipt', '/rohan/orders']
+  const activePaths = ['/rohan/held', '/rohan/chat', '/rohan/board', '/rohan/receipt', '/rohan/orders']
+  const latestNotif = selectRohanBanner(state)
+  const latestSms = state.smsToasts.find((t) => SMS_KEYS.some((k) => t.id.startsWith(k))) ?? null
+  const [queue, setQueue] = useState<Banner[]>([])
+  const [bannerVisible, setBannerVisible] = useState(true)
   const seenNotif = useRef<string | null | undefined>(undefined)
+  const seenSms = useRef<string | null | undefined>(undefined)
+  const seededFor = useRef<string | null>(null)
 
   // Selected seats state across the booking flow (defaulting to 6 seats: D05-D10)
   const [selectedSeats, setSelectedSeats] = useState<LogicSeat[]>([
@@ -55,6 +70,31 @@ export default function RohanFlow() {
   // `?fallback=1` turns bank blocking off first. Lives here, not in screens: DeviceFrame mounts children twice.
   useEffect(() => {
     if (!holdPaths.includes(path)) return
+    // `?at=310|neha|t30|pending|deadline|grace|receipt|late|810`: replay the spec §1 script up to that step.
+    const at = new URLSearchParams(location.search).get('at')
+    if (at && AT_PARAM[at]) {
+      const key = `${path}|${location.search}`
+      if (seededFor.current === key) return
+      seededFor.current = key
+      let next = runScriptTo(withBoard(createInitialDemoState()), AT_PARAM[at])
+      // `&clock=1630`: then move the clock (timers run), e.g. past the free-release time
+      const clock = new URLSearchParams(location.search).get('clock') ?? (at === '810' ? '2010' : null)
+      if (clock && /^\d{4}$/.test(clock)) {
+        next = boardFlowReducer(next, { type: 'SET_CLOCK', now: ist(Number(clock.slice(0, 2)), Number(clock.slice(2))) })
+      }
+      useDemoStore.setState(next)
+      // What the script produced is history: no banners for it
+      seenNotif.current = selectRohanBanner(next)?.id ?? null
+      seenSms.current = next.smsToasts.find((t) => SMS_KEYS.some((k) => t.id.startsWith(k)))?.id ?? null
+      // `&play=1`: let the clock reach the end of grace a moment later (settlement animation)
+      if (new URLSearchParams(location.search).get('play') === '1') {
+        setTimeout(() => {
+          const h = useDemoStore.getState().hold
+          if (h) useDemoStore.getState().dispatch({ type: 'SET_CLOCK', now: h.graceUntil })
+        }, 900)
+      }
+      return
+    }
     const s = useDemoStore.getState()
     if (!s.hold) {
       if (new URLSearchParams(location.search).get('fallback') === '1') {
@@ -73,21 +113,45 @@ export default function RohanFlow() {
     } else if (path === '/rohan/hold' && (s.hold.status === 'active' || s.hold.status === 'resolving')) {
       navigate('/rohan/held', { replace: true })
     }
-  }, [path]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [path, location.search]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Friend events reach Rohan as iOS banners (spec §4 step 6 "Simultaneously on Rohan").
-  // Only notifications that arrive after mount; the first render just records the latest id.
+  // BMS notifications (friend paid / can't make it / halfway / T−30 / settled / late payer) and bank SMS
+  // reach Rohan as iOS banners, one at a time. Only ones that arrive after mount.
   useEffect(() => {
-    const id = friendNotif?.id ?? null
+    const id = latestNotif?.id ?? null
     if (seenNotif.current === undefined) {
       seenNotif.current = id
       return
     }
-    if (id && id !== seenNotif.current) {
+    if (latestNotif && id !== seenNotif.current) {
       seenNotif.current = id
-      setBannerId(id)
+      setQueue((q) => [...q, { id: latestNotif.id, app: 'bms', title: latestNotif.title, body: latestNotif.body, kind: latestNotif.type }])
     }
-  }, [friendNotif?.id])
+  }, [latestNotif?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const id = latestSms?.id ?? null
+    if (seenSms.current === undefined) {
+      seenSms.current = id
+      return
+    }
+    if (latestSms && id !== seenSms.current) {
+      seenSms.current = id
+      setQueue((q) => [...q, { id: latestSms.id, app: 'sms', title: 'OKBANK', body: latestSms.text }])
+    }
+  }, [latestSms?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const banner = queue[0]
+  useEffect(() => setBannerVisible(true), [banner?.id])
+  const nextBanner = () => {
+    setBannerVisible(false)
+    setTimeout(() => setQueue((q) => q.slice(1)), 350)
+  }
+  const openBanner = (b: Banner) => {
+    nextBanner()
+    if (b.app === 'sms') return
+    if (b.kind === 't30') navigate('/rohan/board?sheet=t30')
+    else if (b.kind === 'settled' || b.kind === 'late_paid') navigate('/rohan/receipt')
+    else navigate('/rohan/board')
+  }
 
   // Step 4: after sending in the chat, Rohan lands on the board (placeholder until prompt 06)
   const sentAt = state.friendFlow.share?.sentAt
@@ -119,7 +183,7 @@ export default function RohanFlow() {
   const seatLayoutCommon = {
     onBack: () => navigate('/rohan/showtimes'),
     onHoldForGroup: handleHoldForGroup,
-    onViewHold: () => navigate('/rohan/held'),
+    onViewHold: () => navigate('/rohan/board'),
     initialSeatCount: 6,
     onPay: (seats: LogicSeat[]) => {
       setSelectedSeats(seats)
@@ -176,14 +240,35 @@ export default function RohanFlow() {
         )
 
       case '/rohan/held':
-        return <HoldSuccessScreen onBack={() => navigate('/rohan/seats')} onOpenChat={() => navigate('/rohan/chat')} />
+        return (
+          <HoldSuccessScreen
+            onBack={() => navigate('/rohan/seats')}
+            onOpenChat={() => navigate('/rohan/chat')}
+            onViewGroup={() => navigate('/rohan/board')}
+          />
+        )
 
       case '/rohan/chat':
         return <ChatScreen viewer="Rohan" onBack={() => navigate('/rohan/held')} />
 
-      // Status board: prompt 06. Until then the live hold screen stands in (D-068).
-      case '/rohan/board':
-        return <HoldSuccessScreen showSms={false} onBack={() => navigate('/rohan/chat')} onOpenChat={() => navigate('/rohan/chat')} />
+      case '/rohan/board': {
+        const sheet = new URLSearchParams(location.search).get('sheet') as BoardSheet
+        return (
+          <BoardScreen
+            key={`${location.key}`}
+            initialSheet={sheet}
+            onBack={() => navigate('/rohan/orders')}
+            onOpenChat={() => navigate('/rohan/chat')}
+            onSettled={() => navigate('/rohan/receipt', { replace: true })}
+          />
+        )
+      }
+
+      case '/rohan/receipt':
+        return <ReceiptScreen onBack={() => navigate('/rohan/orders')} />
+
+      case '/rohan/orders':
+        return <OrdersScreen onBack={() => navigate('/rohan/movie')} onOpen={(live) => navigate(live ? '/rohan/board' : '/rohan/receipt')} />
 
       case '/rohan/showtimes':
         return (
@@ -275,20 +360,18 @@ export default function RohanFlow() {
   }
 
   return (
-    <DeviceFrame time="11:04">
+    <DeviceFrame time={formatClockIST(state.clock.now).replace(/ [AP]M$/, '')}>
       {renderActiveScreen()}
-      {friendNotif && (
+      {banner && (
         <IosNotification
+          key={banner.id}
           inFrameOverlay
-          app="bms"
-          title={friendNotif.title}
-          body={friendNotif.body}
-          visible={bannerId === friendNotif.id}
-          onDismiss={() => setBannerId(null)}
-          onClick={() => {
-            setBannerId(null)
-            navigate('/rohan/board')
-          }}
+          app={banner.app}
+          title={banner.title}
+          body={banner.body}
+          visible={bannerVisible}
+          onDismiss={nextBanner}
+          onClick={() => openBanner(banner)}
         />
       )}
     </DeviceFrame>

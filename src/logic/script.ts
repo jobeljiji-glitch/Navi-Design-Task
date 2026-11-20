@@ -62,8 +62,7 @@ export function applyStep(s: BoardState, step: ScriptStep, r: Reduce = boardFlow
     case 'neha':
       return r(at(s, r, 15, 30), { type: 'FRIEND_CANT_MAKE_IT', name: 'Neha' });
     case 'release':
-      s = r(at(s, r, 15, 31), { type: 'RELEASE_SEATS', seatIds: ['D05'] });
-      return r(s, { type: 'DECLINE_KEEP', name: 'Neha' });
+      return r(at(s, r, 15, 31), { type: 'RELEASE_SEATS', seatIds: ['D05'] });
     case 't30':
       return at(s, r, 18, 45);
     case 'priyaPending':
