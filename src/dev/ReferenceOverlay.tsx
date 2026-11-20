@@ -6,11 +6,41 @@ import { useLocation } from 'react-router-dom'
 // ---------------------------------------------------------------------------
 
 const ROUTE_IMAGE_MAP: Record<string, string> = {
-  '/':        '01-home.jpg',
-  '/rohan':   '06-seat-layout-empty.jpg',
-  '/friend':  '06-seat-layout-empty.jpg',
-  '/kit':     '06-seat-layout-empty.jpg',
+  '/':                   '01-home.jpg',
+  '/rohan':              '02-movie-detail.jpg',
+  '/rohan/movie':        '02-movie-detail.jpg',
+  '/rohan/showtimes':    '04-showtimes.jpg',
+  '/rohan/seat-count':   '05-seat-count-sheet.jpg',
+  '/rohan/seats':        '06-seat-layout-empty.jpg',
+  '/rohan/seats-selected': '08-seat-layout-selected.jpg',
+  '/rohan/loader':       '10-confirming-seats.jpg',
+  '/rohan/confirm':      '11-confirm-booking.jpg',
+  '/rohan/payment':      '12-payment.jpg',
+  '/friend':             '06-seat-layout-empty.jpg',
+  '/kit':                '06-seat-layout-empty.jpg',
 }
+
+const ALL_REFERENCE_IMAGES = [
+  '01-home.jpg',
+  '02-movie-detail.jpg',
+  '03-rating-sheet.jpg',
+  '04-showtimes.jpg',
+  '05-seat-count-sheet.jpg',
+  '06-seat-layout-empty.jpg',
+  '07-seat-layout-minimap.jpg',
+  '08-seat-layout-selected.jpg',
+  '09-terms-sheet.jpg',
+  '10-confirming-seats.jpg',
+  '11-confirm-booking.jpg',
+  '12-payment.jpg',
+  '13-ios-share-sheet.jpg',
+  '14-your-bookings.jpg',
+  '15-notifications.jpg',
+  '16-m-ticket.jpg',
+  '17-ios-share-sheet.jpg',
+  '18-bookings-list.jpg',
+  '19-seat-count-6.jpg',
+]
 
 function getImageForRoute(pathname: string): string | null {
   // Exact match first
@@ -43,6 +73,7 @@ export default function ReferenceOverlay() {
   const [visible, setVisible] = useState(false)
   const [opacity, setOpacity] = useState(50)
   const [isDiff, setIsDiff] = useState(false)
+  const [overrideImage, setOverrideImage] = useState<string | null>(null)
 
   // Toggle on 'O' keypress
   const handleKey = useCallback(
@@ -50,7 +81,7 @@ export default function ReferenceOverlay() {
       if (!isEnabled) return
       if (
         (e.key === 'o' || e.key === 'O') &&
-        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement)
       ) {
         setVisible(v => !v)
       }
@@ -65,7 +96,8 @@ export default function ReferenceOverlay() {
 
   if (!isEnabled) return null
 
-  const image = getImageForRoute(location.pathname)
+  const defaultImage = getImageForRoute(location.pathname)
+  const image = overrideImage || defaultImage
   if (!image) return null
 
   const imgSrc = `${getBaseUrl()}reference/${image}`
@@ -126,9 +158,24 @@ export default function ReferenceOverlay() {
         <div style={{ fontWeight: 700, marginBottom: 2 }}>
           Overlay {visible ? '● ON' : '○ OFF'} · press O
         </div>
-        <div style={{ fontSize: 10, opacity: 0.6, wordBreak: 'break-all' }}>
-          {image}
-        </div>
+        <select
+          value={overrideImage || ''}
+          onChange={e => setOverrideImage(e.target.value || null)}
+          style={{
+            background: '#222',
+            color: '#fff',
+            border: '1px solid #444',
+            borderRadius: 4,
+            padding: '3px 6px',
+            fontSize: 11,
+            width: '100%',
+          }}
+        >
+          <option value="">Route Default ({defaultImage})</option>
+          {ALL_REFERENCE_IMAGES.map(img => (
+            <option key={img} value={img}>{img}</option>
+          ))}
+        </select>
 
         {/* Opacity slider */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

@@ -57,27 +57,6 @@ function DemoStage() {
   )
 }
 
-function RohanPlaceholder() {
-  return (
-    <DeviceFrame time="9:41">
-      <div
-        style={{
-          display: 'flex',
-          height: '100%',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          gap: '8px',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        <span style={{ fontSize: '14px', fontWeight: 500 }}>Rohan's screen</span>
-        <span style={{ fontSize: '12px' }}>Coming soon</span>
-      </div>
-    </DeviceFrame>
-  )
-}
-
 function FriendPlaceholder() {
   return (
     <DeviceFrame time="9:41">
@@ -100,6 +79,7 @@ function FriendPlaceholder() {
 }
 
 import KitPage from '@/screens/KitPage'
+import RohanFlow from '@/screens/rohan/RohanFlow'
 
 // ---------------------------------------------------------------------------
 // App
@@ -110,7 +90,8 @@ export default function App() {
     <>
       <Routes>
         <Route path="/" element={<DemoStage />} />
-        <Route path="/rohan" element={<RohanPlaceholder />} />
+        <Route path="/rohan/*" element={<RohanFlow />} />
+        <Route path="/rohan" element={<RohanFlow />} />
         <Route path="/friend/:name" element={<FriendPlaceholder />} />
         <Route
           path="/kit"

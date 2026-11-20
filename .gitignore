@@ -6,7 +6,9 @@ dist/
 dist-ssr/
 
 # Screenshots
-shots/
+shots/*
+!shots/02b-*.png
+!shots/03-*.png
 
 # Editor
 .vscode/

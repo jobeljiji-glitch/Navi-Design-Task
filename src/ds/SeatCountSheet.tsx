@@ -14,10 +14,10 @@ export interface SeatCountSheetProps {
 }
 
 const DEFAULT_TIERS: PriceTier[] = [
-  { name: 'NORMAL', price: 240, status: 'AVAILABLE' },
-  { name: 'EXECUTIVE', price: 260, status: 'AVAILABLE' },
-  { name: 'PREMIUM', price: 280, status: 'AVAILABLE' },
-  { name: 'RECLINER', price: 520, status: 'AVAILABLE' },
+  { name: 'RECLINER ROWS', price: 500, status: 'AVAILABLE' },
+  { name: 'PRIME PLUS ROWS', price: 250, status: 'AVAILABLE' },
+  { name: 'PRIME ROWS', price: 230, status: 'AVAILABLE' },
+  { name: 'CLASSIC ROWS', price: 210, status: 'AVAILABLE' },
 ]
 
 export default function SeatCountSheet({
