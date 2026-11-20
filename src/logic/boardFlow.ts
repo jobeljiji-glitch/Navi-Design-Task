@@ -1302,8 +1302,9 @@ export function selectGroupReceipt(state: BoardState): GroupReceiptView | null {
   const start = showLabel(state);
   const rows: ReceiptRow[] = selectSeatRows(state).map((r) => ({
     seatId: r.seatId,
-    who: r.name ?? '—',
-    status: seatStatusLine(r),
+    // Names only when BMS knows them; otherwise the status leads ("Kept" / "Charged at 9:15 PM unless a friend pays")
+    who: r.name ?? r.status,
+    status: r.name ? seatStatusLine(r) : (r.note ?? (r.kind === 'released' ? 'Back on sale' : '')),
     amount: r.kind === 'released' ? '' : p,
     tone: r.kind === 'you' ? 'you' : r.kind === 'kept' ? 'kept' : r.kind === 'released' ? 'released' : 'paid',
   }));

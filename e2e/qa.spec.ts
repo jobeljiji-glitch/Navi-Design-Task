@@ -11,8 +11,8 @@ import { SCREENS } from './routes'
  */
 
 const FAILURE_IDS = [
-  'under-3h', 'cap', 'second-hold', 'two-holds', 'two-seats', 'no-blocking', 'no-card', 'upi-declined', 'bank-timeout', 'own-fails',
-  'cancel-block', 'conflict', 'friend-fails', 'cant-make-it', 'pending', 'nobody', 'late', 'showtime-pending', 'showtime-expired', 'after-show', 'cinema',
+  'under-3h', 'cap', 'second-hold', 'hold-running', 'over-cap', 'two-seats', 'no-blocking', 'no-card', 'upi-declined', 'bank-timeout', 'own-fails',
+  'cancel-block', 'conflict', 'friend-fails', 'cant-make-it', 'pending', 'nobody', 'late', 'cutoff-pending', 'after-show', 'cinema',
 ]
 
 const ROUTES = [...SCREENS.map((s) => ({ route: s.route, name: s.name })), ...FAILURE_IDS.map((id) => ({ route: `#/?explore=1&failure=${id}`, name: `Failure: ${id}` }))]

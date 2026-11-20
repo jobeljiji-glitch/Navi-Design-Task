@@ -125,7 +125,7 @@ describe('09 scripted outcome through the board wrapper', () => {
           ['Charged so far', '₹277.14'],
           ['Left to cover', '₹277.14'],
         ]);
-        expect(r.rows.find((x) => x.seatId === 'D06')!.status).toBe('Kept · charged at 9:15 PM unless a friend pays');
+        expect(r.rows.find((x) => x.seatId === 'D06')).toMatchObject({ who: 'Kept', status: 'Charged at 9:15 PM unless a friend pays' });
         expect(selectOrderCard(s)!).toMatchObject({ status: 'GROUP HOLD', statusMessage: '1 seat kept · settles 9:15 PM' });
         expect(selectFriendSetLine(s, 'Sana')).toBe("Your group is set. You're in D09.");
         const k = selectKeptSeatActions(s)!;

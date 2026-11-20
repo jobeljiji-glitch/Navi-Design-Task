@@ -9,7 +9,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { SCREENS as BASE } from './routes'
 
 // Failure screens with cards (the limit toasts and #7 sit on the seat layout, which has none; qa.spec covers them)
-const FAILURES = ['no-blocking', 'no-card', 'upi-declined', 'cancel-block', 'conflict', 'friend-fails', 'cant-make-it', 'pending', 'nobody', 'showtime-pending', 'showtime-expired', 'after-show', 'cinema']
+const FAILURES = ['no-blocking', 'no-card', 'upi-declined', 'cancel-block', 'conflict', 'friend-fails', 'cant-make-it', 'pending', 'nobody', 'cutoff-pending', 'after-show', 'cinema']
 const SCREENS: Array<{ route: string; name: string; shot?: string }> = [...BASE, ...FAILURES.map((id) => ({ route: `#/?explore=1&failure=${id}`, name: `08 failure: ${id}` }))]
 
 async function zoomText(page: Page, factor = 1.1) {
@@ -97,34 +97,47 @@ test('Confirm booking: the 16+ badge holds its text at larger sizes (min 22 pt)'
   }
 })
 
-test('Board: Neha can’t make it → release D05 free → receipt numbers', async ({ page }) => {
+test('Board: Neha can’t make it → release D05 free → receipts before and after showtime', async ({ page }) => {
   await page.goto('#/rohan/board?at=neha')
   await page.waitForTimeout(900)
   const frame = page.locator('.device-frame-mobile')
   await frame.getByRole('button', { name: 'Release a seat', exact: true }).click()
   await expect(frame.getByTestId('release-fee-band')).toHaveText('Free until 4:15 PM')
-  await frame.getByRole('button', { name: 'Release D05 · ₹277.14 back' }).click()
+  await frame.getByRole('button', { name: 'Release D05 · ₹277.14 less to cover' }).click()
   await expect(frame.getByTestId('declined-Neha')).toHaveCount(0)
-  await expect(frame.getByTestId('set-aside')).toHaveText('₹554.28 still set aside')
+  await expect(frame.getByTestId('set-aside')).toHaveText('₹554.28 left to cover')
+  await expect(frame.getByTestId('headline-sub')).toHaveText('₹1,385.70 blocked · unblocked at showtime')
 
-  await page.goto('#/rohan/receipt?at=late')
+  // 09: provisional receipt while D06 is kept, then the final one after the showtime settlement
+  await page.goto('#/rohan/receipt?at=kept')
   await page.reload()
   await page.waitForTimeout(900)
-  await expect(frame.getByTestId('ledger-paid')).toContainText('₹554.28')
-  await expect(frame.getByTestId('ledger-unblocked')).toContainText('₹1,108.56')
-  await expect(frame.getByTestId('refund-D06')).toContainText('₹277.14')
+  await expect(frame.getByTestId('receipt-title')).toHaveText('Seats kept · settles at 9:15 PM')
+  await expect(frame.getByTestId('receipt-row-D06')).toContainText('Charged at 9:15 PM unless a friend pays')
+  await expect(frame.getByTestId('ledger-charged')).toContainText('₹277.14')
+
+  await page.goto('#/rohan/receipt?at=settled')
+  await page.reload()
+  await page.waitForTimeout(900)
+  await expect(frame.getByTestId('ledger-charged')).toContainText('₹277.14')
+  await expect(frame.getByTestId('ledger-unblocked')).toContainText('₹1,385.70')
+  await expect(frame.getByTestId('receipt-row-D06')).toContainText('Paid late')
+  expect(await frame.innerText()).not.toMatch(/refund/i)
 })
 
-test('Group hold: content scrolls and the CTA follows the cards', async ({ page }) => {
+test('Group hold: the CTA is pinned in view, the cards scroll above it (09)', async ({ page }) => {
   await page.goto('#/rohan/held')
   await page.waitForTimeout(900)
   await zoomText(page, 1.1)
   const order = await page.evaluate(() => {
     const root = document.querySelector('.device-frame-mobile')!
     const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="status-card"], [data-testid="whos-in"], [data-testid="money-card"]'))
-    const lastCardBottom = Math.max(...cards.map((c) => c.getBoundingClientRect().bottom))
+    const scroller = cards[0].parentElement!
     const cta = Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.includes('Send to your group'))!
-    return { lastCardBottom, ctaTop: cta.getBoundingClientRect().top }
+    const footer = cta.closest('[data-pinned-footer]')!
+    return { scrollBottom: scroller.getBoundingClientRect().bottom, footerTop: footer.getBoundingClientRect().top, ctaBottom: cta.getBoundingClientRect().bottom, frameBottom: root.getBoundingClientRect().bottom, cards: cards.length }
   })
-  expect(order.ctaTop).toBeGreaterThanOrEqual(order.lastCardBottom)
+  expect(order.cards).toBe(3)
+  expect(order.scrollBottom).toBeLessThanOrEqual(order.footerTop + 1)
+  expect(order.ctaBottom).toBeLessThanOrEqual(order.frameBottom)
 })

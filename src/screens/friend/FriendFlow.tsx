@@ -67,7 +67,8 @@ export default function FriendFlow() {
   const state = useDemoStore()
   const session = name ? state.friendFlow.sessions[name] : null
   const hold = state.hold
-  const live = !!hold && (hold.status === 'active' || hold.status === 'closed')
+  // Friends can start paying only before the deadline (09: 'closed' = seats kept, late payers use the kept-seat page)
+  const live = !!hold && hold.status === 'active'
 
   // Deep links and seeding. Lives here, not in screens: DeviceFrame mounts children twice (D-037).
   // The ref keeps it to once per URL, even when StrictMode runs effects twice in dev.

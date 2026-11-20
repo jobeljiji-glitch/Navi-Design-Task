@@ -207,11 +207,9 @@ export const TOUR_STEPS: TourStep[] = [
     text: '30 minutes left. Do nothing and unpaid seats are kept, charged at 9:15 PM.',
     why: 'The default keeps the group together. Every held seat ends up paid.',
     nextLabel: '⏩ Skip to 7:15 PM',
-    phases: [
-      (s) => applyStep(applyStep(s, 'priyaPending'), 'deadline'),
-      (s) => applyStep(applyStep(s, 'priyaPaid'), 'grace'),
-    ],
-    phaseDelayMs: 1400,
+    // 09: one atomic phase (7:13 Priya pays, 7:15 deadline, 7:19 her bank confirms, 7:25 grace ends). No settlement
+    // animation at 7:15 any more, and a delayed second phase could be cancelled by a quick Next.
+    phases: [(s) => ['priyaPending', 'deadline', 'priyaPaid', 'grace'].reduce((acc, st) => applyStep(acc, st as Parameters<typeof applyStep>[1]), s)],
     after: '/rohan/board',
   },
   {
@@ -233,7 +231,7 @@ export const TOUR_STEPS: TourStep[] = [
     text: 'Kabir pays before 9:00 PM. The ticket moves to him. D06 is never charged to Rohan.',
     why: 'At 9:15 PM kept seats are charged. The rest is unblocked once.',
     nextLabel: 'Pay and skip to 9:15 PM',
-    phases: [kabirPays, (s) => applyStep(s, 'showtime')],
+    phases: [(s) => applyStep(kabirPays(s), 'showtime')],
     after: '/rohan/receipt',
     path: '/friend/kabir',
     done: (s) => s.board.lateSeats.includes('D06'),

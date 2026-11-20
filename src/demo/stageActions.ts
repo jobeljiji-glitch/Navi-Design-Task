@@ -227,9 +227,9 @@ export function jumpToMoment(id: MomentId) {
   useStageStore.setState({ mode: 'explore', path: m.path, rohanPath: m.path.startsWith('/rohan') ? m.path : '/rohan/receipt' })
   replaceState(next)
   if ('settle' in m && m.settle) {
+    // 09: settlement happens at showtime
     later(() => {
-      const h = demo().hold
-      if (h) demo().dispatch({ type: 'SET_CLOCK', now: h.graceUntil })
+      if (demo().hold) demo().dispatch({ type: 'SET_CLOCK', now: demo().show.startsAt })
     }, 900)
   }
   log(`Jumped to: ${m.label}`)
@@ -303,14 +303,25 @@ export const FAILURES: Failure[] = [
     },
   },
   {
-    id: 'two-holds',
+    id: 'hold-running',
     group: 'Before the hold',
-    label: '2 holds running on the account',
+    label: 'A group hold already running',
     run: () =>
       limitFailure(
         '/rohan/seats-selected',
-        (s) => fr(s, { type: 'SET_DEMO_SETTINGS', patch: { userAccountsActiveHoldCount: 2 } }),
-        'Rohan already has 2 group holds for other shows. Tap Hold for group.',
+        (s) => fr(s, { type: 'SET_DEMO_SETTINGS', patch: { userAccountsActiveHoldCount: 1 } }),
+        'Rohan already has a group hold for another show (one Reserve Pay block per account). Tap Hold for group.',
+      ),
+  },
+  {
+    id: 'over-cap',
+    group: 'Before the hold',
+    label: 'Over the ₹10,000 block limit (#5)',
+    run: () =>
+      limitFailure(
+        '/rohan/seats-selected?seats=A03,A04,A05,A06,A07,A08,A09,A10,A11,A12',
+        (s) => fr(s, { type: 'SET_DEMO_SETTINGS', patch: { premiumPricing: true } }),
+        'A premium show: 10 recliners at ₹1,277.14 come to ₹12,771.40. Tap Hold for group.',
       ),
   },
   {
@@ -323,7 +334,7 @@ export const FAILURES: Failure[] = [
   {
     id: 'no-blocking',
     group: 'Paying for the hold',
-    label: "Bank can't block (#4, #5)",
+    label: "Bank can't block (#4)",
     run: () =>
       draftFailure(
         (s) => beginHold(fr(s, { type: 'CONTROLLER_TOGGLE_BANK_BLOCKING', supported: false }), FR) as FailureState,
@@ -443,8 +454,8 @@ export const FAILURES: Failure[] = [
     run: () => {
       ensureHold()
       applyLive((s) => at(s, 19, 15, FR) as FailureState)
-      toRohan('/rohan/receipt')
-      log('Deadline passed with nobody paying: unpaid seats kept')
+      toRohan('/rohan/board')
+      log('Deadline passed with nobody paying: unpaid seats kept, charged at 9:15 PM')
     },
   },
   {
@@ -454,16 +465,10 @@ export const FAILURES: Failure[] = [
     run: () => jumpToMoment('late'),
   },
   {
-    id: 'showtime-pending',
+    id: 'cutoff-pending',
     group: 'After the deadline',
-    label: 'Late payment pending at showtime',
-    run: () => showtimePending('success'),
-  },
-  {
-    id: 'showtime-expired',
-    group: 'After the deadline',
-    label: 'Late payment not confirmed in time',
-    run: () => showtimePending('expire'),
+    label: 'Payment pending at the 9:00 PM cut-off',
+    run: () => cutoffPending(),
   },
   {
     id: 'after-show',
@@ -492,32 +497,29 @@ export const FAILURES: Failure[] = [
   },
 ]
 
-/** Kabir pays for the kept seat at 9:14 PM; at 9:15 the show starts with his bank still confirming. */
-function showtimePending(outcome: 'success' | 'expire') {
+/**
+ * 09: late payments close at 9:00 PM (showtime − 15 min). Kabir pays for the kept seat at 8:59 PM and his bank
+ * is still confirming at the cut-off; it gets the usual 10 minutes. Here it never confirms: at 9:10 PM it fails,
+ * Kabir isn't charged and D06 stays kept (charged to Rohan at 9:15 PM). Had it cleared, the ticket would move.
+ */
+function cutoffPending() {
   let s = kabirOpens(runScriptTo(fresh(), 'grace', FR), FR) as FailureState
-  s = at(s, 21, 14, FR) as FailureState
+  s = at(s, 20, 59, FR) as FailureState
   s = fr(s, { type: 'SET_NEXT_PAYMENT_OUTCOME', outcome: 'pending' })
   s = fr(s, { type: 'FRIEND_LATE_PAY_START', name: 'Kabir' })
   if (s.friendFlow.sessions.Kabir.screen === 'phone') s = fr(s, { type: 'FRIEND_PHONE_SUBMIT', name: 'Kabir', phone: '98765 43214' })
   if (s.friendFlow.sessions.Kabir.screen === 'otp') s = fr(s, { type: 'FRIEND_OTP_OK', name: 'Kabir' })
   s = fr(s, { type: 'FRIEND_CHOOSE_UPI', name: 'Kabir', app: 'Kite Pay' })
   s = fr(s, { type: 'FRIEND_APPROVE', name: 'Kabir' })
-  s = at(s, 21, 15, FR) as FailureState
+  s = at(s, 21, 0, FR) as FailureState
   replaceState(s)
   useStageStore.setState({ rohanPath: '/rohan/receipt' })
   toFriend('Kabir')
-  log("9:15 PM: the show starts while Kabir's bank is still confirming D06")
+  log("9:00 PM cut-off: Kabir's bank is still confirming D06. It has until 9:10 PM.")
   later(() => {
-    if (outcome === 'success') {
-      demo().dispatch({ type: 'SET_CLOCK', now: ist(21, 17) })
-      demo().dispatch({ type: 'SET_NEXT_PAYMENT_OUTCOME', outcome: 'success' })
-      demo().dispatch({ type: 'FRIEND_RESOLVE', name: 'Kabir', outcome: 'success' })
-      log("9:17 PM: Kabir's bank confirmed. D06 is his; Rohan refunded")
-    } else {
-      demo().dispatch({ type: 'SET_CLOCK', now: ist(21, 25) })
-      demo().dispatch({ type: 'SET_NEXT_PAYMENT_OUTCOME', outcome: 'success' })
-      log("9:25 PM: Kabir's bank never confirmed. Not charged; Rohan still has D06")
-    }
+    demo().dispatch({ type: 'SET_CLOCK', now: ist(21, 10) })
+    demo().dispatch({ type: 'SET_NEXT_PAYMENT_OUTCOME', outcome: 'success' })
+    log("9:10 PM: Kabir's bank never confirmed. He isn't charged; D06 stays kept for Rohan")
   }, 3500)
 }
 

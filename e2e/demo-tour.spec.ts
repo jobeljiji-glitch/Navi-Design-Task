@@ -9,14 +9,30 @@ const BANNED = /\bIPO\b|ASBA/
 
 async function rects(page: Page) {
   return page.evaluate(() => {
-    const r = (s: string) => {
-      const e = document.querySelector(s)
+    const box = (e: Element | null) => {
       if (!e) return null
       const b = e.getBoundingClientRect()
       return b.width && b.height ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null
     }
-    return { bubble: r('[data-testid=coach-bubble]'), ring: r('[data-testid=coach-ring]') }
+    const r = (s: string) => box(document.querySelector(s))
+    const bubbleEl = document.querySelector('[data-testid=coach-bubble]') as HTMLElement | null
+    const collapsed = !!bubbleEl && getComputedStyle(bubbleEl).visibility === 'hidden'
+    // 09: the bubble never covers the pinned CTA footer or an open sheet's content (unless the anchor is inside that footer)
+    const ringEl = document.querySelector('[data-testid=coach-ring]')
+    const ringBox = box(ringEl)
+    const phoneEl = Array.from(document.querySelectorAll('[data-phone] .device-frame-mobile, [data-phone] .device-frame-desktop')).find((f) => f.getBoundingClientRect().width > 0)
+    const avoid = phoneEl
+      ? Array.from(phoneEl.querySelectorAll('[data-pinned-footer], [data-sheet-body]'))
+          .map((e) => ({ e, b: box(e) }))
+          .filter((x) => x.b && !(x.e.hasAttribute('data-pinned-footer') && ringBox && x.b.t <= ringBox.t + 4 && x.b.b >= ringBox.b - 4))
+          .map((x) => x.b!)
+      : []
+    return { bubble: collapsed ? null : r('[data-testid=coach-bubble]'), pill: r('[data-testid=coach-pill]'), ring: ringBox, avoid }
   })
+}
+
+function hits(a: { l: number; t: number; r: number; b: number }, b: { l: number; t: number; r: number; b: number }) {
+  return !(a.r <= b.l + 1 || a.l >= b.r - 1 || a.b <= b.t + 1 || a.t >= b.b - 1)
 }
 
 function overlaps(a: { l: number; t: number; r: number; b: number }, b: { l: number; t: number; r: number; b: number }) {
@@ -34,21 +50,29 @@ async function runWholeTour(page: Page) {
     const progress = page.getByTestId('coach-progress')
     // step 13 waits for the settlement animation before it shows
     await expect(progress).toHaveText(`Step ${i} of 14`, { timeout: 20_000 })
-    await expect(page.getByTestId('coach-bubble')).toBeVisible({ timeout: 20_000 })
     // screens slide in: wait until the anchor is on screen and the bubble has settled beside it
     await expect.poll(async () => (await rects(page)).ring, { message: `step ${i} highlights something`, timeout: 8000 }).not.toBeNull()
-    await page.waitForTimeout(400)
-    const { bubble, ring } = await rects(page)
+    await page.waitForTimeout(700)
+    const { bubble, pill, ring, avoid } = await rects(page)
     expect(ring, `step ${i} highlights something`).not.toBeNull()
-    expect(overlaps(bubble!, ring!), `step ${i}: bubble covers the highlighted element`).toBe(false)
+    // Either the bubble (clear of the anchor, the CTA footer and sheet content) or, when nothing is clear, the pill
+    expect(!!bubble || !!pill, `step ${i}: bubble or pill shows`).toBe(true)
+    if (bubble) {
+      expect(overlaps(bubble, ring!), `step ${i}: bubble covers the highlighted element`).toBe(false)
+      for (const a of avoid) expect(hits(bubble, a), `step ${i}: bubble covers the CTA footer or sheet content`).toBe(false)
+    }
     expect(await page.locator('body').innerText()).not.toMatch(BANNED)
-    await page.getByTestId('coach-next').click()
+    if (bubble) await page.getByTestId('coach-next').click()
+    else {
+      await page.getByTestId('coach-pill').click()
+      await page.getByTestId('coach-next').click()
+    }
   }
 
   const done = page.getByTestId('done-card')
   await expect(done).toBeVisible({ timeout: 10_000 })
   await expect(page.getByTestId('payoff-0')).toHaveText('Rohan paid ₹277.14 — just his own seat')
-  await expect(page.getByTestId('payoff-0-sub')).toHaveText("He covered Kabir's seat at 7:25 PM and got it back when Kabir paid.")
+  await expect(page.getByTestId('payoff-0-sub')).toHaveText('Kabir paid late, so his seat was never charged to Rohan.')
   await expect(page.getByTestId('payoff-1')).toHaveText('Friends chased: 0')
   await expect(page.getByTestId('payoff-2')).toHaveText('Seats left empty: 0')
   await expect(done).toContainText('Every held seat ended up paid.')
@@ -62,7 +86,22 @@ test.describe('phone (402 pt class)', () => {
   test('guided demo runs start to finish', async ({ page }) => {
     test.setTimeout(120_000)
     await runWholeTour(page)
-    await expect(phone(page).getByTestId('refund-D06')).toContainText('₹277.14')
+    await expect(phone(page).getByTestId('ledger-unblocked')).toContainText('₹1,385.70')
+    await expect(phone(page).getByTestId('ledger-charged')).toContainText('₹277.14')
+  })
+
+  test('minimise collapses the bubble to a pill; tapping it restores (09)', async ({ page }) => {
+    await page.goto('#/?step=5')
+    await expect(page.getByTestId('coach-bubble')).toBeVisible({ timeout: 20_000 })
+    await page.getByTestId('coach-minimise').click()
+    await expect(page.getByTestId('coach-pill')).toHaveText('Step 5/14')
+    await expect(page.getByTestId('coach-bubble')).toBeHidden()
+    // stays minimised on the next step (the stage remounts the bubble per step)
+    await page.keyboard.press('ArrowRight')
+    await expect(page.getByTestId('coach-pill')).toHaveText('Step 6/14', { timeout: 20_000 })
+    await page.getByTestId('coach-pill').click()
+    await expect(page.getByTestId('coach-bubble')).toBeVisible()
+    await expect(page.getByTestId('coach-progress')).toHaveText('Step 6 of 14')
   })
 
   test('the real taps advance the tour (no Next)', async ({ page }) => {
@@ -148,7 +187,7 @@ test.describe('desktop (≥ 1024 px)', () => {
 
   test('jump to moment and every failure visibly change the phone', async ({ page }) => {
     await page.goto('#/?explore=1')
-    for (const id of ['board', 'release', 't30', 'settlement', 'receipt', 'late']) {
+    for (const id of ['board', 'release', 't30', 'kept', 'late', 'settlement', 'receipt']) {
       const before = await phone(page).innerText()
       await page.getByTestId(`moment-${id}`).click()
       await expect.poll(() => phone(page).innerText(), { message: `moment ${id}` }).not.toBe(before)

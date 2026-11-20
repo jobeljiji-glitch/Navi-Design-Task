@@ -9,6 +9,7 @@ import {
   PriceRow,
   IosNotification,
   IosShareSheet,
+  PinnedFooter,
   PrimaryCTA,
   SeatTileRow,
   StatusBadge,
@@ -157,18 +158,20 @@ export default function HoldSuccessScreen({ onBack, onOpenChat, showSms = true, 
           </button>
         </Card>
 
-        {/* Actions follow the cards (no empty gap): one primary + text links */}
-        <div className="flex flex-col items-center gap-0.5 pt-1 cta-safe">
-          <div className="w-full" data-tour="send-to-group">
-            <PrimaryCTA variant="strong" size="lg" onClick={() => setShareOpen(true)}>Send to your group</PrimaryCTA>
-          </div>
-          <div className="flex items-center text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
-            <button type="button" onClick={copyLink} className="px-3 py-2.5">Copy link</button>
-            <span aria-hidden style={{ color: 'var(--text-secondary)' }}>·</span>
-            <button type="button" onClick={() => setQrOpen(true)} className="px-3 py-2.5">Show QR</button>
-          </div>
-        </div>
+        <div className="h-3" aria-hidden />
       </div>
+
+      {/* 09: pinned footer (supersedes D-047's "actions follow the cards"): the CTA never scrolls away */}
+      <PinnedFooter testId="held-footer">
+        <div className="w-full" data-tour="send-to-group">
+          <PrimaryCTA variant="strong" size="lg" onClick={() => setShareOpen(true)}>Send to your group</PrimaryCTA>
+        </div>
+        <div className="flex items-center justify-center text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
+          <button type="button" onClick={copyLink} className="h-11 px-3">Copy link</button>
+          <span aria-hidden style={{ color: 'var(--text-secondary)' }}>·</span>
+          <button type="button" onClick={() => setQrOpen(true)} className="h-11 px-3">Show QR</button>
+        </div>
+      </PinnedFooter>
 
       {toast && (
         <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">
