@@ -41,3 +41,4 @@ coverage/
 # Playwright
 test-results/
 playwright-report/
+!shots/08-*.png

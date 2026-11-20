@@ -23,6 +23,7 @@ import { boardFlowReducer, selectRohanBanner, withBoard } from '@/logic/boardFlo
 import { AT_PARAM, ist, runScriptTo } from '@/logic/script'
 import { createInitialDemoState } from '@/logic/seed'
 import { useInStage } from '@/demo/PhoneRouter'
+import { failureOf } from '@/logic/failureFlow'
 import { useStageStore } from '@/store/stage'
 import type { BoardState } from '@/logic/boardFlow'
 
@@ -242,15 +243,21 @@ export default function RohanFlow() {
         if (!holdView) return null
         return (
           <UpiMandateScreen
-            mode={holdView.fallback ? 'payment' : 'block'}
+            mode={holdView.fallback ? 'payment' : holdView.rail === 'card_preauth' ? 'card' : 'block'}
+            slowBank={failureOf(state).nextApproval === 'timeout'}
             amount={holdView.upiAmount}
             debitedNow={holdView.leavesNow}
             blockEnds={holdView.blockEnds}
             refundLine={`${holdView.perSeat} each time a friend pays`}
             showDetails={`Group hold · ${DEMO_SHOW.filmTitle} · Fri 9:15 PM`}
             onApprove={(pin) => {
+              const seatIds = holdSeatIds
               dispatch({ type: 'APPROVE_HOLD', pin })
-              navigate('/rohan/held', { replace: true })
+              // 08: declined / timed out → back to the sheet; own payment failed (#7) → seat layout, seats still selected
+              const after = useDemoStore.getState().hold
+              if (!after) navigate('/rohan/seats', { replace: true, state: { selectedSeatIds: seatIds } })
+              else if (after.status === 'draft') navigate('/rohan/hold', { replace: true })
+              else navigate('/rohan/held', { replace: true })
             }}
             onDecline={() => {
               dispatch({ type: 'UPI_DECLINED' })
@@ -328,14 +335,20 @@ export default function RohanFlow() {
         )
       }
 
-      case '/rohan/seats-selected':
+      case '/rohan/seats-selected': {
+        // `?seats=C05,C06,…` (08 failure triggers: under 3 seats, a second hold on other seats)
+        const q = new URLSearchParams(location.search).get('seats')
+        const ids = q ? q.split(',').filter(Boolean) : DEMO_GROUP
         return (
           <SeatLayoutScreen
+            key={location.search}
             {...seatLayoutCommon}
-            initialSelectedSeatIds={DEMO_GROUP}
+            initialSelectedSeatIds={ids}
+            initialSeatCount={ids.length}
             isCountSheetOpenInitially={false}
           />
         )
+      }
 
       case '/rohan/confirm':
         return (
@@ -394,12 +407,12 @@ export default function RohanFlow() {
           onClick={() => openBanner(banner)}
         />
       )}
-      {/* Failures #8 and #27 end the hold with an alert (copy from spec §5) */}
-      {state.errorMessage && hold?.status === 'cancelled' && (
+      {/* Failures #8 and #27 end the hold with an alert (copy from spec §5); #7 undoes the hold (08) */}
+      {(failureOf(state).alert || (state.errorMessage && hold?.status === 'cancelled')) && (
         <div className="absolute inset-0 z-[70] flex items-center justify-center px-12" style={{ backgroundColor: 'var(--scrim-light)' }}>
-          <div role="alertdialog" aria-labelledby="hold-alert" className="w-full max-w-[270px] rounded-[14px] overflow-hidden text-center" style={{ backgroundColor: 'var(--ios-sheet-bg)', fontFamily: 'var(--font-system)' }} data-testid="hold-alert">
-            <p id="hold-alert" className="px-4 pt-5 pb-4 text-[15px] leading-[20px]" style={{ color: 'var(--text-primary)' }}>{state.errorMessage}</p>
-            <button type="button" onClick={() => dispatch({ type: 'CLEAR_ERROR' })} className="w-full h-11 text-[17px] font-medium" style={{ borderTop: '0.5px solid var(--ios-separator)', color: 'var(--text-link)' }}>OK</button>
+          <div role="alertdialog" aria-modal="true" aria-labelledby="hold-alert" className="w-full max-w-[270px] rounded-[14px] overflow-hidden text-center" style={{ backgroundColor: 'var(--ios-sheet-bg)', fontFamily: 'var(--font-system)' }} data-testid="hold-alert">
+            <p id="hold-alert" className="px-4 pt-5 pb-4 text-[15px] leading-[20px]" style={{ color: 'var(--text-primary)' }}>{failureOf(state).alert ?? state.errorMessage}</p>
+            <button type="button" autoFocus onClick={() => dispatch(failureOf(state).alert ? { type: 'DISMISS_ALERT' } : { type: 'CLEAR_ERROR' })} className="w-full h-11 text-[17px] font-medium" style={{ borderTop: '0.5px solid var(--ios-separator)', color: 'var(--text-link)' }}>OK</button>
           </div>
         </div>
       )}

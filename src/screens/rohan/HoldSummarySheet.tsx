@@ -3,6 +3,7 @@ import { Edit3, Minus, Plus } from 'lucide-react'
 import { Band, BottomSheet, Hairline, PriceColumns, PrimaryCTA, SeatTileRow } from '@/ds'
 import { useDemoStore } from '@/store'
 import { selectHoldSheet, selectShortenOptions } from '@/logic/holdFlow'
+import { availableRails, selectHoldingLine, selectLadderNotice } from '@/logic/failureFlow'
 import type { PaymentRail } from '@/logic/types'
 
 /**
@@ -65,7 +66,9 @@ export default function HoldSummarySheet({ isOpen, onClose, onConfirm }: HoldSum
   // Whole-state subscription: every value comes from selectors
   const state = useDemoStore()
   const { dispatch, errorMessage } = state
-  const bankSupportsBlocking = state.settings.bankSupportsBlocking
+  const rails = availableRails(state)
+  const ladder = selectLadderNotice(state)
+  const holdingLine = selectHoldingLine(state)
   const [sub, setSub] = useState<SubSheet>(null)
 
   const v = selectHoldSheet(state)
@@ -101,14 +104,37 @@ export default function HoldSummarySheet({ isOpen, onClose, onConfirm }: HoldSum
         <div className="flex flex-col gap-6 pt-1 pb-1" data-testid="hold-sheet">
           {errorMessage && (
             <div
-              className="px-4 py-2.5 text-[14px] leading-[20px] text-pretty"
+              className="px-4 py-3 flex flex-col gap-1 text-pretty"
               style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-primary)', borderRadius: 'var(--card-radius)' }}
               role="alert"
               data-testid="hold-error"
             >
-              {errorMessage}
+              <p className="text-[14px] leading-[20px] font-medium">{errorMessage}</p>
+              {holdingLine && (
+                <p className="text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }} data-testid="holding-line">
+                  {holdingLine}
+                </p>
+              )}
+              {!v.fallback && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatch({ type: 'SET_PAYMENT_RAIL', rail: 'pay_and_refund' })
+                    dispatch({ type: 'SET_COVER_SEATS', count: 0 })
+                    dispatch({ type: 'CLEAR_ERROR' })
+                  }}
+                  className="self-start min-h-[44px] -mb-2 text-[14px] leading-[20px] font-medium"
+                  style={red}
+                  data-testid="pay-for-all"
+                >
+                  Pay for all {v.seatIds.length} instead
+                </button>
+              )}
             </div>
           )}
+
+          {/* 08 fallback ladder: why this isn't UPI Reserve Pay */}
+          {ladder && !errorMessage && <Band standalone tone="warning" testId="ladder-band" title={ladder.title}>{ladder.body}</Band>}
 
           {/* Seat tiles (unchanged) */}
           <section className="flex flex-col gap-2" aria-label="Your group's seats">
@@ -232,7 +258,7 @@ export default function HoldSummarySheet({ isOpen, onClose, onConfirm }: HoldSum
         <Hairline bleed className="mt-2" />
         <SectionLabel>Pay with</SectionLabel>
         <div role="radiogroup" aria-label="Pay with">
-          {RAILS.filter((r) => bankSupportsBlocking || r.rail !== 'reserve_pay').map((r) => (
+          {RAILS.filter((r) => rails.includes(r.rail)).map((r) => (
             <OptionRow
               key={r.rail}
               title={r.title}

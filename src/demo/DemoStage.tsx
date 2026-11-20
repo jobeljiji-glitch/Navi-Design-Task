@@ -12,7 +12,7 @@ import ExploreChips from './ExploreChips'
 import { DoneCard, Interstitial, Intro } from './Overlays'
 import { ControlPanel, StoryPanel } from './Panels'
 import { useTopChrome } from './useTopChrome'
-import { advanceFrom, backStep, exploreFreely, jumpTo, jumpToMoment, nextStep, openPhoneAt, skipTour } from './stageActions'
+import { FAILURES, advanceFrom, backStep, exploreFreely, jumpTo, jumpToMoment, nextStep, openPhoneAt, runFailure, skipTour } from './stageActions'
 
 const DEVICE_W = 402
 const DEVICE_H = 874
@@ -95,6 +95,9 @@ export default function DemoStage() {
       if (m && MOMENTS.some((x) => x.id === m)) jumpToMoment(m)
       const ph = params.get('phone')
       if (ph && /^\/(rohan|friend)\//.test(ph)) openPhoneAt(ph)
+      // 08: `&failure=<id>` runs a Try-a-failure item (README links, shots, e2e)
+      const f = FAILURES.find((x) => x.id === params.get('failure'))
+      if (f) runFailure(f)
     }
   }, [query]) // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { AlertCircle, CreditCard, Check, MessageCircle } from 'lucide-react'
 import { AmountHeader, Band, Card, OtpInput, PaymentRow, PriceRow, PrimaryCTA, TicketCard, UpiMandateScreen } from '@/ds'
 import { useDemoStore } from '@/store'
+import { selectShowtimeCheckout } from '@/logic/failureFlow'
 import { selectFriendCheckout, selectFriendTicket, type FriendName } from '@/logic/friendFlow'
 import { selectFriendSetLine, selectLatePage, selectTransferNote } from '@/logic/boardFlow'
 import FriendHeader from './FriendHeader'
@@ -167,6 +168,8 @@ export function FriendPendingScreen({ name }: { name: FriendName }) {
   const dispatch = state.dispatch
   const v = selectFriendCheckout(state, name)
   const failed = state.friendFlow.sessions[name].screen === 'failed'
+  // 08: a late payment around showtime (10-min grace from 9:15 PM, then no retry)
+  const showtime = selectShowtimeCheckout(state, name)
 
   return (
     <div className={page} style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid={failed ? 'friend-failed' : 'friend-pending'}>
@@ -180,14 +183,19 @@ export function FriendPendingScreen({ name }: { name: FriendName }) {
           )}
           {!failed && <h2 className="text-[20px] leading-[26px] font-normal">{v.pendingTitle}</h2>}
           <p className={`${failed ? 'text-[16px] leading-[22px]' : 'text-[14px] leading-[20px]'} text-pretty max-w-[300px]`} style={{ color: failed ? 'var(--text-primary)' : 'var(--text-secondary)' }} role={failed ? 'alert' : 'status'}>
-            {failed ? v.failedBody : v.pendingBody}
+            {failed ? (showtime.failedBody ?? v.failedBody) : (showtime.pendingBody ?? v.pendingBody)}
           </p>
           {!failed && (
             <p className="text-[14px] leading-[20px] font-medium">{v.amount}</p>
           )}
         </Card>
       </div>
-      {failed && (
+      {failed && !showtime.canRetry && (
+        <div className="shrink-0 px-4 pt-3 cta-safe flex flex-col items-center">
+          <PrimaryCTA variant="strong" size="lg" onClick={() => dispatch({ type: 'FRIEND_GOTO', name, screen: 'chat' })}>Back to the chat</PrimaryCTA>
+        </div>
+      )}
+      {failed && showtime.canRetry && (
         <div className="shrink-0 px-4 pt-3 cta-safe flex flex-col items-center">
           <PrimaryCTA variant="strong" size="lg" onClick={() => dispatch({ type: 'FRIEND_RETRY', name })}>Try again</PrimaryCTA>
           <button type="button" onClick={() => dispatch({ type: 'FRIEND_GOTO', name, screen: 'pay' })} className="h-11 px-4 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
@@ -292,6 +300,9 @@ export function FriendEndedScreen({ name }: { name: FriendName }) {
             <h2 className="text-[18px] leading-[24px] font-medium mt-0.5 text-balance" data-testid="late-title">{v.title}</h2>
             <p className="text-[14px] leading-[20px] mt-0.5 text-pretty" style={{ color: 'var(--text-secondary)' }}>{v.film} · {v.meta}</p>
           </div>
+          {!late && v.body && (
+            <p className="text-[14px] leading-[20px] text-pretty" data-testid="ended-body">{v.body}</p>
+          )}
         </Card>
         {late && v.seatId && (
           <Card className="flex flex-col gap-3" band={<Band title={v.availability} testId="late-band" />}>
@@ -308,7 +319,7 @@ export function FriendEndedScreen({ name }: { name: FriendName }) {
             onClick={() => {
               if (late) dispatch({ type: 'FRIEND_LATE_PAY_START', name })
               else {
-                setToast('Opens this show in BookMyShow')
+                setToast(v.view === 'started' ? 'Opens Monsoon Heist showtimes in BookMyShow' : 'Opens this show in BookMyShow')
                 setTimeout(() => setToast(null), 2000)
               }
             }}

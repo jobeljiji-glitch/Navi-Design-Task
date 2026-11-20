@@ -3,6 +3,7 @@ import { Check, ChevronLeft } from 'lucide-react'
 import { Band, BottomSheet, Card, Hairline, IosShareSheet, PrimaryCTA, PriceRow, StatusBadge, type IosShareContact } from '@/ds'
 import { useDemoStore } from '@/store'
 import { selectGroupReceipt } from '@/logic/boardFlow'
+import { selectSettledOutside } from '@/logic/failureFlow'
 
 /**
  * Receipt (spec §4 step 9): who paid, what Rohan was charged, what was unblocked. Every amount from
@@ -35,6 +36,7 @@ export default function ReceiptScreen({ onBack }: ReceiptScreenProps) {
     setTimeout(() => setToast(null), 2200)
   }
   const k = r.kept
+  const outside = selectSettledOutside(state)
   const sendLink = () => {
     if (!k) return
     dispatch({ type: 'SEND_PAY_LINK', seatId: k.seatId })
@@ -125,12 +127,30 @@ export default function ReceiptScreen({ onBack }: ReceiptScreenProps) {
 
         {k?.note && <Band standalone title={k.note.title} testId="kept-note">{k.note.body}</Band>}
 
+        {/* 08 / spec §3: after showtime a kept seat can only be labelled (no dead pay-link button) */}
+        {outside.map((o) =>
+          o.marked ? (
+            <Band key={o.seatId} standalone title={`${o.seatId} · Settled outside BMS`} testId="settled-outside">
+              A label for your records only. Nothing was charged or refunded.
+            </Band>
+          ) : null,
+        )}
+
         <div className="flex flex-col items-center gap-0.5 pt-1 cta-safe">
+          {outside
+            .filter((o) => !o.marked)
+            .map((o) => (
+              <PrimaryCTA key={o.seatId} variant="outline" size="lg" onClick={() => dispatch({ type: 'MARK_SETTLED_OUTSIDE', seatId: o.seatId })}>
+                Mark {o.seatId} as settled outside BMS
+              </PrimaryCTA>
+            ))}
           {k && (k.payLinkEnabled || k.transferEnabled) && (
             <>
-              <PrimaryCTA variant="strong" size="lg" disabled={!k.payLinkEnabled} onClick={() => setShareOpen(true)}>
-                {k.payLinkCta}
-              </PrimaryCTA>
+              {k.payLinkEnabled && (
+                <PrimaryCTA variant="strong" size="lg" onClick={() => setShareOpen(true)}>
+                  {k.payLinkCta}
+                </PrimaryCTA>
+              )}
               {k.transferEnabled && (
                 <button type="button" onClick={() => setTransferOpen(true)} className="px-3 py-2.5 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
                   Transfer ticket instead

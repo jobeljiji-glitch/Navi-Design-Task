@@ -71,6 +71,8 @@ export default function SeatLayoutScreen({
   const hold = useDemoStore((st) => st.hold)
   const storeSeats = useDemoStore((st) => st.seats)
   const holdLive = !!hold && (hold.status === 'active' || hold.status === 'resolving')
+  // 08 (#3): with a live hold, picking other seats shows the normal bar, so "Hold for group" can explain the limit
+  const showHoldBar = holdLive && selectedSeatIds.every((id) => hold!.seatIds.includes(id))
   const banner = useMemo(() => selectDemandBanner(useDemoStore.getState()), [show]) // eslint-disable-line react-hooks/exhaustive-deps
   const holdStates = useMemo(() => selectHoldSeatStates(useDemoStore.getState()), [hold, storeSeats]) // eslint-disable-line react-hooks/exhaustive-deps
   const totals = useMemo(
@@ -147,7 +149,7 @@ export default function SeatLayoutScreen({
     setTimeout(() => {
       setToastMessage(null)
       setToastAction(false)
-    }, withAction ? 4000 : 2500)
+    }, withAction ? 4000 : message.length > 44 ? 4500 : 2500) // hold limits stay readable longer; Pay beside it is the way on
   }
 
   const handleSeatClick = (seatId: string) => {
@@ -342,8 +344,9 @@ export default function SeatLayoutScreen({
       {toastMessage && (
         <div className="absolute top-36 left-4 right-4 z-50 flex justify-center pointer-events-none">
           <div
-            className="bg-black/85 text-white px-4 py-2 rounded-full text-[13px] font-medium shadow-lg animate-fade-in backdrop-blur-sm pointer-events-auto flex items-center gap-3"
+            className={`bg-black/85 text-white px-4 py-2 ${toastMessage.length > 44 ? 'rounded-[12px] text-center' : 'rounded-full'} text-[13px] leading-[18px] font-medium shadow-lg animate-fade-in backdrop-blur-sm pointer-events-auto flex items-center gap-3 text-pretty`}
             role="status"
+            data-testid="seat-toast"
           >
             <span>{toastMessage}</span>
             {toastAction && onViewHold && (
@@ -369,7 +372,7 @@ export default function SeatLayoutScreen({
 
       {/* Step 1b: 3–10 seats → Hold for group / Pay all */}
       {/* 04b G: once a hold is live, one bar back to it */}
-      {holdLive && onViewHold && (
+      {showHoldBar && onViewHold && (
         <div
           className="w-full px-4 pt-2.5 cta-safe border-t shrink-0"
           style={{ backgroundColor: 'var(--bg-surface)', borderTopColor: 'var(--divider)' }}
@@ -380,7 +383,7 @@ export default function SeatLayoutScreen({
         </div>
       )}
 
-      {!holdLive && totals.canHold && onHoldForGroup && (
+      {!showHoldBar && totals.canHold && onHoldForGroup && (
         <DualCtaBar
           leftText="Hold for group"
           leftSub="Friends pay their own"
@@ -391,7 +394,18 @@ export default function SeatLayoutScreen({
         />
       )}
 
-      {!holdLive && selectedSeatIds.length > 0 && !(totals.canHold && onHoldForGroup) && (
+      {/* 08: under 3 seats "Hold for group" is hidden (spec §3); say why instead of leaving people guessing */}
+      {!showHoldBar && onHoldForGroup && selectedSeatIds.length > 0 && selectedSeatIds.length < 3 && (
+        <div
+          className="w-full px-4 py-2 shrink-0 text-[13px] leading-[18px] border-t"
+          style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-secondary)', borderTopColor: 'var(--divider)' }}
+          data-testid="group-min-note"
+        >
+          Group holds need 3 or more seats.
+        </div>
+      )}
+
+      {!showHoldBar && selectedSeatIds.length > 0 && !(totals.canHold && onHoldForGroup) && (
         <div
           className="w-full px-4 py-2.5 bg-bg-surface border-t border-divider shrink-0 flex items-center justify-center"
           style={{

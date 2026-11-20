@@ -7,7 +7,7 @@ import { setDemoState, useDemoStore } from '@/store'
 import { useStageStore, type BannerCursor } from '@/store/stage'
 import { navPhone } from './PhoneRouter'
 import { rohanBannerIds } from '@/screens/rohan/RohanFlow'
-import { boardFlowReducer, type BoardState } from '@/logic/boardFlow'
+import type { BoardState } from '@/logic/boardFlow'
 import { formatClockIST } from '@/logic/holdFlow'
 import {
   CLOCK_SKIPS,
@@ -22,7 +22,8 @@ import {
   type MomentId,
   type Persona,
 } from '@/logic/tour'
-import { at, beginHold, friendCompletesPay, friendOpensLink, ist, kabirOpens, runScriptTo } from '@/logic/script'
+import { at, beginHold, friendCompletesPay, friendOpensLink, ist, kabirOpens, openUpi, runScriptTo, type Reduce } from '@/logic/script'
+import { failureFlowReducer, initialFailure, type FailureFlowAction, type FailureState } from '@/logic/failureFlow'
 
 /** Failures and moments leave the tour (it can't continue from an off-script state). */
 export function runFailure(f: Failure) {
@@ -53,13 +54,13 @@ function log(text: string) {
 }
 
 /** Replace domain state wholesale (jumps). No banners for what the replay produced. */
-function replaceState(next: BoardState, cursor?: BannerCursor) {
+function replaceState(next: BoardState | FailureState, cursor?: BannerCursor) {
   setDemoState(next)
   useStageStore.setState((s) => ({ cursor: cursor ?? rohanBannerIds(next), phoneKey: s.phoneKey + 1 }))
 }
 
 /** Apply a pure step to the live state (Rohan sees new banners). */
-function applyLive(fn: (s: BoardState) => BoardState) {
+function applyLive(fn: (s: FailureState) => FailureState) {
   useDemoStore.setState(fn(demo()))
 }
 
@@ -241,28 +242,142 @@ function ensureHold() {
   replaceState(runScriptTo(freshState(), 'hold'))
 }
 
+export type FailureGroup = 'Before the hold' | 'Paying for the hold' | 'Friends paying' | 'After the deadline'
+export const FAILURE_GROUPS: FailureGroup[] = ['Before the hold', 'Paying for the hold', 'Friends paying', 'After the deadline']
+
 export interface Failure {
   id: string
+  group: FailureGroup
   label: string
   run: () => void
 }
 
-/** Spec §5 ★ failures, triggered with the real actions. */
+/** Failures go through the full reducer stack (08: failure layer on top), so its timers run too. */
+const FR = failureFlowReducer as unknown as Reduce
+const fr = (s: FailureState, a: FailureFlowAction) => failureFlowReducer(s, a)
+const fresh = (): FailureState => ({ ...freshState(), failure: initialFailure() })
+
+/** Rohan on the seat layout, seats selected, a limit in place: tap "Hold for group". */
+function limitFailure(path: string, prep: (s: FailureState) => FailureState, text: string) {
+  replaceState(prep(fresh()))
+  toRohan(path)
+  log(text)
+}
+
+/** A draft hold (sheet or approval screen), optionally down the payment ladder or with an approval outcome. */
+function draftFailure(prep: (s: FailureState) => FailureState, path: string, text: string) {
+  replaceState(prep(fresh()))
+  toRohan(path)
+  log(text)
+}
+
+/** Spec §5 failures (★ and the rest the logic supports), triggered with the real actions. */
 export const FAILURES: Failure[] = [
+  // --- Before the hold ---------------------------------------------------
   {
-    id: 'no-blocking',
-    label: "Bank can't block (#4)",
+    id: 'under-3h',
+    group: 'Before the hold',
+    label: 'Less than 3 h to the show (#1)',
+    run: () =>
+      limitFailure('/rohan/seats-selected', (s) => fr(s, { type: 'SET_DEMO_SETTINGS', patch: { is3HoursBeforeShow: true } }), 'Show is less than 3 h away. Tap Hold for group.'),
+  },
+  {
+    id: 'cap',
+    group: 'Before the hold',
+    label: 'Group holds full, high demand (#2)',
+    run: () =>
+      limitFailure(
+        '/rohan/seats-selected',
+        (s) => fr(fr(s, { type: 'CONTROLLER_SET_DEMAND_TIER', tier: 'high' }), { type: 'SET_DEMO_SETTINGS', patch: { showHoldsPct: 15 } }),
+        'High-demand show: group holds already cover 15% of the seats left. Tap Hold for group.',
+      ),
+  },
+  {
+    id: 'second-hold',
+    group: 'Before the hold',
+    label: 'Second hold on the same show (#3)',
     run: () => {
-      useStageStore.setState({ path: '/rohan/hold', rohanPath: '/rohan/hold' })
-      let s = freshState()
-      s = boardFlowReducer(s, { type: 'CONTROLLER_TOGGLE_BANK_BLOCKING', supported: false })
-      s = beginHold(s)
-      replaceState(s)
-      log("Bank doesn't support blocking: pay all now, refunds as friends pay")
+      replaceState(runScriptTo(fresh(), 'hold', FR))
+      toRohan('/rohan/seats-selected?seats=C05,C06,C07,C08,C09,C10')
+      log('Rohan already holds D05–D10 and picks C05–C10. Tap Hold for group.')
     },
   },
   {
+    id: 'two-holds',
+    group: 'Before the hold',
+    label: '2 holds running on the account',
+    run: () =>
+      limitFailure(
+        '/rohan/seats-selected',
+        (s) => fr(s, { type: 'SET_DEMO_SETTINGS', patch: { userAccountsActiveHoldCount: 2 } }),
+        'Rohan already has 2 group holds for other shows. Tap Hold for group.',
+      ),
+  },
+  {
+    id: 'two-seats',
+    group: 'Before the hold',
+    label: 'Fewer than 3 seats',
+    run: () => limitFailure('/rohan/seats-selected?seats=D07,D08', (s) => s, 'Only 2 seats: Hold for group is hidden.'),
+  },
+  // --- Paying for the hold ------------------------------------------------
+  {
+    id: 'no-blocking',
+    group: 'Paying for the hold',
+    label: "Bank can't block (#4, #5)",
+    run: () =>
+      draftFailure(
+        (s) => beginHold(fr(s, { type: 'CONTROLLER_TOGGLE_BANK_BLOCKING', supported: false }), FR) as FailureState,
+        '/rohan/hold',
+        "Rohan's bank has no UPI Reserve Pay: hold it on his card instead",
+      ),
+  },
+  {
+    id: 'no-card',
+    group: 'Paying for the hold',
+    label: 'No card hold either (#4)',
+    run: () =>
+      draftFailure(
+        (s) =>
+          beginHold(
+            fr(fr(s, { type: 'CONTROLLER_TOGGLE_BANK_BLOCKING', supported: false }), { type: 'CONTROLLER_TOGGLE_CARD_HOLD', supported: false }),
+            FR,
+          ) as FailureState,
+        '/rohan/hold',
+        'No block, no card hold: pay for all 6 now, refunded as each friend pays',
+      ),
+  },
+  {
+    id: 'upi-declined',
+    group: 'Paying for the hold',
+    label: 'UPI block declined (#6)',
+    run: () =>
+      draftFailure((s) => fr(openUpi(beginHold(s, FR), FR) as FailureState, { type: 'UPI_DECLINED' }), '/rohan/hold', "Rohan's bank declined the block"),
+  },
+  {
+    id: 'bank-timeout',
+    group: 'Paying for the hold',
+    label: "Bank doesn't respond",
+    run: () =>
+      draftFailure(
+        (s) => fr(openUpi(beginHold(s, FR), FR) as FailureState, { type: 'SET_NEXT_APPROVAL', outcome: 'timeout' }),
+        '/rohan/upi',
+        "Rohan's bank will time out. Approve with any PIN.",
+      ),
+  },
+  {
+    id: 'own-fails',
+    group: 'Paying for the hold',
+    label: 'Own payment fails, block works (#7)',
+    run: () =>
+      draftFailure(
+        (s) => fr(openUpi(beginHold(s, FR), FR) as FailureState, { type: 'SET_NEXT_APPROVAL', outcome: 'own_fails' }),
+        '/rohan/upi',
+        "Rohan's payment for D07 will fail. Approve with any PIN.",
+      ),
+  },
+  {
     id: 'cancel-block',
+    group: 'Paying for the hold',
     label: 'Rohan cancels the block in UPI (#8)',
     run: () => {
       ensureHold()
@@ -271,12 +386,14 @@ export const FAILURES: Failure[] = [
       log('Rohan cancelled his block in the UPI app')
     },
   },
+  // --- Friends paying -------------------------------------------------------
   {
     id: 'conflict',
+    group: 'Friends paying',
     label: 'Two friends pick the same seat (#10)',
     run: () => {
       ensureHold()
-      applyLive((s) => friendOpensLink(s, 'Sana'))
+      applyLive((s) => friendOpensLink(s, 'Sana', FR) as FailureState)
       const seat = demo().friendFlow.sessions.Sana.seatId ?? 'D09'
       demo().dispatch({ type: 'FRIEND_LOCK_SEAT', friendName: 'Kabir', seatId: seat })
       toFriend('Sana')
@@ -284,7 +401,21 @@ export const FAILURES: Failure[] = [
     },
   },
   {
+    id: 'friend-fails',
+    group: 'Friends paying',
+    label: "A friend's bank declines (#12)",
+    run: () => {
+      ensureHold()
+      applyLive((s) =>
+        fr(friendCompletesPay(friendOpensLink(s, 'Priya', FR), 'Priya', 'pending', FR) as FailureState, { type: 'FRIEND_RESOLVE', name: 'Priya', outcome: 'fail' }),
+      )
+      toFriend('Priya')
+      log("Priya's bank declined her payment")
+    },
+  },
+  {
     id: 'cant-make-it',
+    group: 'Friends paying',
     label: "Neha can't make it (#17)",
     run: () => {
       ensureHold()
@@ -295,31 +426,62 @@ export const FAILURES: Failure[] = [
   },
   {
     id: 'pending',
+    group: 'Friends paying',
     label: 'Payment pending at the deadline (#19)',
     run: () => {
       ensureHold()
-      applyLive((s) => at(friendCompletesPay(friendOpensLink(at(s, 19, 13), 'Priya'), 'Priya', 'pending'), 19, 15))
+      applyLive((s) => at(friendCompletesPay(friendOpensLink(at(s, 19, 13, FR), 'Priya', FR), 'Priya', 'pending', FR), 19, 15, FR) as FailureState)
       toRohan('/rohan/board')
       log("Priya's payment is still with her bank at 7:15 PM")
     },
   },
+  // --- After the deadline ---------------------------------------------------
   {
     id: 'nobody',
+    group: 'After the deadline',
     label: 'Nobody responds (#20)',
     run: () => {
       ensureHold()
-      applyLive((s) => at(s, 19, 15))
+      applyLive((s) => at(s, 19, 15, FR) as FailureState)
       toRohan('/rohan/receipt')
       log('Deadline passed with nobody paying: unpaid seats kept')
     },
   },
   {
     id: 'late',
+    group: 'After the deadline',
     label: 'Kabir pays late (#23)',
     run: () => jumpToMoment('late'),
   },
   {
+    id: 'showtime-pending',
+    group: 'After the deadline',
+    label: 'Late payment pending at showtime',
+    run: () => showtimePending('success'),
+  },
+  {
+    id: 'showtime-expired',
+    group: 'After the deadline',
+    label: 'Late payment not confirmed in time',
+    run: () => showtimePending('expire'),
+  },
+  {
+    id: 'after-show',
+    group: 'After the deadline',
+    label: 'Link opened after the show (#25)',
+    run: () => {
+      let s = runScriptTo(fresh(), 'grace', FR) as FailureState
+      s = at(s, 21, 20, FR) as FailureState
+      s = friendOpensLink(s, 'Kabir', FR) as FailureState
+      replaceState(s)
+      useStageStore.setState({ rohanPath: '/rohan/receipt' })
+      toFriend('Kabir')
+      log('Kabir opens the link at 9:20 PM, after the show started')
+    },
+  },
+  {
     id: 'cinema',
+    group: 'After the deadline',
     label: 'Cinema cancels the show (#27)',
     run: () => {
       ensureHold()
@@ -329,6 +491,35 @@ export const FAILURES: Failure[] = [
     },
   },
 ]
+
+/** Kabir pays for the kept seat at 9:14 PM; at 9:15 the show starts with his bank still confirming. */
+function showtimePending(outcome: 'success' | 'expire') {
+  let s = kabirOpens(runScriptTo(fresh(), 'grace', FR), FR) as FailureState
+  s = at(s, 21, 14, FR) as FailureState
+  s = fr(s, { type: 'SET_NEXT_PAYMENT_OUTCOME', outcome: 'pending' })
+  s = fr(s, { type: 'FRIEND_LATE_PAY_START', name: 'Kabir' })
+  if (s.friendFlow.sessions.Kabir.screen === 'phone') s = fr(s, { type: 'FRIEND_PHONE_SUBMIT', name: 'Kabir', phone: '98765 43214' })
+  if (s.friendFlow.sessions.Kabir.screen === 'otp') s = fr(s, { type: 'FRIEND_OTP_OK', name: 'Kabir' })
+  s = fr(s, { type: 'FRIEND_CHOOSE_UPI', name: 'Kabir', app: 'Kite Pay' })
+  s = fr(s, { type: 'FRIEND_APPROVE', name: 'Kabir' })
+  s = at(s, 21, 15, FR) as FailureState
+  replaceState(s)
+  useStageStore.setState({ rohanPath: '/rohan/receipt' })
+  toFriend('Kabir')
+  log("9:15 PM: the show starts while Kabir's bank is still confirming D06")
+  later(() => {
+    if (outcome === 'success') {
+      demo().dispatch({ type: 'SET_CLOCK', now: ist(21, 17) })
+      demo().dispatch({ type: 'SET_NEXT_PAYMENT_OUTCOME', outcome: 'success' })
+      demo().dispatch({ type: 'FRIEND_RESOLVE', name: 'Kabir', outcome: 'success' })
+      log("9:17 PM: Kabir's bank confirmed. D06 is his; Rohan refunded")
+    } else {
+      demo().dispatch({ type: 'SET_CLOCK', now: ist(21, 25) })
+      demo().dispatch({ type: 'SET_NEXT_PAYMENT_OUTCOME', outcome: 'success' })
+      log("9:25 PM: Kabir's bank never confirmed. Not charged; Rohan still has D06")
+    }
+  }, 3500)
+}
 
 function toRohan(path: string) {
   useStageStore.setState({ rohanPath: path })

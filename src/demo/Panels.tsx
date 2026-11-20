@@ -7,6 +7,7 @@ import { formatClockIST } from '@/logic/holdFlow'
 import { INTRO, MOMENTS, PERSONAS, TOUR_STEPS, personaOf } from '@/logic/tour'
 import {
   FAILURES,
+  FAILURE_GROUPS,
   clockSkips,
   clockTo,
   jumpTo,
@@ -182,21 +183,28 @@ export function MomentList({ onPick }: { onPick?: () => void }) {
 
 export function FailureList({ onPick }: { onPick?: () => void }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      {FAILURES.map((f) => (
-        <button
-          key={f.id}
-          type="button"
-          className={chip}
-          style={chipStyle}
-          onClick={() => {
-            runFailure(f)
-            onPick?.()
-          }}
-          data-testid={`failure-${f.id}`}
-        >
-          {f.label}
-        </button>
+    <div className="flex flex-col gap-3">
+      {FAILURE_GROUPS.map((g) => (
+        <div key={g} className="flex flex-col gap-1.5" role="group" aria-label={g}>
+          <h3 className="text-[12px] leading-[16px]" style={{ color: 'var(--text-secondary)' }}>
+            {g}
+          </h3>
+          {FAILURES.filter((f) => f.group === g).map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={chip}
+              style={chipStyle}
+              onClick={() => {
+                runFailure(f)
+                onPick?.()
+              }}
+              data-testid={`failure-${f.id}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       ))}
     </div>
   )

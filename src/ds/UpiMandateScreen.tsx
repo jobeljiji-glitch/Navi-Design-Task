@@ -9,8 +9,12 @@ import { motion, AnimatePresence } from 'motion/react'
  */
 export interface UpiMandateScreenProps {
   amount: string
-  /** block = Reserve Pay (organiser), payment = pay-and-refund fallback, pay = a friend's one-off payment (05) */
-  mode?: 'block' | 'payment' | 'pay'
+  /** block = Reserve Pay (organiser), card = card pre-auth (08 ladder), payment = pay-and-refund fallback, pay = a friend's one-off payment (05) */
+  mode?: 'block' | 'card' | 'payment' | 'pay'
+  /** Card rung: "ending 4021" (fictional card) */
+  cardLabel?: string
+  /** 08: the bank is slow (timeout failure): show "Waiting for your bank…" before answering */
+  slowBank?: boolean
   debitedNow?: string
   furtherDebits?: string
   blockEnds?: string
@@ -44,13 +48,17 @@ export default function UpiMandateScreen({
   showDetails = 'Group hold · Monsoon Heist · Fri 9:15 PM',
   payerVpa = 'rohan@okbank',
   plainNote = "This money stays in your account — it's only set aside. You're only charged for seats your friends don't pay for.",
+  cardLabel = 'ending 4021',
+  slowBank = false,
   onApprove,
   onDecline,
   className = '',
 }: UpiMandateScreenProps) {
   const [pinOpen, setPinOpen] = useState(false)
   const [pin, setPin] = useState('')
-  const isBlock = mode === 'block'
+  const isCard = mode === 'card'
+  const isBlock = mode === 'block' || isCard
+  const [waiting, setWaiting] = useState(false)
 
   const press = (key: string) => {
     if (key === 'del') {
@@ -60,7 +68,12 @@ export default function UpiMandateScreen({
     if (!key || pin.length >= 4) return
     const next = pin + key
     setPin(next)
-    if (next.length === 4) setTimeout(() => onApprove(next), 250)
+    if (next.length === 4) {
+      if (slowBank) {
+        setWaiting(true)
+        setTimeout(() => onApprove(next), 1800)
+      } else setTimeout(() => onApprove(next), 250)
+    }
   }
 
   return (
@@ -74,12 +87,12 @@ export default function UpiMandateScreen({
         <button type="button" onClick={onDecline} className="w-11 h-11 flex items-center justify-center" aria-label="Close and decline">
           <X size={22} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
         </button>
-        <span className="text-[16px] font-medium">UPI</span>
+        <span className="text-[16px] font-medium">{isCard ? 'Card check' : 'UPI'}</span>
         <span className="w-11" />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4 flex flex-col">
-        <h1 className="text-[22px] leading-[28px] font-normal text-balance">{isBlock ? 'Approve a block request' : 'Approve a payment'}</h1>
+        <h1 className="text-[22px] leading-[28px] font-normal text-balance">{isCard ? 'Approve a hold on your card' : isBlock ? 'Approve a block request' : 'Approve a payment'}</h1>
 
         {/* Merchant */}
         <div className="flex items-center gap-3 mt-4">
@@ -99,13 +112,20 @@ export default function UpiMandateScreen({
         <div className="mt-5 py-5 flex flex-col items-center" style={{ backgroundColor: 'var(--bg-page)', borderRadius: 'var(--card-radius)' }}>
           <span className="text-[34px] leading-[40px] font-medium" data-testid="upi-amount">{amount}</span>
           <span className="text-[14px] leading-[20px] mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {isBlock ? 'will be blocked in your account' : 'will be debited from your account'}
+            {isCard ? `will be held on your card ${cardLabel}` : isBlock ? 'will be blocked in your account' : 'will be debited from your account'}
           </span>
         </div>
 
         {/* Details */}
         <div className="mt-2">
-          {isBlock ? (
+          {isCard ? (
+            <>
+              <DetailRow label="Charged now" value={debitedNow} />
+              <DetailRow label="Further charges" value={furtherDebits} />
+              <DetailRow label="Hold ends" value={blockEnds} />
+              <DetailRow label="Type" value="Card pre-authorisation" />
+            </>
+          ) : isBlock ? (
             <>
               <DetailRow label="Debited now" value={debitedNow} />
               <DetailRow label="Further debits" value={furtherDebits} />
@@ -134,7 +154,9 @@ export default function UpiMandateScreen({
         )}
         {mode !== 'pay' && (
           <p className="mt-3 text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
-            {isBlock
+            {isCard
+              ? 'Unused money is unblocked automatically when the hold ends.'
+              : isBlock
               ? 'Unused money is unblocked automatically. You can cancel this block from Mandates.'
               : 'Each time a friend pays, their share comes back to this account.'}
           </p>
@@ -158,7 +180,7 @@ export default function UpiMandateScreen({
           style={{ backgroundColor: 'var(--text-link)', color: 'var(--text-on-brand)' }}
           data-testid="approve-with-pin"
         >
-          Approve with PIN
+          {isCard ? 'Approve with OTP' : 'Approve with PIN'}
         </button>
       </div>
 
@@ -178,14 +200,14 @@ export default function UpiMandateScreen({
               <button type="button" onClick={() => { setPinOpen(false); setPin('') }} className="w-11 h-11 flex items-center justify-center" aria-label="Close PIN entry">
                 <X size={22} strokeWidth={1.75} />
               </button>
-              <span className="text-[15px] ml-1" style={{ color: 'var(--text-secondary)' }}>{payerVpa}</span>
+              <span className="text-[15px] ml-1" style={{ color: 'var(--text-secondary)' }}>{isCard ? `Card ${cardLabel}` : payerVpa}</span>
             </div>
 
             <div className="flex-1 flex flex-col items-center pt-8 px-4">
               <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>
-                {isBlock ? 'Block' : 'Pay'} {amount} · BookMyShow
+                {isCard ? 'Hold' : isBlock ? 'Block' : 'Pay'} {amount} · BookMyShow
               </span>
-              <span className="text-[20px] leading-[26px] font-medium mt-6">Enter 4-digit UPI PIN</span>
+              <span className="text-[20px] leading-[26px] font-medium mt-6">{isCard ? 'Enter the 4-digit code sent to your phone' : 'Enter 4-digit UPI PIN'}</span>
               <div className="flex gap-5 mt-6" aria-label={`${pin.length} of 4 digits entered`}>
                 {[0, 1, 2, 3].map((i) => (
                   <div key={i} className="w-9 flex flex-col items-center gap-2">
@@ -194,6 +216,11 @@ export default function UpiMandateScreen({
                   </div>
                 ))}
               </div>
+              {waiting && (
+                <p className="mt-8 text-[15px]" role="status" style={{ color: 'var(--text-secondary)' }} data-testid="upi-waiting">
+                  Waiting for your bank…
+                </p>
+              )}
             </div>
 
             <div className="shrink-0 grid grid-cols-3 gap-[6px] p-[6px]" style={{ backgroundColor: 'var(--bg-tag)' }}>
