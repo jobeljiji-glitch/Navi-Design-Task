@@ -46,8 +46,8 @@ export default function PriceBreakdown({
         className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 ${className}`}
         style={{
           backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--divider)',
-          borderRadius: '8px',
+          borderRadius: 'var(--card-radius)',
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         <div className="flex flex-col gap-2">
@@ -119,8 +119,8 @@ export default function PriceBreakdown({
       className={`w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--divider)',
-        borderRadius: '8px',
+        borderRadius: 'var(--card-radius)',
+        boxShadow: 'var(--card-shadow)',
       }}
     >
       <div className="flex flex-col gap-2.5">

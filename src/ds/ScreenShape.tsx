@@ -29,7 +29,7 @@ export default function ScreenShape({
       </div>
 
       <span
-        className="text-[14px] leading-[20px] font-medium text-text-primary mt-2"
+        className="text-[14px] leading-[20px] font-bold text-text-primary mt-2"
         style={{ color: 'var(--text-primary)' }}
       >
         {label}

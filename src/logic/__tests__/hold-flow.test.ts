@@ -64,6 +64,15 @@ describe('holdFlow: begin', () => {
     expect(v.howKeep).toBe('Unpaid seats stay yours and are charged from the block. Release any before 7:15 PM.');
     expect(v.howRelease).toBe('Release free until 4:15 PM. After that, the ₹27.14 fee per seat is kept.');
     expect(v.caption).toBe('One UPI PIN · Unused money is unblocked automatically');
+    expect(v.columns).toEqual([
+      { key: 'now', label: 'Paid now', price: '₹277.14', status: 'Your seat · D07', tone: 'green' },
+      { key: 'aside', label: 'Set aside', price: '₹1,385.70', status: '5 friends · not charged', tone: 'grey' },
+    ]);
+    expect(v.columnsCaption).toBe('Unblocked seat by seat as friends pay');
+    expect(v.rulesTitle).toBe('Friends pay by 7:15 PM today');
+    expect(v.rulesBody).toBe('Unpaid seats stay yours. Release free until 4:15 PM, then the ₹27.14 fee per seat is kept.');
+    expect(v.settingsLine1).toBe('Friends pick their own seat · No seats covered');
+    expect(v.settingsLine2).toBe('Paying with UPI · rohan@okbank');
     expect(v.tiles.map((t) => t.kind)).toEqual(['held', 'held', 'owner', 'held', 'held', 'held']);
   });
 
@@ -82,6 +91,9 @@ describe('holdFlow: begin', () => {
     ]);
     expect(v.moneyTotal).toBe('₹1,662.84');
     expect(v.coverLabel).toBe('2 seats');
+    expect(v.columns[0].status).toBe('D07 + 2 covered');
+    expect(v.columns[1].status).toBe('3 friends · not charged');
+    expect(v.settingsLine1).toBe('Friends pick their own seat · 2 seats covered');
     expect(v.tiles.filter((t) => t.kind === 'covered').map((t) => t.id)).toEqual(['D05', 'D10']);
   });
 
@@ -138,6 +150,10 @@ describe('holdFlow: approve / decline', () => {
     expect(ok.paidSub).toBe('₹250 + ₹27.14 fee');
     expect(ok.setAsideSub).toBe('Blocked, not charged');
     expect(ok.most).toBe('₹1,662.84');
+    expect([ok.ticketsLabel, ok.ticketsPrice, ok.feesPrice, ok.orderTotal]).toEqual(['Ticket(s) price · 6 tickets', '₹1,500.00', '₹162.84', '₹1,662.84']);
+    expect([ok.splitPaidLabel, ok.splitWaitingLabel]).toEqual(['Paid by you · D07', 'Waiting on 5 friends']);
+    expect(ok.splitWaitingSub).toBe('Set aside in your account, unblocks as each friend pays');
+    expect(ok.rulesBand).toBe('Unpaid seats stay yours at 7:15 PM · Release free until 4:15 PM');
     expect(ok.moneyNote).toBe('Unpaid seats stay yours at 7:15 PM. Release free until 4:15 PM.');
     expect(ok.payBy).toBe('7:15 PM today');
     expect(ok.shareMessage).toContain('Pay by 7:15 PM today · bms.link/g/k7Qx2');
@@ -184,6 +200,7 @@ describe('holdFlow: demand tier', () => {
     s = run(s, { type: 'CONTROLLER_SET_DEMAND_TIER', tier: 'low' });
     expect(selectDemandBanner(s)).toEqual({ tier: 'low', holdHours: 24 });
     expect(selectHoldSheet(s)!.howRelease).toBe('Release free anytime before 7:15 PM.');
+    expect(selectHoldSheet(s)!.rulesBody).toBe('Unpaid seats stay yours. Release free anytime before 7:15 PM.');
     expect(selectHoldSheet(s)!.freeReleaseUntil).toBeNull();
   });
 });

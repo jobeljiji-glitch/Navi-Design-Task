@@ -44,8 +44,8 @@ export default function BookingCard({
         className="w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 cursor-pointer relative overflow-hidden"
         style={{
           backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--divider)',
           borderRadius: 'var(--card-radius)',
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         {/* Top section: Poster + Details */}

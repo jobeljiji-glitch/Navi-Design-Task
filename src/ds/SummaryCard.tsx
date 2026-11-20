@@ -36,8 +36,9 @@ export default function SummaryCard({
       className={`w-full bg-bg-surface rounded-[8px] flex flex-col ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--divider)',
-        borderRadius: '8px',
+        borderRadius: 'var(--card-radius)',
+        boxShadow: 'var(--card-shadow)',
+        overflow: 'hidden',
       }}
     >
       <div className="p-4 flex flex-col gap-2">
@@ -118,18 +119,18 @@ export default function SummaryCard({
         <div
           className="px-4 py-3 flex flex-col gap-0.5 rounded-b-[8px]"
           style={{
-            backgroundColor: '#EAF8F1',
+            backgroundColor: 'var(--bg-success)',
           }}
         >
           <span
             className="text-[14px] leading-[19px] font-medium"
-            style={{ color: '#047857' }}
+            style={{ color: 'var(--text-primary)' }}
           >
             Cancellation Available
           </span>
           <span
-            className="text-[14px] leading-[19px]"
-            style={{ color: '#065F46' }}
+            className="text-[13px] leading-[18px]"
+            style={{ color: 'var(--text-primary)' }}
           >
             {cancellationText}
           </span>

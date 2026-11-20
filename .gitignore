@@ -15,6 +15,7 @@ shots/*
 !shots/04-*.png
 !shots/04b-*.png
 !shots/04c-*.png
+!shots/04d-*.png
 
 # Editor
 .vscode/

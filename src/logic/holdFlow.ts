@@ -294,6 +294,13 @@ export interface HoldSheetView {
   howRelease: string;
   ctaTitle: string;
   ctaSub: string | null;
+  // 04d booking-flow patterns
+  columns: Array<{ key: string; label: string; price: string; status: string; tone: 'green' | 'grey' }>;
+  columnsCaption: string;
+  rulesTitle: string;
+  rulesBody: string;
+  settingsLine1: string;
+  settingsLine2: string;
   seatsModeLabel: string;
   coverLabel: string;
   railLabel: string;
@@ -419,6 +426,41 @@ export function selectHoldSheet(state: DemoState): HoldSheetView | null {
       : `Release free anytime before ${deadlineTime}.`,
     ctaTitle,
     ctaSub,
+    columns: fallback
+      ? [
+          { key: 'now', label: 'Paid now', price: formatINR(hold.blockAmount), status: `All ${n} seats`, tone: 'green' },
+          { key: 'aside', label: 'Comes back', price: formatINR(per * friends), status: `As ${friends} friends pay`, tone: 'grey' },
+        ]
+      : [
+          {
+            key: 'now',
+            label: 'Paid now',
+            price: formatINR(nowPaise),
+            status: cover === 0 ? `Your seat · ${hold.ownerSeatId}` : `${hold.ownerSeatId} + ${cover} covered`,
+            tone: 'green',
+          },
+          {
+            key: 'aside',
+            label: 'Set aside',
+            price: formatINR(blockedPaise),
+            status: holdCount === 0 ? 'No friends left to pay' : `${holdCount} ${holdCount === 1 ? 'friend' : 'friends'} · not charged`,
+            tone: 'grey',
+          },
+        ],
+    columnsCaption: fallback ? 'Refunded seat by seat as friends pay' : 'Unblocked seat by seat as friends pay',
+    rulesTitle: `Friends pay by ${deadlineFull}`,
+    rulesBody: freeTime
+      ? `Unpaid seats stay yours. Release free until ${freeTime}, then the ${formatINR(show.fee)} fee per seat is kept.`
+      : `Unpaid seats stay yours. Release free anytime before ${deadlineTime}.`,
+    settingsLine1: [
+      hold.assignMode === 'friends_pick' ? 'Friends pick their own seat' : 'You assign the seats',
+      ...(fallback ? [] : [cover === 0 ? 'No seats covered' : `${cover} ${cover === 1 ? 'seat' : 'seats'} covered`]),
+    ].join(' · '),
+    settingsLine2: isCard
+      ? 'Paying with a credit or debit card'
+      : fallback
+        ? `Paying for all seats with UPI · ${hold.organiser.upi}`
+        : `Paying with UPI · ${hold.organiser.upi}`,
     seatsModeLabel: hold.assignMode === 'friends_pick' ? 'Friends pick their own' : 'You assign them',
     coverLabel: cover === 0 ? 'None' : `${cover} ${cover === 1 ? 'seat' : 'seats'}`,
     railLabel: hold.paymentRail === 'card_preauth' ? 'Card' : fallback ? 'UPI · pay all now' : `UPI ${hold.organiser.upi}`,
@@ -447,6 +489,15 @@ export interface HoldSuccessView {
   paidLine: string;
   setAsideLabel: string;
   setAsideCaption: string;
+  // 04d Confirm-booking price card + split + band
+  ticketsLabel: string;
+  ticketsPrice: string;
+  feesPrice: string;
+  orderTotal: string;
+  splitPaidLabel: string;
+  splitWaitingLabel: string;
+  splitWaitingSub: string;
+  rulesBand: string;
   // 04c money card
   paidLabel: string;
   paidSub: string;
@@ -513,6 +564,18 @@ export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
     paidLine: `${paidCount} of ${n} paid`,
     setAsideLabel: fallback ? `Back to you as ${unpaid} friends pay` : `Set aside for ${unpaid} ${unpaid === 1 ? 'friend' : 'friends'}`,
     setAsideCaption: fallback ? `${formatINR(per)} comes back each time a friend pays` : 'Unblocks as friends pay',
+    ticketsLabel: `Ticket(s) price · ${n} tickets`,
+    ticketsPrice: formatINR(hold.seatIds.reduce((sum, id) => sum + (state.seats[id]?.price ?? 0), 0)),
+    feesPrice: formatINR(state.show.fee * n),
+    orderTotal: formatINR(hold.blockAmount),
+    splitPaidLabel: coveredCount > 0 ? `Paid by you · ${hold.ownerSeatId} + ${coveredCount} covered` : `Paid by you · ${hold.ownerSeatId}`,
+    splitWaitingLabel: `Waiting on ${unpaid} ${unpaid === 1 ? 'friend' : 'friends'}`,
+    splitWaitingSub: fallback ? 'Paid by you now, refunded as each friend pays' : 'Set aside in your account, unblocks as each friend pays',
+    rulesBand: freeTime
+      ? `Unpaid seats stay yours at ${deadline} · Release free until ${freeTime}`
+      : state.show.tier === 'low'
+        ? `Unpaid seats stay yours at ${deadline} · Release free anytime before then`
+        : `Unpaid seats stay yours at ${deadline} · Releasing now keeps the ${formatINR(state.show.fee)} fee per seat`,
     paidLabel: coveredCount > 0 ? `You paid for ${1 + coveredCount} seats` : `Your ticket (${hold.ownerSeatId})`,
     paidSub:
       coveredCount > 0

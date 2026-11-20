@@ -87,6 +87,7 @@
   --seat-radius: 3px;                   /* est */
   --sheet-radius: 16px;                 /* est */
   --card-radius: 8px;                   /* est */
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.04); /* 04d: measured on ref 22 cards (1 px darker rim + 2-3 px soft drop) */
 
   /* iPhone 17 */
   --device-width: 402px;

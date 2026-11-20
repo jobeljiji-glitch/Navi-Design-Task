@@ -74,7 +74,7 @@ export default function MovieDetailScreen({
           {/* Title Graphic */}
           <div className="relative z-10 p-4 flex flex-col items-center justify-center flex-1 text-center">
             <span
-              className="text-[28px] leading-[32px] font-medium uppercase tracking-tight text-white drop-shadow-md"
+              className="text-[28px] leading-[32px] font-black uppercase tracking-tight text-white drop-shadow-md"
               style={{ fontFamily: 'system-ui, sans-serif' }}
             >
               MONSOON HEIST

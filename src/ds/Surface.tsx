@@ -3,7 +3,10 @@ import type { ReactNode, ElementType } from 'react'
 /**
  * Surface system (04c) — the ONE way to contain content (refs 11, 18, 19, 22):
  *
- * - Card       white, radius 8, NO border, NO shadow. Use on grey pages (--bg-page).
+ * - Card       white, radius 8, soft --card-shadow measured on ref 22 (04d), 16 pt padding.
+ *              Use on grey pages (--bg-page). `band` slot sits flush on the card's bottom edge.
+ * - Band       the ref 22 cancellation band: --bg-success, 14/500 title (+ optional action), 13 pt body.
+ * - PriceColumns  the ref 05/19 tier-column pattern (12 pt caps label, 20/500 price, 12 pt status).
  * - SoftGroup  soft grey fill (--bg-muted), radius 8, no border. Use inside white sheets
  *              when something needs containment (e.g. a money summary).
  * - Hairline   1 px divider. `bleed` extends through a 16 pt sheet/page gutter (full-width, like 05/19).
@@ -20,15 +23,88 @@ interface BaseProps {
   as?: ElementType
 }
 
-export function Card({ children, className = '', testId, as: Tag = 'section', padded = true }: BaseProps & { padded?: boolean }) {
+export function Card({
+  children,
+  className = '',
+  testId,
+  as: Tag = 'section',
+  padded = true,
+  band,
+}: BaseProps & { padded?: boolean; band?: ReactNode }) {
   return (
     <Tag
-      className={`w-full overflow-hidden ${padded ? 'p-4' : ''} ${className}`}
-      style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--card-radius)' }}
+      className="w-full overflow-hidden flex flex-col"
+      style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--card-radius)', boxShadow: 'var(--card-shadow)' }}
       data-testid={testId}
     >
-      {children}
+      <div className={`min-w-0 ${padded ? 'p-4' : ''} ${className}`}>{children}</div>
+      {band}
     </Tag>
+  )
+}
+
+/** Ref 22 cancellation band. Inside a Card's `band` slot it sits flush on the bottom edge; standalone it is rounded. */
+export function Band({
+  title,
+  action,
+  children,
+  standalone = false,
+  testId,
+}: {
+  title: ReactNode
+  action?: ReactNode
+  children?: ReactNode
+  standalone?: boolean
+  testId?: string
+}) {
+  return (
+    <div
+      className="px-4 py-3 flex flex-col gap-0.5"
+      style={{ backgroundColor: 'var(--bg-success)', borderRadius: standalone ? 'var(--card-radius)' : undefined }}
+      data-testid={testId}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="text-[14px] leading-[20px] font-medium text-balance" style={{ color: 'var(--text-primary)' }}>
+          {title}
+        </span>
+        {action}
+      </div>
+      {children && (
+        <p className="text-[13px] leading-[18px] text-pretty" style={{ color: 'var(--text-primary)' }}>
+          {children}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Ref 05/19 tier columns: equal columns, left-aligned. */
+export function PriceColumns({
+  columns,
+  testId,
+}: {
+  columns: Array<{ key: string; label: string; price: string; status: string; tone?: 'green' | 'grey' }>
+  testId?: string
+}) {
+  return (
+    <div className="w-full grid gap-2" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }} data-testid={testId}>
+      {columns.map((c) => (
+        <div key={c.key} className="flex flex-col items-start text-left min-w-0" data-testid={`col-${c.key}`}>
+          <span className="text-[12px] leading-[15px] uppercase font-normal" style={{ color: 'var(--text-secondary)' }}>
+            {c.label}
+          </span>
+          <span className="text-[20px] leading-[26px] font-medium mt-1" style={{ color: 'var(--text-primary)' }}>
+            {c.price}
+          </span>
+          <span
+            className={`text-[12px] leading-[16px] mt-0.5 ${c.tone === 'green' ? 'font-medium tracking-[0.2px]' : 'font-normal'}`}
+            style={{ color: c.tone === 'green' ? 'var(--text-success)' : 'var(--text-secondary)' }}
+          >
+            {c.status}
+          </span>
+        </div>
+      ))}
+    </div>
   )
 }
 

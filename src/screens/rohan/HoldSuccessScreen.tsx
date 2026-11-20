@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import {
+  Band,
   BottomSheet,
   Card,
   Hairline,
@@ -87,60 +88,54 @@ export default function HoldSuccessScreen({ onBack }: HoldSuccessScreenProps) {
       </header>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col gap-3 no-scrollbar" style={{ overscrollBehavior: 'contain' }}>
-        {/* Card 1: status */}
-        <Card padded={false} testId="status-card">
-          <div className="p-4 flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <StatusBadge status="GROUP HOLD" />
-              <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v.statusLine}</span>
-            </div>
-            <div>
-              <h2 className="text-[18px] leading-[24px] font-medium text-balance">{v.title}</h2>
-              <div className="mt-1 flex flex-col text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>
-                <span>{v.filmLine}</span>
-                <span>{v.dateLine}</span>
-                <span>{v.cinemaLine}</span>
-              </div>
+        {/* Card 1: status, with the rules as the ref-22 band flush on its bottom edge */}
+        <Card testId="status-card" className="flex flex-col gap-3" band={<Band title={v.rulesBand.split(' · ')[0]} testId="status-band">{v.rulesBand.split(' · ')[1]}</Band>}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <StatusBadge status="GROUP HOLD" />
+            <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v.statusLine}</span>
+          </div>
+          <div>
+            <h2 className="text-[18px] leading-[24px] font-medium text-balance">{v.title}</h2>
+            <div className="mt-1 flex flex-col text-[14px] leading-[20px] text-pretty" style={{ color: 'var(--text-secondary)' }}>
+              <span>{v.filmLine}</span>
+              <span>{v.dateLine}</span>
+              <span>{v.cinemaLine}</span>
             </div>
           </div>
         </Card>
 
-        {/* Card 2: who's in (focus) */}
-        <Card padded={false} testId="whos-in">
-          <div className="p-4 flex flex-col gap-3">
-            <div className="flex items-baseline justify-between">
-              <h3 className="text-[16px] leading-[22px] font-medium">Who's in</h3>
-              <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v.paidLine}</span>
-            </div>
-            <SeatTileRow tiles={v.tiles} />
-            <div
-              className="w-full h-1 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'var(--bg-muted)' }}
-              role="progressbar"
-              aria-valuenow={v.paidCount}
-              aria-valuemin={0}
-              aria-valuemax={v.totalCount}
-              aria-label={v.paidLine}
-            >
-              <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--showtime-green)' }} />
-            </div>
+        {/* Card 2: who's in — tiles, labels and progress all inside the 16 pt padding */}
+        <Card testId="whos-in" className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-[16px] leading-[22px] font-medium">Who's in</h3>
+            <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v.paidLine}</span>
+          </div>
+          <SeatTileRow tiles={v.tiles} />
+          <div
+            className="w-full h-1 rounded-full overflow-hidden"
+            style={{ backgroundColor: 'var(--bg-muted)' }}
+            role="progressbar"
+            aria-valuenow={v.paidCount}
+            aria-valuemin={0}
+            aria-valuemax={v.totalCount}
+            aria-label={v.paidLine}
+          >
+            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--showtime-green)' }} />
           </div>
         </Card>
 
-        {/* Card 3: money — Confirm-booking price rows (ref 22) */}
-        <div className="flex flex-col gap-2">
-          <Card testId="money-card" className="flex flex-col gap-3">
-            <PriceRow label={v.paidLabel} value={v.paid} sub={v.paidSub} testId="money-paid" />
-            <PriceRow label={v.setAsideLabel} value={v.blocked} sub={v.setAsideSub} testId="money-aside" />
-            <Hairline dashed />
-            <PriceRow label={v.mostLabel} value={v.most} strong testId="money-most" />
-          </Card>
-          <p className="px-1 text-[12px] leading-[16px] text-pretty" style={{ color: 'var(--text-secondary)' }} data-testid="money-note">
-            {v.moneyNote}
-          </p>
-        </div>
+        {/* Card 3: the Confirm-booking price card (ref 22), then the split */}
+        <Card testId="money-card" className="flex flex-col gap-3">
+          <PriceRow label={v.ticketsLabel} value={v.ticketsPrice} testId="money-tickets" />
+          <PriceRow label="Convenience fees" value={v.feesPrice} testId="money-fees" />
+          <Hairline dashed />
+          <PriceRow label="Order total" value={v.orderTotal} strong testId="money-total" />
+          <Hairline className="my-1" />
+          <PriceRow label={v.splitPaidLabel} value={v.paid} testId="split-paid" />
+          <PriceRow label={v.splitWaitingLabel} value={v.blocked} sub={v.splitWaitingSub} testId="split-waiting" />
+        </Card>
 
-        {/* Ticket row */}
+        {/* The only ticket row */}
         <Card padded={false}>
           <button
             type="button"

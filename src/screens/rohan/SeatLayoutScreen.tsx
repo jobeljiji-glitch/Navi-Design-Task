@@ -317,8 +317,8 @@ export default function SeatLayoutScreen({
           >
             <div className="flex flex-col text-left pr-2">
               <div className="flex items-center gap-1">
-                <span className="text-[10px] font-medium text-text-secondary leading-none">bookmyshow</span>
-                <span className="text-[11px] font-medium tracking-wider text-amber-900 leading-none">CLUB</span>
+                <span className="text-[10px] font-semibold text-text-secondary leading-none">bookmyshow</span>
+                <span className="text-[11px] font-black tracking-wider text-amber-900 leading-none">CLUB</span>
               </div>
               <span
                 className="text-[12px] leading-[15px] font-medium mt-0.5"
