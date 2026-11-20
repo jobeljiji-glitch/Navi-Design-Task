@@ -22,6 +22,9 @@ import { formatClockIST } from '@/logic/holdFlow'
 import { boardFlowReducer, selectRohanBanner, withBoard } from '@/logic/boardFlow'
 import { AT_PARAM, ist, runScriptTo } from '@/logic/script'
 import { createInitialDemoState } from '@/logic/seed'
+import { useInStage } from '@/demo/PhoneRouter'
+import { useStageStore } from '@/store/stage'
+import type { BoardState } from '@/logic/boardFlow'
 
 const DEMO_GROUP = ['D05', 'D06', 'D07', 'D08', 'D09', 'D10']
 const ALREADY_HOLDING = "You're already holding seats for this show."
@@ -29,6 +32,14 @@ const UPI_OPENING_MS = 600
 const CHAT_TO_BOARD_MS = 900
 /** Bank SMS that reach Rohan as banners from here (the approval SMS is shown by the Group hold screen). */
 const SMS_KEYS = ['sms-settled-', 'sms-late-refund-', 'sms-add-seat-', 'sms-cancel-']
+
+/** The banner ids RohanFlow treats as already seen (the stage records them across persona switches). */
+export function rohanBannerIds(s: BoardState) {
+  return {
+    notif: selectRohanBanner(s)?.id ?? null,
+    sms: s.smsToasts.find((t) => SMS_KEYS.some((k) => t.id.startsWith(k)))?.id ?? null,
+  }
+}
 
 type Banner = { id: string; app: 'bms' | 'sms'; title: string; body: string; kind?: string }
 
@@ -44,8 +55,14 @@ export default function RohanFlow() {
   const latestSms = state.smsToasts.find((t) => SMS_KEYS.some((k) => t.id.startsWith(k))) ?? null
   const [queue, setQueue] = useState<Banner[]>([])
   const [bannerVisible, setBannerVisible] = useState(true)
-  const seenNotif = useRef<string | null | undefined>(undefined)
-  const seenSms = useRef<string | null | undefined>(undefined)
+  // In the demo stage the seen ids outlive this component, so a friend's payment made while
+  // Rohan's phone was away still arrives as a banner when the story comes back to him.
+  const inStage = useInStage()
+  const seenNotif = useRef<string | null | undefined>(inStage ? useStageStore.getState().cursor.notif : undefined)
+  const seenSms = useRef<string | null | undefined>(inStage ? useStageStore.getState().cursor.sms : undefined)
+  const syncCursor = () => {
+    if (inStage) useStageStore.setState({ cursor: { notif: seenNotif.current ?? null, sms: seenSms.current ?? null } })
+  }
   const seededFor = useRef<string | null>(null)
 
   // Selected seats state across the booking flow (defaulting to 6 seats: D05-D10)
@@ -69,6 +86,7 @@ export default function RohanFlow() {
   // Deep links (screenshots, tutorial "restart from step"): seed the demo hold if the store has none.
   // `?fallback=1` turns bank blocking off first. Lives here, not in screens: DeviceFrame mounts children twice.
   useEffect(() => {
+    if (inStage) return // the stage owns state
     if (!holdPaths.includes(path)) return
     // `?at=310|neha|t30|pending|deadline|grace|receipt|late|810`: replay the spec §1 script up to that step.
     const at = new URLSearchParams(location.search).get('at')
@@ -125,6 +143,7 @@ export default function RohanFlow() {
     }
     if (latestNotif && id !== seenNotif.current) {
       seenNotif.current = id
+      syncCursor()
       setQueue((q) => [...q, { id: latestNotif.id, app: 'bms', title: latestNotif.title, body: latestNotif.body, kind: latestNotif.type }])
     }
   }, [latestNotif?.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -136,6 +155,7 @@ export default function RohanFlow() {
     }
     if (latestSms && id !== seenSms.current) {
       seenSms.current = id
+      syncCursor()
       setQueue((q) => [...q, { id: latestSms.id, app: 'sms', title: 'OKBANK', body: latestSms.text }])
     }
   }, [latestSms?.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -373,6 +393,15 @@ export default function RohanFlow() {
           onDismiss={nextBanner}
           onClick={() => openBanner(banner)}
         />
+      )}
+      {/* Failures #8 and #27 end the hold with an alert (copy from spec §5) */}
+      {state.errorMessage && hold?.status === 'cancelled' && (
+        <div className="absolute inset-0 z-[70] flex items-center justify-center px-12" style={{ backgroundColor: 'var(--scrim-light)' }}>
+          <div role="alertdialog" aria-labelledby="hold-alert" className="w-full max-w-[270px] rounded-[14px] overflow-hidden text-center" style={{ backgroundColor: 'var(--ios-sheet-bg)', fontFamily: 'var(--font-system)' }} data-testid="hold-alert">
+            <p id="hold-alert" className="px-4 pt-5 pb-4 text-[15px] leading-[20px]" style={{ color: 'var(--text-primary)' }}>{state.errorMessage}</p>
+            <button type="button" onClick={() => dispatch({ type: 'CLEAR_ERROR' })} className="w-full h-11 text-[17px] font-medium" style={{ borderTop: '0.5px solid var(--ios-separator)', color: 'var(--text-link)' }}>OK</button>
+          </div>
+        </div>
       )}
     </DeviceFrame>
   )

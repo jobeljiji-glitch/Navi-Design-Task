@@ -151,7 +151,7 @@ Copy is final unless marked *(draft)*. Currency always shows two decimals, like 
 ### Step 2: Hold summary (bottom sheet)
 - Title: **Hold 6 seats for your group** · subtitle "Monsoon Heist · Fri 9:15 PM · D05–D10"
 - Rows: `Your seat [D07 ▾]` → "₹277.14 now" · `5 friends' seats` → "₹1,385.70 blocked"
-- `MoneyLedger`: "Leaves your account now ₹277.14" · "Blocked, not taken ₹1,385.70" · **"Most you could pay ₹1,662.84"** · helper: "Each time a friend pays, ₹277.14 is unblocked. Works like an IPO application."
+- `MoneyLedger`: "Leaves your account now ₹277.14" · "Blocked, not taken ₹1,385.70" · **"Most you could pay ₹1,662.84"** · helper: "Each time a friend pays, ₹277.14 is unblocked. The money stays in your account — it’s only set aside."
 - Info rows:
   - "Friends have until **7:15 PM today** (6h). After that, you keep or release each unpaid seat." + `Shorten`
   - "Friends pick their own seat." + link `Assign seats instead`
@@ -304,6 +304,8 @@ A panel next to the phones (on mobile: the ⚙ tab). Every event is logged with 
 
 ### Tutorial (coach marks; `Next`, `Back`, `Skip tour`; `Replay tour` in the controller)
 
+> **Superseded by D-093–D-104:** the shipped tour is 14 steps on one phone that changes hands (`src/logic/tour.ts`). The table below is the original outline.
+
 | # | Persona | Anchor | Bubble text |
 | --- | --- | --- | --- |
 | 0 | — | Centre card | "Group Hold for BookMyShow. Lock seats for your group without paying for everyone. Take the 2-minute tour, or explore on your own." `Start tour` · `Explore on my own` |
@@ -312,7 +314,7 @@ A panel next to the phones (on mobile: the ⚙ tab). Every event is logged with 
 | 3 | Rohan | Number 6 | "Six seats. Notice the new hint: he can hold seats for the group." |
 | 4 | Rohan | Demand banner | "An honest signal: seats are selling, and the hold would last 6 hours." |
 | 5 | Rohan | Hold for group | "Instead of paying ₹1,662.84 for everyone, he holds the seats." |
-| 6 | Rohan | Money ledger | "Only his seat is paid now. The rest is blocked, not taken, like an IPO application." |
+| 6 | Rohan | Money ledger | "Only his seat is paid now. The money stays in your account — it’s only set aside." |
 | 7 | Rohan | Approve with PIN | "This is his bank app. One PIN: ₹1,662.84 set aside, ₹277.14 leaves now." |
 | 8 | Rohan | Send to your group | "The link replaces the WhatsApp poll." |
 | 9 | Amit | Link preview | "Now you're Amit. Tap Rohan's link." |

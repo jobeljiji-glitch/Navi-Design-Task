@@ -43,6 +43,7 @@ export default function SeatCountSheet({
   )
 
   const footer = (
+    <div data-tour="seat-count-select">
     <PrimaryCTA
       onClick={() => {
         onSelectSeats?.()
@@ -51,6 +52,7 @@ export default function SeatCountSheet({
     >
       Select seats
     </PrimaryCTA>
+    </div>
   )
 
   return (

@@ -59,7 +59,7 @@ export default function SeatGrid({
             {/* Rows list */}
             <div className="flex flex-col gap-[6px]">
               {group.rows.map(rowItem => (
-                <div key={rowItem.row} className="flex items-center">
+                <div key={rowItem.row} className="flex items-center" data-tour={`seat-row-${rowItem.row}`}>
                   {/* Sticky Row letter on the left */}
                   <div
                     className="sticky left-0 z-10 w-7 pl-4 pr-1 py-0.5 flex items-center justify-start shrink-0"

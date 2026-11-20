@@ -206,6 +206,7 @@ export default function MovieDetailScreen({
         <button
           type="button"
           onClick={onBookTickets}
+          data-tour="book-tickets"
           className="w-full h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white transition-transform active:scale-[0.99]"
           style={{ backgroundColor: 'var(--bms-red-strong)' }}
         >

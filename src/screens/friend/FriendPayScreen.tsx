@@ -98,7 +98,7 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
 
       {/* Pinned footer (ref 22 bar: white + hairline) */}
       <div className="shrink-0 px-4 pt-3 cta-safe flex flex-col items-center border-t" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--divider)' }}>
-        <div className="w-full" data-tour="friend-pay">
+        <div className="w-full" data-tour="friend-pay-cta">
           <PrimaryCTA variant="strong" size="lg" disabled={!v.ctaEnabled} onClick={() => dispatch({ type: 'FRIEND_PAY', name })}>
             {v.cta}
           </PrimaryCTA>

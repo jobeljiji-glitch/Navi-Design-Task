@@ -8,6 +8,7 @@ import { boardFlowReducer, openLatePayment, selectFriendReminder, withBoard, typ
 import { AT_PARAM, ist, runScriptTo } from '@/logic/script'
 import { createInitialDemoState } from '@/logic/seed'
 import { IosNotification } from '@/ds'
+import { useInStage } from '@/demo/PhoneRouter'
 import ChatScreen from '@/screens/chat/ChatScreen'
 import FriendPayScreen from './FriendPayScreen'
 import {
@@ -71,8 +72,9 @@ export default function FriendFlow() {
   // Deep links and seeding. Lives here, not in screens: DeviceFrame mounts children twice (D-037).
   // The ref keeps it to once per URL, even when StrictMode runs effects twice in dev.
   const seededFor = useRef<string | null>(null)
+  const inStage = useInStage()
   useEffect(() => {
-    if (!name) return
+    if (!name || inStage) return // in the demo stage, the stage owns state
     const key = `${name}|${location.search}`
     if (seededFor.current === key) return
     seededFor.current = key

@@ -292,7 +292,7 @@ export default function ShowtimesScreen({
               </div>
 
               {/* Showtime pill, 16 pt below distance */}
-              <div className="mt-4 flex items-center">
+              <div className="mt-4 flex items-center" data-tour={c.live ? 'pill-915' : undefined}>
                 <ShowtimePill
                   time={c.time}
                   subtitle={c.subtitle}

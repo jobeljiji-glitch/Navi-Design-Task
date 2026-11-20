@@ -1,71 +1,13 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import DeviceFrame from '@/demo/DeviceFrame'
-import RohanFlow from '@/screens/rohan/RohanFlow'
-import FriendFlow from '@/screens/friend/FriendFlow'
 
-// Lazy-loaded routes to minimize main production bundle size
+// Every route is its own chunk (D-102): the demo stage, the two flows, the component kit and the
+// dev overlay load on demand, so the entry chunk is only React, the router and the store.
+const DemoStage = lazy(() => import('@/demo/DemoStage'))
+const RohanFlow = lazy(() => import('@/screens/rohan/RohanFlow'))
+const FriendFlow = lazy(() => import('@/screens/friend/FriendFlow'))
 const KitPage = lazy(() => import('@/screens/KitPage'))
 const ReferenceOverlay = lazy(() => import('@/dev/ReferenceOverlay'))
-
-// ---------------------------------------------------------------------------
-// Placeholder screens
-// ---------------------------------------------------------------------------
-
-function DemoStage() {
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '48px',
-        padding: '32px',
-        background: 'var(--bg-page)',
-        flexWrap: 'wrap',
-      }}
-    >
-      <DeviceFrame time="9:41">
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            flexDirection: 'column',
-            gap: '8px',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          <span style={{ fontSize: '14px', fontWeight: 500 }}>Rohan's phone</span>
-          <span style={{ fontSize: '12px' }}>Demo stage placeholder</span>
-        </div>
-      </DeviceFrame>
-
-      <DeviceFrame time="9:41">
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            flexDirection: 'column',
-            gap: '8px',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          <span style={{ fontSize: '14px', fontWeight: 500 }}>Friend's phone</span>
-          <span style={{ fontSize: '12px' }}>Demo stage placeholder</span>
-        </div>
-      </DeviceFrame>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// App
-// ---------------------------------------------------------------------------
 
 export default function App() {
   return (

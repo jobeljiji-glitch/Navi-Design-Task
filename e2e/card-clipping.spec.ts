@@ -31,6 +31,14 @@ const SCREENS: Array<{ route: string; name: string; shot?: string }> = [
   { route: '#/friend/kabir?at=810', name: 'Friend late page', shot: '06e-friend-late' },
   { route: '#/friend/kabir?at=showtime', name: 'Friend: show started' },
   { route: '#/friend/sana?at=receipt', name: 'Friend ticket (group set)' },
+  // 07 demo stage: the phone inside the stage, plus its own overlays (intro, done card)
+  { route: '#/', name: 'Stage: intro', shot: '07-intro' },
+  { route: '#/?step=3', name: 'Stage: step 3 (hold sheet)', shot: '07-step-03' },
+  { route: '#/?step=8', name: 'Stage: step 8 (board, banner)' },
+  { route: '#/?step=12', name: 'Stage: step 12 (T−30 sheet)', shot: '07-step-12' },
+  { route: '#/?step=13', name: 'Stage: step 13 (receipt)' },
+  { route: '#/?step=14', name: 'Stage: step 14 (Kabir late)' },
+  { route: '#/?explore=1&moment=receipt', name: 'Stage: explore (receipt)', shot: '07-explore' },
 ]
 
 async function zoomText(page: Page, factor = 1.1) {
@@ -59,7 +67,9 @@ async function clipped(page: Page) {
     root.appendChild(probe)
     const cardShadow = getComputedStyle(probe).boxShadow
     probe.remove()
-    const nodes = Array.from(root.querySelectorAll<HTMLElement>('*')).filter(
+    // 07: stage overlays (intro, done card) sit outside the phone
+    const overlays = Array.from(document.querySelectorAll<HTMLElement>('[data-stage-overlay][data-card], [data-stage-overlay] [data-card]'))
+    const nodes = [...overlays, ...Array.from(root.querySelectorAll<HTMLElement>('*'))].filter(
       (el) =>
         el.hasAttribute('data-card') ||
         getComputedStyle(el).boxShadow === cardShadow ||

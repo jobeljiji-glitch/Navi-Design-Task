@@ -301,7 +301,7 @@ export function FriendEndedScreen({ name }: { name: FriendName }) {
         )}
       </div>
       {v.cta && (
-        <div className="shrink-0 px-4 pt-3 cta-safe">
+        <div className="shrink-0 px-4 pt-3 cta-safe" data-tour="late-pay-cta">
           <PrimaryCTA
             variant="strong"
             size="lg"

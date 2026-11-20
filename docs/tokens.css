@@ -98,6 +98,19 @@
   --scrim: rgba(0, 0, 0, 0.70);
   --sheet-handle: #C9C7CC;
   --divider: #E6E6E6;                   /* est */
+  --scrim-light: rgba(0, 0, 0, 0.40);   /* new 07: iOS alert dim */
+
+  /* 07 demo stage (outside the phone) */
+  --stage-bg: #E9EEF2;                  /* new 07: backdrop around the phone */
+  --stage-panel: #FFFFFF;               /* new 07 */
+  --stage-ink: #1C1C1C;                 /* new 07: interstitial card */
+  --stage-ink-text: #FFFFFF;            /* new 07 */
+  --stage-ink-muted: rgba(255, 255, 255, 0.72); /* new 07: 9:1 on stage-ink */
+  --coach-ring: #EB4E63;                /* new 07: spotlight ring (bms red) */
+  --coach-glow: rgba(235, 78, 99, 0.28);/* new 07 */
+  --coach-shadow: 0 12px 32px rgba(0, 0, 0, 0.22), 0 0 0 0.5px rgba(0, 0, 0, 0.08); /* new 07: bubble elevation */
+  --chip-bg: rgba(255, 255, 255, 0.14); /* new 07: chips on the demo bar */
+  --stage-bar: 44px;                    /* new 07: demo bar height (explore on a phone) */
 
   /* Type */
   --font-app: "Roboto", -apple-system, "SF Pro Text", system-ui, sans-serif;

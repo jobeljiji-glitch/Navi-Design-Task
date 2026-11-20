@@ -43,6 +43,8 @@ type Phase = (s: BoardState) => BoardState;
 
 export interface TourStep {
   id: string;
+  /** Short name for the story list. */
+  label: string;
   persona: Persona;
   /** `data-tour` ids, highest priority first: the first one visible on the phone is highlighted. */
   anchors: string[];
@@ -53,8 +55,12 @@ export interface TourStep {
   nextLabel?: string;
   phases: Phase[];
   phaseDelayMs?: number;
-  /** Where the phone is after Next. */
+  /** Where the phone is after Next (and where a jump to the following step lands). */
   after: string;
+  /** Live Next goes here first instead, and the UI moves on by itself (e.g. the settlement animation). */
+  liveAfter?: string;
+  /** Where the phone goes when this step starts on a different persona's phone. */
+  path?: string;
   /** The user did the highlighted tap themselves. */
   done?: (s: BoardState, path: string) => boolean;
   /** Persona transition card shown when this step starts. */
@@ -68,6 +74,7 @@ const paid = (s: BoardState, seat: string) => s.seats[seat]?.state === 'paid_fri
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 'book',
+    label: "Pick the 9:15 PM show",
     persona: 'Rohan',
     anchors: ['pill-915', 'book-tickets'],
     text: "Rohan's planning Friday's movie with five friends. Not everyone has confirmed. He picks the 9:15 PM show.",
@@ -78,8 +85,9 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'hold-for-group',
+    label: "Hold for group",
     persona: 'Rohan',
-    anchors: ['hold-for-group', 'seat-count-select', 'seat-map'],
+    anchors: ['hold-for-group', 'seat-count-select', 'seat-row-D', 'seat-map'],
     text: 'Tap one seat and the whole group sits together. Then tap Hold for group — friends pay their own share.',
     why: 'The seats lock now, so nobody has to say yes before they are ready.',
     phases: [beginHold],
@@ -88,8 +96,9 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'money',
+    label: "Only his seat is paid",
     persona: 'Rohan',
-    anchors: ['hold-money'],
+    anchors: ['money-ledger'],
     text: 'Only his seat is paid now. The money stays in your account — it’s only set aside.',
     why: 'Nothing leaves his account for a seat a friend ends up paying for.',
     phases: [openUpi],
@@ -98,6 +107,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'pin',
+    label: "One UPI PIN",
     persona: 'Rohan',
     anchors: ['approve-with-pin'],
     text: 'This is his bank app. One PIN: ₹1,662.84 set aside, ₹277.14 leaves now.',
@@ -108,6 +118,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'share',
+    label: "Share to the group",
     persona: 'Rohan',
     anchors: ['chat-send', 'send-to-group'],
     text: 'One link in the group chat replaces the poll.',
@@ -118,19 +129,22 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'amit-link',
+    label: "Amit opens the link",
     persona: 'Amit',
     anchors: ['link-preview'],
     text: "Now you're Amit. Tap Rohan's link.",
     why: 'It opens in the browser or the app. No signup needed.',
     phases: [(s) => friendOpensLink(at(s, 14, 2), 'Amit')],
+    path: '/friend/amit',
     after: '/friend/amit',
     done: (s) => s.friendFlow.sessions.Amit.screen !== 'chat',
     interstitial: "Meanwhile, on Amit's phone… 📱",
   },
   {
     id: 'amit-pay',
+    label: "Amit picks a seat and pays",
     persona: 'Amit',
-    anchors: ['friend-pay'],
+    anchors: ['friend-pay-cta'],
     text: 'Picking a seat and paying is one step. No signup.',
     why: "Seeing who's in already makes 'yes' easier.",
     phases: [(s) => friendCompletesPay(s, 'Amit')],
@@ -139,20 +153,23 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'unblocked',
+    label: "₹277.14 unblocked",
     persona: 'Rohan',
     anchors: ['block-meter'],
     text: "Amit has his own ticket. On Rohan's phone, ₹277.14 just got unblocked.",
     why: 'Rohan sees each friend pay without asking anyone.',
     nextLabel: '⏩ Skip to 3:30 PM',
     phases: [(s) => applyStep(applyStep(s, 'sana'), 'neha')],
+    path: '/rohan/board',
     after: '/rohan/board',
     interstitial: "Back on Rohan's phone… 📱",
     replayBanners: true,
   },
   {
     id: 'neha',
+    label: "Neha can't make it",
     persona: 'Rohan',
-    anchors: ['release-confirm', 'release-seat', 'declined-Neha'],
+    anchors: ['release-sheet', 'cant-make-it-row'],
     text: "Neha can't make it. Rohan releases a seat from the end of the row, free before 4:15 PM.",
     why: 'Sana paid at 3:10 PM too. The block shrinks as plans change.',
     nextLabel: 'Release D05',
@@ -162,6 +179,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'released',
+    label: "A seat goes back on sale",
     persona: 'Rohan',
     anchors: ['set-aside', 'pay-by'],
     text: "D05 is back on sale and its ₹277.14 is unblocked. Free release ends at 4:15 PM.",
@@ -172,6 +190,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'halfway',
+    label: "4:15 PM: the nudge",
     persona: 'Rohan',
     anchors: ['pay-by', 'set-aside'],
     text: "Halfway. BookMyShow nudges whoever hasn't paid, so Rohan doesn't chase anyone.",
@@ -182,6 +201,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 't30',
+    label: "6:45 PM: 30 minutes left",
     persona: 'Rohan',
     anchors: ['t30-sheet'],
     text: '30 minutes left. Do nothing and unpaid seats are kept.',
@@ -192,10 +212,12 @@ export const TOUR_STEPS: TourStep[] = [
       (s) => applyStep(applyStep(s, 'priyaPaid'), 'grace'),
     ],
     phaseDelayMs: 1400,
-    after: '/rohan/board',
+    liveAfter: '/rohan/board',
+    after: '/rohan/receipt',
   },
   {
     id: 'receipt',
+    label: "7:25 PM: the receipt",
     persona: 'Rohan',
     anchors: ['receipt-ledger'],
     text: 'Rohan paid for his seat and one kept seat. ₹1,108.56 was never charged — it’s simply unblocked.',
@@ -206,12 +228,14 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'kabir',
+    label: "8:10 PM: Kabir pays late",
     persona: 'Kabir',
-    anchors: ['late-pay'],
+    anchors: ['late-pay-cta', 'late-title'],
     text: 'Kabir pays late, before the show. The ticket moves to him and Rohan is refunded.',
     why: 'Rohan only pays for a seat until someone takes it.',
     phases: [kabirPays],
     after: '/rohan/receipt',
+    path: '/friend/kabir',
     done: (s) => s.board.lateSeats.includes('D06'),
     interstitial: "Meanwhile, on Kabir's phone… 📱",
   },
@@ -238,7 +262,8 @@ export function freshState(): BoardState {
 
 /** Where the phone is when step `i` (0-based) starts. */
 export function startPath(i: number): string {
-  return i <= 0 ? '/rohan/movie' : TOUR_STEPS[i - 1].after;
+  if (i <= 0) return '/rohan/movie';
+  return TOUR_STEPS[i]?.path ?? TOUR_STEPS[i - 1].after;
 }
 
 export function applyPhases(s: BoardState, step: TourStep): BoardState {

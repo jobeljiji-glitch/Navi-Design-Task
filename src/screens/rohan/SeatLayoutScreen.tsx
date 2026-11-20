@@ -278,7 +278,7 @@ export default function SeatLayoutScreen({
           touchAction: 'pan-x pan-y',
         }}
       >
-        <div className="min-w-[540px] flex flex-col pb-6">
+        <div className="min-w-[540px] flex flex-col pb-6" data-tour="seat-map">
           {/* True size seat grid */}
           <SeatGrid
             rows={gridRows}

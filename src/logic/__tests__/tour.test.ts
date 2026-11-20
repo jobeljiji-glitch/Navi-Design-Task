@@ -82,7 +82,7 @@ describe('07 guided tour', () => {
     ]);
     // the phone shows the step's persona when the step starts (after its interstitial)
     TOUR_STEPS.forEach((step, i) => {
-      if (!step.interstitial) expect(personaOf(startPath(i)), step.id).toBe(step.persona);
+      expect(personaOf(startPath(i)), step.id).toBe(step.persona);
     });
   });
 

@@ -36,3 +36,30 @@ html, body, #root {
 .pb-sab {
   padding-bottom: var(--sab, 0px);
 }
+
+/* 07 demo stage */
+.stage-interstitial { position: fixed; inset: 0; }
+@media (min-width: 431px) {
+  .stage-interstitial { position: absolute; border-radius: 52px; }
+}
+@keyframes coach-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--coach-ring), 0 0 0 7px var(--coach-glow); }
+  50% { box-shadow: 0 0 0 2px var(--coach-ring), 0 0 0 12px transparent; }
+}
+.coach-ring { animation: coach-pulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .coach-ring { animation: none; }
+}
+
+/* 07: in explore mode on a phone, the app sits below the demo bar instead of under it (D-098) */
+@media (max-width: 430px) {
+  .demo-stage[data-mode='explore'] .device-frame-mobile,
+  .demo-stage[data-mode='done'] .device-frame-mobile {
+    top: calc(env(safe-area-inset-top, 0px) + var(--stage-bar)) !important;
+    padding-top: 0 !important;
+  }
+}
+@media (min-width: 431px) {
+  .explore-chips { left: auto !important; background: transparent !important; top: 8px !important; --chip-bg: var(--stage-ink); }
+  .explore-chips .stage-bar-label { display: none; }
+}
