@@ -99,22 +99,7 @@ function FriendPlaceholder() {
   )
 }
 
-function KitPlaceholder() {
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--text-secondary)',
-        fontSize: '14px',
-      }}
-    >
-      Design kit — coming soon
-    </div>
-  )
-}
+import KitPage from '@/screens/KitPage'
 
 // ---------------------------------------------------------------------------
 // App
@@ -127,7 +112,23 @@ export default function App() {
         <Route path="/" element={<DemoStage />} />
         <Route path="/rohan" element={<RohanPlaceholder />} />
         <Route path="/friend/:name" element={<FriendPlaceholder />} />
-        <Route path="/kit" element={<KitPlaceholder />} />
+        <Route
+          path="/kit"
+          element={
+            <div
+              style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '32px 16px',
+                background: 'var(--bg-page)',
+              }}
+            >
+              <KitPage />
+            </div>
+          }
+        />
       </Routes>
       <ReferenceOverlay />
     </>
