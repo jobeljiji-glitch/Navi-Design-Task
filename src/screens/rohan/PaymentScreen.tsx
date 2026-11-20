@@ -11,7 +11,7 @@ export interface PaymentScreenProps {
 export default function PaymentScreen({
   onBack,
   onSelectPayment,
-  amountPaise = 51428, // Default ₹514.28 matching reference 12
+  amountPaise = 166284, // Default ₹1,662.84 matching the 6-seat path
 }: PaymentScreenProps) {
   const formattedAmount = formatINR(amountPaise)
 
@@ -56,7 +56,7 @@ export default function PaymentScreen({
 
       {/* Payment Options Scrollable Area */}
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        {/* Preferred Payments Section */}
+        {/* Preferred Payments Section Header: 11 pt uppercase */}
         <div className="pt-3 pb-1.5 px-4">
           <span
             className="text-[11px] leading-[14px] uppercase tracking-[0.5px] font-normal"
@@ -68,7 +68,7 @@ export default function PaymentScreen({
 
         <div className="flex flex-col bg-bg-surface border-y border-divider">
           <PaymentRow
-            icon={<span className="font-bold text-[12px] text-blue-900 tracking-tighter">VISA</span>}
+            icon={<span className="font-bold text-[13px] text-blue-900 tracking-tighter">VISA</span>}
             title="ICICI Bank Credit Card | ****5004"
             subtitle="Enter CVV to complete payment"
             lastUsed
@@ -97,7 +97,7 @@ export default function PaymentScreen({
           />
         </div>
 
-        {/* Other Payment Options Section */}
+        {/* Other Payment Options Section Header: 11 pt uppercase */}
         <div className="pt-4 pb-1.5 px-4">
           <span
             className="text-[11px] leading-[14px] uppercase tracking-[0.5px] font-normal"

@@ -9,6 +9,7 @@ dist-ssr/
 shots/*
 !shots/02b-*.png
 !shots/03-*.png
+!shots/03b-*.png
 
 # Editor
 .vscode/

@@ -71,13 +71,8 @@ export default function MovieDetailScreen({
             }}
           />
 
-          {/* Fictional Title Graphic */}
+          {/* Title Graphic */}
           <div className="relative z-10 p-4 flex flex-col items-center justify-center flex-1 text-center">
-            <span
-              className="text-[10px] uppercase tracking-[3px] font-semibold text-cyan-300 opacity-90 mb-1"
-            >
-              Fictional Demo Film
-            </span>
             <span
               className="text-[28px] leading-[32px] font-black uppercase tracking-tight text-white drop-shadow-md"
               style={{ fontFamily: 'system-ui, sans-serif' }}

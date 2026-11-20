@@ -1,6 +1,11 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import DeviceFrame from '@/demo/DeviceFrame'
-import ReferenceOverlay from '@/dev/ReferenceOverlay'
+import RohanFlow from '@/screens/rohan/RohanFlow'
+
+// Lazy-loaded routes to minimize main production bundle size
+const KitPage = lazy(() => import('@/screens/KitPage'))
+const ReferenceOverlay = lazy(() => import('@/dev/ReferenceOverlay'))
 
 // ---------------------------------------------------------------------------
 // Placeholder screens
@@ -78,16 +83,13 @@ function FriendPlaceholder() {
   )
 }
 
-import KitPage from '@/screens/KitPage'
-import RohanFlow from '@/screens/rohan/RohanFlow'
-
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
 
 export default function App() {
   return (
-    <>
+    <Suspense fallback={<div className="min-h-screen bg-bg-page" />}>
       <Routes>
         <Route path="/" element={<DemoStage />} />
         <Route path="/rohan/*" element={<RohanFlow />} />
@@ -112,6 +114,6 @@ export default function App() {
         />
       </Routes>
       <ReferenceOverlay />
-    </>
+    </Suspense>
   )
 }

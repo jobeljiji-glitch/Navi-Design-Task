@@ -36,15 +36,15 @@ export default function SeatGrid({
   }
 
   return (
-    <div className={`w-full flex flex-col gap-6 py-2 ${className}`}>
+    <div className={`w-full flex flex-col gap-5 py-2 ${className}`}>
       {tiers.map(group => {
         const price = tierPrices?.[group.tierName]
         return (
-          <div key={group.tierName} className="flex flex-col gap-3">
-            {/* Tier Header */}
-            <div className="flex items-center gap-3 px-4">
+          <div key={group.tierName} className="flex flex-col gap-2.5">
+            {/* Tier Header: 13 pt, weight 400, grey, letter-spaced, hairline to the right */}
+            <div className="sticky left-0 flex items-center gap-2.5 pl-4 pr-2 z-20">
               <span
-                className="text-[12px] leading-[16px] uppercase tracking-[0.5px] font-normal shrink-0 text-text-secondary"
+                className="text-[13px] leading-[18px] uppercase tracking-[0.5px] font-normal shrink-0"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 {price != null ? `₹ ${price} ` : ''}
@@ -57,19 +57,24 @@ export default function SeatGrid({
             </div>
 
             {/* Rows list */}
-            <div className="flex flex-col gap-1.5 px-4">
+            <div className="flex flex-col gap-[6px]">
               {group.rows.map(rowItem => (
-                <div key={rowItem.row} className="flex items-center gap-3">
-                  {/* Row letter */}
-                  <span
-                    className="w-4 text-[11px] leading-none font-normal text-text-secondary text-left shrink-0"
-                    style={{ color: 'var(--text-secondary)' }}
+                <div key={rowItem.row} className="flex items-center">
+                  {/* Sticky Row letter on the left */}
+                  <div
+                    className="sticky left-0 z-10 w-7 pl-4 pr-1 py-0.5 flex items-center justify-start shrink-0"
+                    style={{ backgroundColor: 'var(--bg-surface)' }}
                   >
-                    {rowItem.row}
-                  </span>
+                    <span
+                      className="text-[11px] leading-none font-normal text-left"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {rowItem.row}
+                    </span>
+                  </div>
 
-                  {/* Seat items on 26pt pitch */}
-                  <div className="flex items-center gap-[6px] overflow-x-auto">
+                  {/* Seat items on 26pt pitch: 20x20 tile + 6px gap */}
+                  <div className="flex items-center gap-[6px] pl-1 pr-6">
                     {rowItem.seats.map(seat => (
                       <Seat
                         key={seat.id}

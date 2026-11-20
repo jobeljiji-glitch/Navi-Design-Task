@@ -2,6 +2,7 @@ export interface DateItem {
   day: string
   date: number
   month: string
+  available?: boolean
 }
 
 export interface DateStripProps {
@@ -19,43 +20,67 @@ export default function DateStrip({
 }: DateStripProps) {
   return (
     <div
-      className={`w-full flex items-center gap-2 overflow-x-auto py-2 px-4 no-scrollbar ${className}`}
+      className={`w-full flex items-stretch gap-0 overflow-x-auto no-scrollbar bg-bg-surface ${className}`}
+      style={{ backgroundColor: 'var(--bg-surface)' }}
     >
       {dates.map((item, idx) => {
         const isSelected = idx === selectedIndex
+        const isAvailable = item.available !== false && item.date <= 22
+
         return (
           <button
             key={`${item.day}-${item.date}-${item.month}`}
             type="button"
             onClick={() => onSelectDate(idx)}
-            className={`w-[65px] h-[78px] rounded-[4px] flex flex-col items-center justify-center shrink-0 transition-transform active:scale-95 border ${
-              isSelected ? 'font-medium' : 'bg-bg-surface'
+            className={`w-[65px] h-[76px] flex flex-col items-center justify-center shrink-0 transition-opacity active:opacity-85 ${
+              isSelected ? 'font-medium' : ''
             }`}
             style={{
               backgroundColor: isSelected
                 ? 'var(--bms-red)'
                 : 'var(--bg-surface)',
-              borderColor: isSelected ? 'var(--bms-red)' : 'var(--divider)',
               color: isSelected
                 ? 'var(--text-on-brand)'
-                : 'var(--text-secondary)',
+                : isAvailable
+                  ? 'var(--text-primary)'
+                  : 'var(--text-disabled, #A3A3A3)',
             }}
             aria-label={`${item.day} ${item.date} ${item.month}`}
           >
-            <span className="text-[12px] uppercase leading-none font-normal">
-              {item.day}
-            </span>
             <span
-              className="text-[20px] leading-tight font-bold my-1"
+              className="text-[12px] uppercase leading-none font-normal"
               style={{
                 color: isSelected
                   ? 'var(--text-on-brand)'
-                  : 'var(--text-primary)',
+                  : isAvailable
+                    ? 'var(--text-secondary)'
+                    : 'var(--text-disabled, #A3A3A3)',
+              }}
+            >
+              {item.day}
+            </span>
+            <span
+              className="text-[20px] leading-tight font-medium my-1"
+              style={{
+                color: isSelected
+                  ? 'var(--text-on-brand)'
+                  : isAvailable
+                    ? 'var(--text-primary)'
+                    : 'var(--text-disabled, #A3A3A3)',
               }}
             >
               {item.date}
             </span>
-            <span className="text-[12px] uppercase leading-none font-normal">
+            <span
+              className="text-[12px] uppercase leading-none font-normal"
+              style={{
+                color: isSelected
+                  ? 'var(--text-on-brand)'
+                  : isAvailable
+                    ? 'var(--text-secondary)'
+                    : 'var(--text-disabled, #A3A3A3)',
+              }}
+            >
               {item.month}
             </span>
           </button>

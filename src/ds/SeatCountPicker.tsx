@@ -8,6 +8,13 @@ export interface SeatCountPickerProps {
   className?: string
 }
 
+export function preloadVehicleIllustrations(baseUrl: string = import.meta.env.BASE_URL || '/') {
+  for (let i = 1; i <= 10; i++) {
+    const img = new Image()
+    img.src = `${baseUrl}illustrations/seat-count/${i}.webp`
+  }
+}
+
 export default function SeatCountPicker({
   count,
   onChange,
@@ -17,12 +24,9 @@ export default function SeatCountPicker({
   const numbers = Array.from({ length: maxSeats }, (_, i) => i + 1)
   const baseUrl = import.meta.env.BASE_URL || '/'
 
-  // Preload all 10 vehicle images
+  // Ensure preloaded
   useEffect(() => {
-    for (let i = 1; i <= 10; i++) {
-      const img = new Image()
-      img.src = `${baseUrl}illustrations/seat-count/${i}.png`
-    }
+    preloadVehicleIllustrations(baseUrl)
   }, [baseUrl])
 
   return (
@@ -32,8 +36,11 @@ export default function SeatCountPicker({
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.img
             key={count}
-            src={`${baseUrl}illustrations/seat-count/${count}.png`}
+            src={`${baseUrl}illustrations/seat-count/${count}.webp`}
             alt={`${count} seat vehicle illustration`}
+            decoding="async"
+            width={280}
+            height={120}
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 12 }}
@@ -52,9 +59,7 @@ export default function SeatCountPicker({
               key={n}
               type="button"
               onClick={() => onChange(n)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-transform active:scale-95 ${
-                isSelected ? 'font-normal text-[17px]' : 'font-normal text-[17px]'
-              }`}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-transform active:scale-95 font-normal text-[17px]"
               style={{
                 backgroundColor: isSelected ? 'var(--bms-red)' : 'transparent',
                 color: isSelected

@@ -13,11 +13,18 @@ export default function RohanFlow() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  // Selected seats state across the booking flow
+  // Selected seats state across the booking flow (defaulting to 6 seats: D05-D10)
   const [selectedSeats, setSelectedSeats] = useState<LogicSeat[]>([
-    { id: 'G09', row: 'G', num: 9, tier: 'prime', price: 23000, state: 'selected' },
-    { id: 'G10', row: 'G', num: 10, tier: 'prime', price: 23000, state: 'selected' },
+    { id: 'D05', row: 'D', num: 5, tier: 'primePlus', price: 25000, state: 'selected' },
+    { id: 'D06', row: 'D', num: 6, tier: 'primePlus', price: 25000, state: 'selected' },
+    { id: 'D07', row: 'D', num: 7, tier: 'primePlus', price: 25000, state: 'selected' },
+    { id: 'D08', row: 'D', num: 8, tier: 'primePlus', price: 25000, state: 'selected' },
+    { id: 'D09', row: 'D', num: 9, tier: 'primePlus', price: 25000, state: 'selected' },
+    { id: 'D10', row: 'D', num: 10, tier: 'primePlus', price: 25000, state: 'selected' },
   ])
+
+  // Track if we came directly from showtimes to open the seat sheet
+  const [openSeatSheet, setOpenSeatSheet] = useState(false)
 
   // Current route extraction
   const path = location.pathname.replace(/\/+$/, '')
@@ -33,7 +40,10 @@ export default function RohanFlow() {
         return (
           <ShowtimesScreen
             onBack={() => navigate('/rohan/movie')}
-            onSelectShowtime={() => navigate('/rohan/seats')}
+            onSelectShowtime={() => {
+              setOpenSeatSheet(true)
+              navigate('/rohan/seats')
+            }}
           />
         )
 
@@ -42,6 +52,7 @@ export default function RohanFlow() {
           <SeatLayoutScreen
             onBack={() => navigate('/rohan/showtimes')}
             isCountSheetOpenInitially={true}
+            initialSeatCount={6}
             onPay={(seats) => {
               setSelectedSeats(seats)
               navigate('/rohan/confirm')
@@ -54,6 +65,8 @@ export default function RohanFlow() {
           <SeatLayoutScreen
             onBack={() => navigate('/rohan/showtimes')}
             initialSelectedSeatIds={[]}
+            initialSeatCount={6}
+            isCountSheetOpenInitially={openSeatSheet}
             onPay={(seats) => {
               setSelectedSeats(seats)
               navigate('/rohan/confirm')
@@ -65,7 +78,8 @@ export default function RohanFlow() {
         return (
           <SeatLayoutScreen
             onBack={() => navigate('/rohan/showtimes')}
-            initialSelectedSeatIds={['G09', 'G10']}
+            initialSelectedSeatIds={['D05', 'D06', 'D07', 'D08', 'D09', 'D10']}
+            initialSeatCount={6}
             onPay={(seats) => {
               setSelectedSeats(seats)
               navigate('/rohan/confirm')

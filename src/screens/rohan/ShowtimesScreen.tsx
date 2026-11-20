@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ChevronLeft,
   Search,
@@ -8,9 +8,10 @@ import {
   Navigation,
   ArrowUpDown,
   ChevronDown,
+  X,
 } from 'lucide-react'
 import { DEMO_SHOW } from '@/logic/seed'
-import { DateStrip, ShowtimePill } from '@/ds'
+import { DateStrip, ShowtimePill, preloadVehicleIllustrations } from '@/ds'
 
 export interface ShowtimesScreenProps {
   onBack?: () => void
@@ -22,6 +23,13 @@ export default function ShowtimesScreen({
   onSelectShowtime,
 }: ShowtimesScreenProps) {
   const [selectedDateIdx, setSelectedDateIdx] = useState(0)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [isSubtitleNoticeVisible, setIsSubtitleNoticeVisible] = useState(true)
+
+  // Preload all 10 seat count vehicle webp illustrations on mount
+  useEffect(() => {
+    preloadVehicleIllustrations()
+  }, [])
 
   const dates = [
     { day: 'FRI', date: 20, month: 'NOV' },
@@ -31,6 +39,13 @@ export default function ShowtimesScreen({
     { day: 'TUE', date: 24, month: 'NOV' },
     { day: 'WED', date: 25, month: 'NOV' },
   ]
+
+  const showDemoToast = () => {
+    setToastMessage('Demo: only Cineplex Kurla 9:15 PM is live')
+    setTimeout(() => {
+      setToastMessage(null)
+    }, 2800)
+  }
 
   return (
     <div
@@ -44,7 +59,7 @@ export default function ShowtimesScreen({
     >
       {/* Top Header */}
       <header
-        className="flex items-center justify-between px-4 h-[54px] shrink-0 border-b border-divider"
+        className="flex items-center justify-between px-4 h-[54px] shrink-0 border-b border-divider bg-bg-surface"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottomColor: 'var(--divider)',
@@ -93,7 +108,7 @@ export default function ShowtimesScreen({
         </div>
       </header>
 
-      {/* Date Strip */}
+      {/* Date Strip: Borderless, flush left solid red selected tile */}
       <div
         className="border-b border-divider shrink-0 bg-bg-surface"
         style={{
@@ -108,16 +123,16 @@ export default function ShowtimesScreen({
         />
       </div>
 
-      {/* Language / Format Indicator Subheader */}
+      {/* Language / Format Indicator Subheader: 15 pt, weight 500, hairline */}
       <div
-        className="px-4 py-2 border-b border-divider bg-bg-surface flex items-center shrink-0"
+        className="px-4 py-2.5 border-b border-divider bg-bg-surface flex items-center shrink-0"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottomColor: 'var(--divider)',
         }}
       >
         <span
-          className="text-[13px] font-medium"
+          className="text-[15px] font-medium"
           style={{ color: 'var(--text-primary)' }}
         >
           {DEMO_SHOW.language} • {DEMO_SHOW.format}
@@ -132,229 +147,315 @@ export default function ShowtimesScreen({
           borderBottomColor: 'var(--divider)',
         }}
       >
+        {/* Sort by chip: grey outline, red sort icon, chevron */}
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[18px] border border-divider text-[12px] font-normal whitespace-nowrap bg-bg-surface"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-divider text-[15px] font-normal whitespace-nowrap bg-bg-surface"
           style={{ borderColor: 'var(--divider)' }}
         >
-          <ArrowUpDown size={12} strokeWidth={1.75} />
-          <span>Sort by</span>
-          <ChevronDown size={12} strokeWidth={1.75} />
+          <ArrowUpDown size={15} strokeWidth={1.75} style={{ color: 'var(--bms-red-text)' }} />
+          <span style={{ color: 'var(--text-primary)' }}>Sort by</span>
+          <ChevronDown size={14} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
         </button>
 
+        {/* Vertical divider */}
+        <div className="w-[1px] h-6 bg-divider shrink-0 mx-0.5" />
+
+        {/* Red outline & red text chips: 15 pt, fully rounded */}
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[18px] border border-divider text-[12px] font-normal whitespace-nowrap bg-bg-surface"
-          style={{ borderColor: 'var(--divider)' }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[15px] font-normal whitespace-nowrap bg-bg-surface"
+          style={{
+            borderColor: 'var(--bms-red)',
+            color: 'var(--bms-red-text)',
+          }}
         >
           <span>Special Formats</span>
-          <ChevronDown size={12} strokeWidth={1.75} />
+          <ChevronDown size={14} strokeWidth={1.75} />
         </button>
 
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[18px] border border-divider text-[12px] font-normal whitespace-nowrap bg-bg-surface"
-          style={{ borderColor: 'var(--divider)' }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[15px] font-normal whitespace-nowrap bg-bg-surface"
+          style={{
+            borderColor: 'var(--bms-red)',
+            color: 'var(--bms-red-text)',
+          }}
         >
           <span>Cancellable</span>
         </button>
 
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[18px] border border-divider text-[12px] font-normal whitespace-nowrap bg-bg-surface"
-          style={{ borderColor: 'var(--divider)' }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[15px] font-normal whitespace-nowrap bg-bg-surface"
+          style={{
+            borderColor: 'var(--bms-red)',
+            color: 'var(--bms-red-text)',
+          }}
         >
           <span>₹0 - ₹500</span>
         </button>
       </div>
 
-      {/* Cinema Listings Content */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3.5 no-scrollbar">
+      {/* Cinema Listings Content: sitting on light-grey page, ~22 pt side margins */}
+      <div className="flex-1 overflow-y-auto px-[22px] py-4 flex flex-col gap-4 no-scrollbar">
         {/* Cinema 1: Cineplex Kurla (Active Demo Show) */}
         <div
-          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3 border border-divider shadow-sm"
+          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3.5 border border-divider shadow-sm"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderColor: 'var(--divider)',
           }}
         >
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              {/* Neutral Cinema Logo Initials */}
-              <div
-                className="w-10 h-10 rounded-[6px] border border-divider flex items-center justify-center font-bold text-[13px] shrink-0"
-                style={{
-                  backgroundColor: 'var(--bg-muted)',
-                  borderColor: 'var(--divider)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                CP
-              </div>
+          <div className="flex items-start gap-3">
+            {/* 56 pt logo tile: rounded 8, light border, brand initials */}
+            <div
+              className="w-[56px] h-[56px] rounded-[8px] border border-divider flex items-center justify-center font-bold text-[16px] shrink-0"
+              style={{
+                backgroundColor: 'var(--bg-muted)',
+                borderColor: 'var(--divider)',
+                color: 'var(--text-primary)',
+              }}
+            >
+              CP
+            </div>
 
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
+            <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[56px]">
+              {/* Line 1: Name + Info + Heart */}
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1 min-w-0">
                   <h2
-                    className="text-[14px] leading-[18px] font-medium"
+                    className="text-[16px] leading-[20px] font-medium truncate"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {DEMO_SHOW.cinemaName}
                   </h2>
                   <Info
-                    size={14}
+                    size={15}
                     strokeWidth={1.75}
                     style={{ color: 'var(--text-secondary)' }}
+                    className="shrink-0"
                   />
                 </div>
-
-                <div
-                  className="flex items-center gap-1.5 text-[12px] mt-0.5"
-                  style={{ color: 'var(--text-secondary)' }}
+                <button
+                  type="button"
+                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0"
+                  aria-label="Favorite cinema"
                 >
-                  <Navigation size={11} strokeWidth={1.75} />
-                  <span>{DEMO_SHOW.distanceKm}</span>
-                  <span>|</span>
-                  <span style={{ color: 'var(--text-secondary)' }}>
-                    Cancellation available
-                  </span>
-                </div>
+                  <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+                </button>
               </div>
-            </div>
 
-            <div className="flex flex-col items-end gap-1">
-              <button
-                type="button"
-                className="p-1 text-text-secondary hover:text-text-primary"
-                aria-label="Favorite cinema"
+              {/* Line 2: Distance & Cancellation + Visited tag */}
+              <div
+                className="flex items-center justify-between gap-1 text-[13px] mt-1"
+                style={{ color: 'var(--text-secondary)' }}
               >
-                <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
-              </button>
-              <span
-                className="text-[10px] font-medium"
-                style={{ color: 'var(--text-link)' }}
-              >
-                Visited
-              </span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Navigation size={12} strokeWidth={1.75} className="shrink-0" />
+                  <span className="truncate">{DEMO_SHOW.distanceKm} | Cancellation available</span>
+                </div>
+                <span
+                  className="text-[11px] font-medium px-1.5 py-0.5 rounded-[2px] shrink-0"
+                  style={{
+                    backgroundColor: '#EBF4FF',
+                    color: '#2563EB',
+                  }}
+                >
+                  Visited
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Active Showtime Pill */}
+          {/* Active Showtime Pill: 200 x 72 pt, no SCREEN 4 badge, centred 17 pt time */}
           <div className="flex items-center gap-3 pt-1">
             <ShowtimePill
               time="09:15 PM"
-              badge={DEMO_SHOW.screen}
               onClick={() => onSelectShowtime?.('09:15 PM')}
             />
           </div>
         </div>
 
-        {/* Cinema 2 (Greyed context row) */}
+        {/* Cinema 2: INOX R-City, Ghatkopar (Context cinema, normal-looking, not greyed out) */}
         <div
-          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3 border border-divider opacity-60"
+          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3.5 border border-divider shadow-sm"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderColor: 'var(--divider)',
           }}
         >
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <div
-                className="w-10 h-10 rounded-[6px] border border-divider flex items-center justify-center font-bold text-[13px] shrink-0"
-                style={{
-                  backgroundColor: 'var(--bg-muted)',
-                  borderColor: 'var(--divider)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                IX
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
+          <div className="flex items-start gap-3">
+            <div
+              className="w-[56px] h-[56px] rounded-[8px] border border-divider flex items-center justify-center font-bold text-[16px] shrink-0"
+              style={{
+                backgroundColor: 'var(--bg-muted)',
+                borderColor: 'var(--divider)',
+                color: '#D97706',
+              }}
+            >
+              PVR
+            </div>
+
+            <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[56px]">
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1 min-w-0">
                   <h2
-                    className="text-[14px] leading-[18px] font-medium"
+                    className="text-[16px] leading-[20px] font-medium truncate"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     INOX: R-City, Ghatkopar
                   </h2>
-                  <Info size={14} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+                  <Info
+                    size={15}
+                    strokeWidth={1.75}
+                    style={{ color: 'var(--text-secondary)' }}
+                    className="shrink-0"
+                  />
                 </div>
-                <div
-                  className="flex items-center gap-1.5 text-[12px] mt-0.5"
-                  style={{ color: 'var(--text-secondary)' }}
+                <button
+                  type="button"
+                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0"
+                  aria-label="Favorite cinema"
                 >
-                  <Navigation size={11} strokeWidth={1.75} />
-                  <span>4.2 km | Cancellation available</span>
+                  <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+                </button>
+              </div>
+
+              <div
+                className="flex items-center justify-between gap-1 text-[13px] mt-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Navigation size={12} strokeWidth={1.75} className="shrink-0" />
+                  <span className="truncate">4.2 km | Cancellation available</span>
                 </div>
               </div>
             </div>
-            <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
           </div>
 
-          <div className="flex items-center gap-3 pt-1 opacity-40 pointer-events-none">
-            <ShowtimePill time="12:45 PM" badge="ENG" />
+          <div className="flex items-center gap-3 pt-1">
+            <ShowtimePill
+              time="12:45 PM"
+              sublabel="ENG"
+              onClick={showDemoToast}
+            />
           </div>
         </div>
 
-        {/* Cinema 3 (Greyed context row) */}
+        {/* Cinema 3: Cinepolis Magnet Mall (Context cinema, normal-looking) */}
         <div
-          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3 border border-divider opacity-60"
+          className="w-full rounded-[8px] p-3.5 flex flex-col gap-3.5 border border-divider shadow-sm"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderColor: 'var(--divider)',
           }}
         >
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <div
-                className="w-10 h-10 rounded-[6px] border border-divider flex items-center justify-center font-bold text-[13px] shrink-0"
-                style={{
-                  backgroundColor: 'var(--bg-muted)',
-                  borderColor: 'var(--divider)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                CN
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
+          <div className="flex items-start gap-3">
+            <div
+              className="w-[56px] h-[56px] rounded-[8px] border border-divider flex items-center justify-center font-bold text-[16px] shrink-0"
+              style={{
+                backgroundColor: 'var(--bg-muted)',
+                borderColor: 'var(--divider)',
+                color: '#0284C7',
+              }}
+            >
+              CN
+            </div>
+
+            <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[56px]">
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1 min-w-0">
                   <h2
-                    className="text-[14px] leading-[18px] font-medium"
+                    className="text-[16px] leading-[20px] font-medium truncate"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     Cinepolis: Magnet Mall, Bhandup (W)
                   </h2>
-                  <Info size={14} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+                  <Info
+                    size={15}
+                    strokeWidth={1.75}
+                    style={{ color: 'var(--text-secondary)' }}
+                    className="shrink-0"
+                  />
                 </div>
-                <div
-                  className="flex items-center gap-1.5 text-[12px] mt-0.5"
-                  style={{ color: 'var(--text-secondary)' }}
+                <button
+                  type="button"
+                  className="p-0.5 text-text-secondary hover:text-text-primary shrink-0"
+                  aria-label="Favorite cinema"
                 >
-                  <Navigation size={11} strokeWidth={1.75} />
-                  <span>1.8 km | Non-cancellable</span>
+                  <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
+                </button>
+              </div>
+
+              <div
+                className="flex items-center justify-between gap-1 text-[13px] mt-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Navigation size={12} strokeWidth={1.75} className="shrink-0" />
+                  <span className="truncate">1.8 km | Non-cancellable</span>
                 </div>
+                <span
+                  className="text-[11px] font-medium px-1.5 py-0.5 rounded-[2px] shrink-0"
+                  style={{
+                    backgroundColor: '#EBF4FF',
+                    color: '#2563EB',
+                  }}
+                >
+                  Visited
+                </span>
               </div>
             </div>
-            <Heart size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
           </div>
 
-          <div className="flex items-center gap-3 pt-1 opacity-40 pointer-events-none">
-            <ShowtimePill time="05:50 PM" />
+          <div className="flex items-center gap-3 pt-1">
+            <ShowtimePill
+              time="05:50 PM"
+              sublabel="LASER"
+              onClick={showDemoToast}
+            />
           </div>
         </div>
       </div>
 
-      {/* Subtitle Footer Note */}
-      <div
-        className="px-4 py-2.5 bg-bg-surface border-t border-divider flex items-center justify-between text-[11px] shrink-0"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderTopColor: 'var(--divider)',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        <span>LAN indicates subtitle language, if available</span>
-        <span>1/2 ✕</span>
-      </div>
+      {/* Floating Demo Toast */}
+      {toastMessage && (
+        <div className="absolute top-20 left-4 right-4 z-50 flex justify-center pointer-events-none">
+          <div className="bg-black/85 text-white px-4 py-2.5 rounded-full text-[13px] font-medium shadow-lg animate-fade-in backdrop-blur-sm">
+            {toastMessage}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Subtitle Language Toast Bar */}
+      {isSubtitleNoticeVisible && (
+        <div
+          className="w-full px-4 py-2 bg-bg-surface border-t border-divider flex items-center justify-between shrink-0 shadow-sm"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderTopColor: 'var(--divider)',
+          }}
+        >
+          <div className="flex items-center gap-2 text-[12px] text-text-secondary">
+            <span className="px-1 py-0.5 rounded border border-divider text-[10px] font-semibold leading-none">
+              LAN
+            </span>
+            <span>indicates subtitle language, if available</span>
+          </div>
+          <div className="flex items-center gap-3 text-[12px] text-text-secondary">
+            <span>1/2</span>
+            <button
+              type="button"
+              onClick={() => setIsSubtitleNoticeVisible(false)}
+              className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-bg-muted"
+              aria-label="Dismiss notice"
+            >
+              <X size={14} strokeWidth={2} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

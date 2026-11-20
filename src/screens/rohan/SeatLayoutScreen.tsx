@@ -1,13 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { ChevronLeft, Edit3 } from 'lucide-react'
 import { DEMO_SHOW, createInitialSeats } from '@/logic/seed'
 import type { Seat as LogicSeat, SeatTier } from '@/logic/types'
+import { pickSeats } from '@/logic/seatPick'
 import {
   SeatGrid,
   ScreenShape,
   SeatLegend,
-  BottomCtaBar,
   SeatCountSheet,
+  LoaderSheet,
+  ShowtimePill,
   type SeatGridRow,
   type SeatState,
 } from '@/ds'
@@ -41,12 +43,16 @@ export default function SeatLayoutScreen({
   onBack,
   onPay,
   initialSelectedSeatIds = [],
-  initialSeatCount = 2,
+  initialSeatCount = 6,
   isCountSheetOpenInitially = false,
 }: SeatLayoutScreenProps) {
   const [seatCount, setSeatCount] = useState(initialSeatCount)
   const [isCountSheetOpen, setIsCountSheetOpen] = useState(isCountSheetOpenInitially)
   const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>(initialSelectedSeatIds)
+  const [isLoaderOpen, setIsLoaderOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Initial seat map from seed.ts
   const initialSeats = useMemo(() => createInitialSeats(), [])
@@ -61,6 +67,21 @@ export default function SeatLayoutScreen({
     }
     return map
   }, [initialSeats, selectedSeatIds])
+
+  // Center target seat block (D05-D10) horizontally on mount
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const targetElement = scrollContainerRef.current.querySelector('#D07') as HTMLElement
+      if (targetElement) {
+        const containerWidth = scrollContainerRef.current.clientWidth
+        const targetLeft = targetElement.offsetLeft
+        scrollContainerRef.current.scrollLeft = Math.max(0, targetLeft - containerWidth / 2 + 10)
+      } else {
+        // Fallback default horizontal scroll
+        scrollContainerRef.current.scrollLeft = 80
+      }
+    }
+  }, [])
 
   // Convert currentSeats into SeatGridRow[] grouped by row
   const gridRows: SeatGridRow[] = useMemo(() => {
@@ -85,24 +106,20 @@ export default function SeatLayoutScreen({
     })
   }, [currentSeats])
 
-  // Toggle seat selection
+  // Handle seat clicks using group seat picking logic
   const handleSeatClick = (seatId: string) => {
-    const seat = currentSeats[seatId]
-    if (!seat || (seat.state !== 'available' && seat.state !== 'selected')) return
+    const result = pickSeats(initialSeats, selectedSeatIds, seatId, seatCount)
+    setSelectedSeatIds([...result])
 
-    if (selectedSeatIds.includes(seatId)) {
-      setSelectedSeatIds(prev => prev.filter(id => id !== seatId))
-    } else {
-      if (selectedSeatIds.length < seatCount) {
-        setSelectedSeatIds(prev => [...prev, seatId])
-      } else {
-        // Replace oldest or shift
-        setSelectedSeatIds(prev => [...prev.slice(1), seatId])
-      }
+    if (result.message) {
+      setToastMessage(result.message)
+      setTimeout(() => {
+        setToastMessage(null)
+      }, 2500)
     }
   }
 
-  // Calculate total ticket price from selected seats (never hardcoded)
+  // Calculate total ticket price from selected seats
   const selectedSeatsList = useMemo(() => {
     return selectedSeatIds.map(id => initialSeats[id]).filter(Boolean)
   }, [selectedSeatIds, initialSeats])
@@ -112,6 +129,16 @@ export default function SeatLayoutScreen({
   }, [selectedSeatsList])
 
   const totalRupees = Math.floor(totalPaise / 100)
+
+  // Handle Pay action: show loader for 1,200 ms, then transition to confirm booking
+  const handlePayClick = () => {
+    if (selectedSeatsList.length === 0) return
+    setIsLoaderOpen(true)
+    setTimeout(() => {
+      setIsLoaderOpen(false)
+      onPay?.(selectedSeatsList)
+    }, 1200)
+  }
 
   return (
     <div
@@ -123,144 +150,178 @@ export default function SeatLayoutScreen({
         height: 874,
       }}
     >
-      {/* Navigation Bar */}
+      {/* Navigation Header: title 17 pt wt 500, cinema 15 pt grey. No ticket control here. */}
       <header
-        className="flex items-center justify-between px-4 h-[54px] shrink-0 border-b border-divider"
+        className="flex items-center px-4 h-[54px] shrink-0 border-b border-divider bg-bg-surface"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottomColor: 'var(--divider)',
         }}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70 transition-opacity"
-            aria-label="Back"
-          >
-            <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
-          </button>
-          <div className="flex flex-col text-left min-w-0">
-            <h1
-              className="text-[17px] leading-[22px] font-medium truncate"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {DEMO_SHOW.filmTitle} - {DEMO_SHOW.language}
-            </h1>
-            <span
-              className="text-[12px] leading-[16px] font-normal truncate"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {DEMO_SHOW.cinemaName}
-            </span>
-          </div>
-        </div>
-
-        {/* Edit Tickets count button */}
         <button
           type="button"
-          onClick={() => setIsCountSheetOpen(true)}
-          className="flex items-center gap-1 text-[13px] font-medium px-2 py-1 rounded-[4px] hover:bg-bg-muted shrink-0"
-          style={{ color: 'var(--bms-red-text)' }}
-          aria-label="Edit ticket count"
+          onClick={onBack}
+          className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-bg-muted active:opacity-70 transition-opacity shrink-0"
+          aria-label="Back"
         >
-          <Edit3 size={13} strokeWidth={2} />
-          <span>{seatCount} Tickets</span>
+          <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
         </button>
+
+        <div className="flex flex-col text-left min-w-0 ml-1">
+          <h1
+            className="text-[17px] leading-[22px] font-medium truncate"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {DEMO_SHOW.filmTitle} - {DEMO_SHOW.language}
+          </h1>
+          <span
+            className="text-[15px] leading-[20px] font-normal truncate"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {DEMO_SHOW.cinemaName}
+          </span>
+        </div>
       </header>
 
-      {/* Date & Showtime Strip */}
+      {/* Strip under header: light-grey background. Fri, 20 Nov on left, ✎ N Tickets in red on right */}
       <div
-        className="px-4 py-2 flex items-center justify-between border-b border-divider shrink-0"
+        className="px-4 py-2.5 flex flex-col gap-2 border-b border-divider shrink-0"
         style={{
-          backgroundColor: 'var(--bg-header-strip)',
+          backgroundColor: 'var(--bg-header-strip, #F2F3F5)',
           borderBottomColor: 'var(--divider)',
         }}
       >
-        <span
-          className="text-[13px] font-medium"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          Fri, 20 Nov
-        </span>
-        <div
-          className="px-3 py-1 rounded-[2px] text-[12px] font-semibold tracking-wide"
-          style={{
-            backgroundColor: 'var(--showtime-green)',
-            color: 'var(--text-on-brand)',
-          }}
-        >
-          09:15 PM
+        <div className="flex items-center justify-between">
+          <span
+            className="text-[14px] font-medium"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Fri, 20 Nov
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setIsCountSheetOpen(true)}
+            className="flex items-center gap-1 text-[13px] font-medium hover:opacity-85 shrink-0"
+            style={{ color: 'var(--bms-red-text)' }}
+            aria-label="Edit ticket count"
+          >
+            <Edit3 size={13} strokeWidth={2} />
+            <span>{seatCount} Tickets</span>
+          </button>
+        </div>
+
+        {/* Selected green showtime pill on next line, left-aligned, ~110 x 40 pt */}
+        <div className="flex items-center">
+          <ShowtimePill
+            time="09:15 PM"
+            size="normal"
+            selected
+          />
         </div>
       </div>
 
-      {/* Scrollable Seat Grid Container */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto px-1 pt-[96px] pb-4 flex flex-col no-scrollbar">
-        <div className="min-w-[390px] flex flex-col items-center">
+      {/* Main Horizontally & Vertically Scrollable Seat Grid Container */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-x-auto overflow-y-auto no-scrollbar"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x pan-y',
+        }}
+      >
+        <div className="min-w-[540px] flex flex-col pb-6">
+          {/* True size seat grid */}
           <SeatGrid
             rows={gridRows}
             tierPrices={TIER_PRICES}
             onSeatClick={handleSeatClick}
           />
 
-          {/* Screen shape at bottom */}
-          <div className="w-full mt-6 mb-4 flex justify-center">
-            <ScreenShape />
+          {/* Under last row: Screen shape trapezoid and "All eyes this way please!" */}
+          <div className="w-full mt-4 flex justify-center">
+            <ScreenShape label="All eyes this way please!" />
           </div>
 
           {/* Seat Legend */}
           <div className="w-full mb-3">
             <SeatLegend />
           </div>
+
+          {/* Static Club Banner */}
+          <div
+            className="mx-4 my-2 px-4 py-2.5 rounded-[6px] flex items-center justify-between border border-divider shadow-sm"
+            style={{
+              backgroundColor: 'var(--bg-club, #FFFBEB)',
+              borderColor: '#FDE68A',
+            }}
+          >
+            <div className="flex flex-col text-left pr-2">
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-semibold text-text-secondary leading-none">bookmyshow</span>
+                <span className="text-[11px] font-black tracking-wider text-amber-900 leading-none">CLUB</span>
+              </div>
+              <span
+                className="text-[12px] leading-[15px] font-medium mt-0.5"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Add Club membership at ₹159 for 60 days and get instant 15% off
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-[4px] bg-white border border-amber-500 text-[12px] font-medium text-amber-900 shrink-0 shadow-sm"
+            >
+              Add Club
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Club Membership Strip (when seats are selected, matching ref 08) */}
+      {/* Floating toast for seat selection info */}
+      {toastMessage && (
+        <div className="absolute top-36 left-4 right-4 z-50 flex justify-center pointer-events-none">
+          <div className="bg-black/85 text-white px-4 py-2 rounded-full text-[13px] font-medium shadow-lg animate-fade-in backdrop-blur-sm">
+            {toastMessage}
+          </div>
+        </div>
+      )}
+
+      {/* Sticky Bottom Pay bar: appears only once at least 1 seat is selected. 48 pt high, strong red */}
       {selectedSeatIds.length > 0 && (
         <div
-          className="px-4 py-2.5 flex items-center justify-between border-t border-divider shrink-0"
+          className="w-full px-4 py-2.5 bg-bg-surface border-t border-divider shrink-0 shadow-lg flex items-center justify-center"
           style={{
-            backgroundColor: 'var(--bg-club)',
+            backgroundColor: 'var(--bg-surface)',
             borderTopColor: 'var(--divider)',
+            paddingBottom: 'calc(var(--safe-bottom) + 10px)',
           }}
         >
-          <div className="flex flex-col text-left pr-2">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] font-semibold text-text-secondary leading-none">bookmyshow</span>
-              <span className="text-[11px] font-black tracking-wider text-amber-900 leading-none">CLUB</span>
-            </div>
-            <span
-              className="text-[11px] leading-[14px] font-medium mt-0.5"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Add Club membership at ₹159 for 60 days and get instant 15% off
-            </span>
-          </div>
-
           <button
             type="button"
-            className="px-3 py-1.5 rounded-[4px] bg-white border border-amber-500 text-[12px] font-medium text-amber-900 shrink-0 shadow-sm"
+            onClick={handlePayClick}
+            className="w-full h-[48px] rounded-[6px] flex items-center justify-center font-medium text-[16px] text-white shadow-sm transition-transform active:scale-[0.99]"
+            style={{ backgroundColor: 'var(--bms-red-strong)' }}
           >
-            Add Club
+            Pay ₹{totalRupees.toLocaleString('en-IN')}
           </button>
         </div>
       )}
 
-      {/* Bottom CTA Bar */}
-      {selectedSeatIds.length > 0 && (
-        <BottomCtaBar
-          ctaText={`Pay ₹ ${totalRupees}`}
-          onCtaClick={() => onPay?.(selectedSeatsList)}
-        />
-      )}
-
-      {/* Seat Count Picker Bottom Sheet */}
+      {/* "How many seats?" Sheet */}
       <SeatCountSheet
         isOpen={isCountSheetOpen}
         onClose={() => setIsCountSheetOpen(false)}
         count={seatCount}
         onChangeCount={setSeatCount}
         onSelectSeats={() => setIsCountSheetOpen(false)}
+      />
+
+      {/* Loader Sheet: 1,200 ms "Confirming your Seats!" */}
+      <LoaderSheet
+        isOpen={isLoaderOpen}
+        message="Confirming your Seats!"
       />
     </div>
   )
