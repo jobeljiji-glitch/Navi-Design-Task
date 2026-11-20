@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { friendFlowReducer, withFriendFlow, type AppAction, type AppState } from '../logic/friendFlow';
+import { boardFlowReducer, withBoard, type BoardFlowAction, type BoardState } from '../logic/boardFlow';
 import { createInitialDemoState } from '../logic/seed';
 
-export interface DemoStore extends AppState {
-  dispatch: (action: AppAction) => void;
+export interface DemoStore extends BoardState {
+  dispatch: (action: BoardFlowAction) => void;
   advanceClockMinutes: (minutes: number) => void;
   setClockTime: (timeMs: number) => void;
   setLiveClock: (isLive: boolean) => void;
@@ -13,10 +13,10 @@ export const useDemoStore = create<DemoStore>((set, get) => {
   let liveInterval: ReturnType<typeof setInterval> | null = null;
 
   return {
-    ...withFriendFlow(createInitialDemoState()),
+    ...withBoard(createInitialDemoState()),
 
-    dispatch: (action: AppAction) => {
-      set((state) => friendFlowReducer(state, action));
+    dispatch: (action: BoardFlowAction) => {
+      set((state) => boardFlowReducer(state, action));
     },
 
     advanceClockMinutes: (minutes: number) => {
