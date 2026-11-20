@@ -1,0 +1,83 @@
+/* BookMyShow tokens, reconstructed from reference/screens (see docs/design-system.md).
+   Components must use these variables only. Values marked "est" are estimates to verify with the overlay. */
+:root {
+  /* Brand and actions */
+  --bms-red: #EB4E63;
+  --bms-red-strong: #DB354B;
+  --bms-red-text: #D04B5E;
+  --bms-star: #EF7685;
+
+  /* Seats and showtimes */
+  --seat-available-border: #1FAD3D;
+  --seat-number: #259A3F;
+  --seat-selected: #1FAD3D;
+  --seat-sold: #EFEFEF;
+  --seat-sold-text: #C4C4C4;            /* est */
+  --showtime-green: #1FAD3D;
+  --screen-tint: #D5F1FF;
+
+  /* New seat states (this project) */
+  --seat-held-fill: #FFF4D6;
+  --seat-held-border: #E8A317;
+  --seat-paying-fill: #FFE7A3;
+  --seat-paid-friend: #1FAD3D;
+
+  /* Text */
+  --text-primary: #1C1C1C;
+  --text-secondary: #5C5C5C;
+  --text-tertiary: #8A8A8A;             /* est */
+  --text-success: #0B7221;
+  --text-link: #1E63D6;                 /* est */
+  --text-on-brand: #FFFFFF;
+
+  /* Surfaces */
+  --bg-page: #F2F6F9;
+  --bg-header-strip: #F3F7FA;
+  --bg-surface: #FFFFFF;
+  --bg-muted: #F5F5F5;
+  --bg-tag: #DCDCDC;
+  --bg-success: #E7FCED;
+  --bg-amount: #FAF7E4;
+  --bg-club: #FAEDC3;
+  --bg-info: #EAF1FF;                   /* new: group hint */
+  --bg-warning: #FFF4D6;                /* new: demand banner, deadline pill */
+  --text-warning: #8A5A00;              /* new */
+  --trending-blue: #648FFF;
+
+  /* Status badges (Your Bookings) */
+  --badge-failed: #AD1D34;              /* measured */
+  --badge-finished: #666666;            /* measured */
+  --badge-hold: #E8A317;                /* new: GROUP HOLD */
+  --badge-confirmed: #1FAD3D;           /* new: CONFIRMED */
+  --badge-text: #FFFFFF;
+
+  /* iOS system surfaces (share sheet, notifications) */
+  --ios-sheet-bg: #F6F6F6;              /* measured */
+  --ios-group-bg: #EBEBEB;              /* measured */
+  --ios-notif-bg: rgba(40, 40, 40, 0.72); /* est, with backdrop blur */
+  --scrim: rgba(0, 0, 0, 0.70);
+  --sheet-handle: #C9C7CC;
+  --divider: #E6E6E6;                   /* est */
+
+  /* Type */
+  --font-app: "Roboto", -apple-system, "SF Pro Text", system-ui, sans-serif;
+  --font-system: -apple-system, "SF Pro Text", system-ui, sans-serif;
+
+  /* Size (pt = CSS px at 402 wide) */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --margin-screen: 16px;
+  --cta-height: 40px;
+  --cta-radius: 6px;                    /* est */
+  --seat-size: 20px;
+  --seat-pitch: 26px;
+  --seat-radius: 3px;                   /* est */
+  --sheet-radius: 16px;                 /* est */
+  --card-radius: 8px;                   /* est */
+
+  /* iPhone 17 */
+  --device-width: 402px;
+  --device-height: 874px;
+  --safe-top: 62px;
+  --safe-bottom: 34px;
+  --status-bar-height: 54px;
+}
