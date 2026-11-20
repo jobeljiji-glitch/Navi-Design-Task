@@ -76,7 +76,7 @@ export default function PaymentScreen({
           />
           <PaymentRow
             icon={
-              <div className="w-6 h-6 rounded-full bg-cyan-500 text-white flex items-center justify-center text-[9px] font-medium">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium" style={{ backgroundColor: 'var(--pay-glyph-teal)', color: 'var(--text-on-brand)' }}>
                 pay
               </div>
             }

@@ -59,7 +59,7 @@ export default function MovieDetailScreen({
         <div
           className="w-full h-[200px] rounded-[12px] relative overflow-hidden flex flex-col justify-between shrink-0"
           style={{
-            background: 'linear-gradient(145deg, #0f2b38 0%, #153b50 35%, #1e293b 70%, #0f172a 100%)',
+            background: 'linear-gradient(145deg, var(--poster-1) 0%, var(--poster-2) 35%, var(--poster-3) 70%, var(--poster-4) 100%)',
           }}
         >
           {/* Subtle stylized rain overlay */}
@@ -67,7 +67,7 @@ export default function MovieDetailScreen({
             className="absolute inset-0 opacity-20 pointer-events-none"
             style={{
               backgroundImage:
-                'repeating-linear-gradient(105deg, rgba(255,255,255,0.4) 0px, rgba(255,255,255,0.4) 1px, transparent 1px, transparent 14px)',
+                'repeating-linear-gradient(105deg, var(--poster-rain) 0px, var(--poster-rain) 1px, transparent 1px, transparent 14px)',
             }}
           />
 
@@ -182,7 +182,7 @@ export default function MovieDetailScreen({
             className="flex items-center gap-1 px-2.5 py-1 rounded-[4px] text-white text-[12px] font-medium shrink-0"
             style={{ backgroundColor: 'var(--trending-blue)' }}
           >
-            <TrendingUp size={14} strokeWidth={2} />
+            <TrendingUp size={14} strokeWidth={1.75} />
             <span>Trending</span>
           </div>
           <span

@@ -160,7 +160,7 @@ export default function ReceiptScreen({ onBack }: ReceiptScreenProps) {
 
       {toast && (
         <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">
-          <div className="bg-black/85 text-white px-4 py-2 rounded-full text-[13px] font-medium shadow-lg" role="status">{toast}</div>
+          <div className="toast-surface px-4 py-2 rounded-full text-[13px] font-medium shadow-lg" role="status">{toast}</div>
         </div>
       )}
 

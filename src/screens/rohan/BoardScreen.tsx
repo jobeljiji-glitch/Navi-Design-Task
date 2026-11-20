@@ -286,7 +286,7 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
 
       {toast && (
         <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">
-          <div className="bg-black/85 text-white px-4 py-2 rounded-full text-[13px] font-medium shadow-lg text-center" role="status">{toast}</div>
+          <div className="toast-surface px-4 py-2 rounded-full text-[13px] font-medium shadow-lg text-center" role="status">{toast}</div>
         </div>
       )}
 
@@ -535,7 +535,7 @@ export default function BoardScreen({ onBack, onOpenChat, onSettled, initialShee
                   className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                   style={{ backgroundColor: done ? 'var(--seat-selected)' : 'var(--bg-muted)', color: 'var(--text-on-brand)' }}
                 >
-                  {done && <Check size={14} strokeWidth={2.25} />}
+                  {done && <Check size={14} strokeWidth={1.75} />}
                 </span>
                 {s}
               </li>

@@ -696,7 +696,7 @@ export default function KitPage() {
         >
           <div className="flex flex-col gap-4">
             <span className="text-[13px] text-text-secondary" style={{ color: 'var(--text-secondary)' }}>
-              Monsoon Heist · Fri 9:15 PM · D05–D10
+              Monsoon Heist · Fri, 9:15 PM · D05–D10
             </span>
             <MoneyLedger
               debitedNow="₹277.14"
@@ -724,7 +724,7 @@ export default function KitPage() {
         <IosShareSheet
           isOpen={shareSheetOpen}
           onClose={() => setShareSheetOpen(false)}
-          message="Rohan is holding 6 seats for Monsoon Heist, Fri 9:15 PM. Pay by 7:15 PM · bms.link/g/k7Qx2"
+          message="Rohan is holding 6 seats for Monsoon Heist, Fri, 9:15 PM. Pay by 7:15 PM · bms.link/g/k7Qx2"
           onSelectContact={c => {
             setShareSheetOpen(false)
             alert(`Selected contact: ${c.name}`)

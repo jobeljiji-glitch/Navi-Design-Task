@@ -253,7 +253,7 @@ export default function SeatLayoutScreen({
             style={{ color: 'var(--bms-red-text)' }}
             aria-label="Edit ticket count"
           >
-            <Edit3 size={13} strokeWidth={2} />
+            <Edit3 size={13} strokeWidth={1.75} />
             <span>{seatCount} Tickets</span>
           </button>
         </div>
@@ -313,8 +313,8 @@ export default function SeatLayoutScreen({
           <div
             className="mx-4 my-2 px-4 py-2.5 rounded-[6px] flex items-center justify-between"
             style={{
-              backgroundColor: 'var(--bg-club, #FFFBEB)',
-              borderColor: '#FDE68A',
+              backgroundColor: 'var(--bg-club)',
+              borderColor: 'var(--club-border)',
             }}
           >
             <div className="flex flex-col text-left pr-2">
@@ -344,7 +344,7 @@ export default function SeatLayoutScreen({
       {toastMessage && (
         <div className="absolute top-36 left-4 right-4 z-50 flex justify-center pointer-events-none">
           <div
-            className={`bg-black/85 text-white px-4 py-2 ${toastMessage.length > 44 ? 'rounded-[12px] text-center' : 'rounded-full'} text-[13px] leading-[18px] font-medium shadow-lg animate-fade-in backdrop-blur-sm pointer-events-auto flex items-center gap-3 text-balance`}
+            className={`toast-surface px-4 py-2 ${toastMessage.length > 44 ? 'rounded-[12px] text-center' : 'rounded-full'} text-[13px] leading-[18px] font-medium shadow-lg animate-fade-in backdrop-blur-sm pointer-events-auto flex items-center gap-3 text-balance`}
             role="status"
             data-testid="seat-toast"
           >

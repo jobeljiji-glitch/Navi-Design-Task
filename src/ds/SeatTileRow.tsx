@@ -34,8 +34,10 @@ function tileStyle(kind: SeatTileKind) {
     case 'owner':
     case 'paid':
     case 'covered':
-    case 'kept':
       return { backgroundColor: 'var(--seat-selected)', border: '1px solid var(--seat-selected)', color: 'var(--text-on-brand)' }
+    case 'kept':
+      // 09: kept = unpaid, Rohan's, not charged yet: amber solid outline (same as the receipt's kept row)
+      return { backgroundColor: 'var(--seat-held-fill)', border: '1px solid var(--seat-held-border)', color: 'var(--text-warning)' }
     case 'paying':
       return { backgroundColor: 'var(--seat-paying-fill)', border: '1px solid var(--seat-held-border)', color: 'var(--text-warning)' }
     case 'released':
@@ -54,7 +56,7 @@ function tileStyle(kind: SeatTileKind) {
 
 function captionColor(kind: SeatTileKind) {
   if (kind === 'owner' || kind === 'paid' || kind === 'covered' || kind === 'selected') return 'var(--text-success)'
-  if (kind === 'paying') return 'var(--text-warning)'
+  if (kind === 'paying' || kind === 'kept') return 'var(--text-warning)'
   return 'var(--text-secondary)'
 }
 

@@ -37,6 +37,12 @@ html, body, #root {
   padding-bottom: var(--sab, 0px);
 }
 
+/* 09: one toast surface for every screen (tokens, no raw palette colours) */
+.toast-surface {
+  background-color: var(--toast-bg);
+  color: var(--text-on-brand);
+}
+
 /* App viewport height (07b). Standalone routes: the dynamic viewport. Inside the demo stage the
    app viewport (below the demo bar) overrides it with its measured height. */
 :root { --app-h: 100vh; }

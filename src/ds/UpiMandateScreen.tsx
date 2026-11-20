@@ -46,7 +46,7 @@ export default function UpiMandateScreen({
   furtherDebits = 'Only kept seats, at 9:15 PM',
   blockEnds = 'Today, 9:15 PM',
   refundLine = '₹277.14 each time a friend pays',
-  showDetails = 'Group hold · Monsoon Heist · Fri 9:15 PM',
+  showDetails = 'Group hold · Monsoon Heist · Fri, 9:15 PM',
   payerVpa = 'rohan@okbank',
   plainNote = "Blocked, not charged. You're charged only for seats you keep.",
   cardLabel = 'ending 4021',

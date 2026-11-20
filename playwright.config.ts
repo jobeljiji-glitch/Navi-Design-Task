@@ -12,6 +12,8 @@ export default defineConfig({
   testDir: 'e2e',
   timeout: 60_000,
   fullyParallel: false,
+  // 09: one dev server serves both engines; more than 2 workers made layout timing flaky under load
+  workers: 2,
   reporter: 'list',
   use: {
     baseURL: `http://localhost:${PORT}/Navi-Design-Task/`,

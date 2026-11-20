@@ -72,7 +72,7 @@ export default function SummaryCard({
             className="flex items-center gap-1 text-[13px] leading-none font-medium hover:opacity-80 shrink-0"
             style={{ color: 'var(--bms-red-text)' }}
           >
-            <Edit3 size={13} strokeWidth={2} />
+            <Edit3 size={13} strokeWidth={1.75} />
             <span>M-Ticket</span>
           </button>
         </div>

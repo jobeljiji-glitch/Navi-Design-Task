@@ -101,6 +101,9 @@
   --sheet-handle: #C9C7CC;
   --divider: #E6E6E6;                   /* est */
   --scrim-light: rgba(0, 0, 0, 0.40);   /* new 07: iOS alert dim */
+  --toast-bg: rgba(0, 0, 0, 0.85);      /* new 09: one toast surface (was bg-black/85 in 6 screens) */
+  --club-border: #FDE68A;               /* new 09: Club strip border (was raw hex in SeatLayout) */
+  --pay-glyph-teal: #06B6D4;            /* new 09: ref-12 wallet glyph (was Tailwind cyan-500) */
 
   /* 07 demo stage (outside the phone) */
   --stage-bg: #E9EEF2;                  /* new 07: backdrop around the phone */

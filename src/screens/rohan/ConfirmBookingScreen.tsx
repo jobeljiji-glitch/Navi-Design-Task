@@ -120,7 +120,7 @@ export default function ConfirmBookingScreen({
               className="flex items-center gap-1 text-[13px] font-medium hover:opacity-85"
               style={{ color: 'var(--bms-red-text)' }}
             >
-              <Edit3 size={13} strokeWidth={2} />
+              <Edit3 size={13} strokeWidth={1.75} />
               <span>Edit</span>
             </button>
           </div>
