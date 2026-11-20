@@ -195,7 +195,7 @@ export default function DeviceFrame({ time = '9:41', children }: DeviceFrameProp
           flexDirection: 'column',
           width: '100%',
           height: '100%',
-          paddingTop: 'env(safe-area-inset-top, var(--safe-top))',
+          paddingTop: 'var(--sat)', // top inset (07c: one variable, see index.css)
           // bottom inset is owned by bars via --sab (no double inset)
           ['--sab' as string]: 'env(safe-area-inset-bottom, 0px)',
           background: 'var(--bg-surface)',

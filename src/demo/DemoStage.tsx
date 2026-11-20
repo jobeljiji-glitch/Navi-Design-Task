@@ -11,6 +11,7 @@ import CoachBubble from './CoachBubble'
 import ExploreChips from './ExploreChips'
 import { DoneCard, Interstitial, Intro } from './Overlays'
 import { ControlPanel, StoryPanel } from './Panels'
+import { useTopChrome } from './useTopChrome'
 import { advanceFrom, backStep, exploreFreely, jumpTo, jumpToMoment, nextStep, openPhoneAt, skipTour } from './stageActions'
 
 const DEVICE_W = 402
@@ -153,6 +154,10 @@ export default function DemoStage() {
   }, [framed, wide])
 
   const tourStep = mode === 'tour' ? TOUR_STEPS[step] : null
+
+  // 07c: browser chrome colour = whatever is at the top of the page.
+  const topSource = framed ? 'stage' : mode === 'intro' || (showBar && barOpen) ? 'bar' : 'screen'
+  useTopChrome(topSource, [path, phoneKey, interstitial, step])
 
   // While the intro is open, everything behind it is inert (keyboard and screen readers stay in the dialog).
   const bodyRef = useRef<HTMLDivElement>(null)

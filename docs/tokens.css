@@ -105,11 +105,11 @@
   --stage-panel: #FFFFFF;               /* new 07 */
   --stage-ink: #1C1C1C;                 /* new 07: interstitial card */
   --stage-ink-text: #FFFFFF;            /* new 07 */
-  --stage-ink-muted: rgba(255, 255, 255, 0.72); /* new 07: 9:1 on stage-ink */
+  --stage-ink-muted: #B8B8BD;           /* 07c: opaque light grey, 9.3:1 on stage-ink (was translucent white) */
   --coach-ring: #EB4E63;                /* new 07: spotlight ring (bms red) */
   --coach-glow: rgba(235, 78, 99, 0.28);/* new 07 */
   --coach-shadow: 0 12px 32px rgba(0, 0, 0, 0.22), 0 0 0 0.5px rgba(0, 0, 0, 0.08); /* new 07: bubble elevation */
-  --chip-bg: rgba(255, 255, 255, 0.14); /* new 07: chips on the demo bar */
+  --chip-bg: #3A3A3C;                   /* 07c: opaque chip fill on the demo bar (was translucent white) */
   --stage-bar: 40px;                    /* new 07b: demo bar height on a phone (below the top inset) */
 
   /* Type */

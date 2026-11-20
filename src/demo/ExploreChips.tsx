@@ -27,7 +27,7 @@ export default function ExploreChips({ layout = 'float', onToggle }: { layout?: 
 
   const chipCls = 'h-7 px-2.5 rounded-full inline-flex items-center gap-1 text-[13px] font-medium'
   const chipStyle = { backgroundColor: layout === 'float' ? 'var(--stage-ink)' : 'var(--chip-bg)', color: 'var(--stage-ink-text)' }
-  const menuTop = layout === 'bar' ? 'calc(env(safe-area-inset-top, 0px) + var(--stage-bar) + 6px)' : 'calc(env(safe-area-inset-top, 0px) + 46px)'
+  const menuTop = layout === 'bar' ? 'calc(var(--sat) + var(--stage-bar) + 6px)' : 'calc(var(--sat) + 46px)'
 
   if (layout === 'pill') {
     return (
@@ -37,7 +37,7 @@ export default function ExploreChips({ layout = 'float', onToggle }: { layout?: 
         aria-expanded={false}
         aria-label="Show demo controls"
         className="fixed right-0 z-[97] pl-2 pr-1 py-2"
-        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 2px)' }}
+        style={{ top: 'calc(var(--sat) + 2px)' }}
         data-stage-overlay
         data-testid="demo-pill"
       >
@@ -59,7 +59,7 @@ export default function ExploreChips({ layout = 'float', onToggle }: { layout?: 
         }
         style={
           layout === 'bar'
-            ? { paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(env(safe-area-inset-top, 0px) + var(--stage-bar))', backgroundColor: 'var(--stage-ink)' }
+            ? { paddingTop: 'var(--sat)', height: 'calc(var(--sat) + var(--stage-bar))', backgroundColor: 'var(--stage-ink)' }
             : undefined
         }
         data-stage-overlay

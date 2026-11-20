@@ -47,7 +47,7 @@ export function Intro() {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-      style={{ backgroundColor: 'var(--scrim)', paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      style={{ backgroundColor: 'var(--scrim)', paddingTop: 'var(--sat)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       data-stage-overlay
     >
       <motion.div

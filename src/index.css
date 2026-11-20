@@ -21,7 +21,7 @@ html, body, #root {
 
 /* Safe-area padding utilities (real device) */
 .safe-top {
-  padding-top: env(safe-area-inset-top, var(--safe-top));
+  padding-top: var(--sat);
 }
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, var(--safe-bottom));
@@ -40,6 +40,8 @@ html, body, #root {
 /* App viewport height (07b). Standalone routes: the dynamic viewport. Inside the demo stage the
    app viewport (below the demo bar) overrides it with its measured height. */
 :root { --app-h: 100vh; }
+/* Top safe-area inset, read through one variable (07c) so tests can emulate a notch. */
+:root { --sat: env(safe-area-inset-top, 0px); }
 @supports (height: 100dvh) { :root { --app-h: 100dvh; } }
 
 /* 07 demo stage */
@@ -66,4 +68,15 @@ html, body, #root {
 }
 .stage-app[data-bar='open'] .device-frame-mobile {
   padding-top: 0 !important;
+}
+
+/* 07c: home-screen app (status bar style black-translucent: white status text over our page).
+   The strip under the status bar is always the demo bar colour, never a white band: with the bar
+   open the bar itself extends up under it; otherwise the full-screen frame paints it as a border. */
+html[data-standalone] .device-frame-mobile {
+  padding-top: 0 !important;
+  border-top: var(--sat) solid var(--stage-ink);
+}
+html[data-standalone] .stage-app[data-bar='open'] .device-frame-mobile {
+  border-top-width: 0;
 }

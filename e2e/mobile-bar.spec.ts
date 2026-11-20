@@ -90,6 +90,7 @@ for (const bar of ['open', 'collapsed'] as BarState[]) {
     test('hold sheet: footer CTA is fully visible', async ({ page }) => {
       await page.goto('#/?step=3')
       await page.getByRole('button', { name: 'Skip tutorial' }).click() // keeps the hold sheet open
+      await expect(page.getByTestId('demo-bar-title')).toBeVisible() // explore mode: the bar opens by default
       await setBar(page, bar)
       await expectAppFills(page, bar)
       await expectFullyVisible(page, app(page).locator('[data-tour~="hold-cta"]'), 'Hold sheet CTA')
