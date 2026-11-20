@@ -1,3 +1,6 @@
+import { useEffect } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
+
 export interface SeatCountPickerProps {
   count: number
   onChange: (count: number) => void
@@ -12,117 +15,36 @@ export default function SeatCountPicker({
   className = '',
 }: SeatCountPickerProps) {
   const numbers = Array.from({ length: maxSeats }, (_, i) => i + 1)
+  const baseUrl = import.meta.env.BASE_URL || '/'
+
+  // Preload all 10 vehicle images
+  useEffect(() => {
+    for (let i = 1; i <= 10; i++) {
+      const img = new Image()
+      img.src = `${baseUrl}illustrations/seat-count/${i}.png`
+    }
+  }, [baseUrl])
 
   return (
-    <div className={`w-full flex flex-col items-center gap-6 ${className}`}>
-      {/* Scooter Illustration */}
-      <div className="w-[120px] h-[72px] flex items-center justify-center">
-        <svg
-          width="120"
-          height="72"
-          viewBox="0 0 120 72"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          {/* Ground shadow */}
-          <ellipse
-            cx="60"
-            cy="66"
-            rx="45"
-            ry="4"
-            fill="var(--divider)"
-            opacity="0.8"
+    <div className={`w-full flex flex-col items-center select-none ${className}`}>
+      {/* Vehicle Illustration Area (centered, ~130 pt tall, object-fit: contain) */}
+      <div className="w-full h-[130px] flex items-center justify-center overflow-hidden relative">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.img
+            key={count}
+            src={`${baseUrl}illustrations/seat-count/${count}.png`}
+            alt={`${count} seat vehicle illustration`}
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 12 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="h-[120px] max-w-[280px] object-contain"
           />
-
-          {/* Rear wheel */}
-          <circle
-            cx="34"
-            cy="54"
-            r="12"
-            fill="var(--text-primary)"
-          />
-          <circle
-            cx="34"
-            cy="54"
-            r="8"
-            fill="var(--seat-held-border)"
-          />
-          <circle
-            cx="34"
-            cy="54"
-            r="4"
-            fill="var(--bg-surface)"
-          />
-
-          {/* Front wheel */}
-          <circle
-            cx="86"
-            cy="54"
-            r="12"
-            fill="var(--text-primary)"
-          />
-          <circle
-            cx="86"
-            cy="54"
-            r="8"
-            fill="var(--seat-held-border)"
-          />
-          <circle
-            cx="86"
-            cy="54"
-            r="4"
-            fill="var(--bg-surface)"
-          />
-
-          {/* Scooter Body */}
-          <path
-            d="M32 36C32 30 38 26 48 26H70L62 48H36C33.8 48 32 46.2 32 44V36Z"
-            fill="var(--bms-red)"
-          />
-
-          {/* Footboard / engine base */}
-          <path
-            d="M48 48H76C78 48 80 46 80 44L78 36H66"
-            stroke="var(--text-secondary)"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-
-          {/* Seat */}
-          <path
-            d="M30 25C30 23 33 21 38 21H56C58 21 60 23 58 25L54 27H32L30 25Z"
-            fill="var(--text-primary)"
-          />
-
-          {/* Handlebar & stem */}
-          <path
-            d="M80 48L72 16"
-            stroke="var(--text-secondary)"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M68 16H78"
-            stroke="var(--text-primary)"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-          />
-
-          {/* Headlight */}
-          <circle
-            cx="76"
-            cy="18"
-            r="4"
-            fill="var(--bg-amount)"
-            stroke="var(--seat-held-border)"
-            strokeWidth="1.5"
-          />
-        </svg>
+        </AnimatePresence>
       </div>
 
-      {/* Number picker row */}
-      <div className="w-full flex items-center justify-between px-2">
+      {/* Number picker row: 1–10 spread evenly across full width */}
+      <div className="w-full flex items-center justify-between px-2 pt-3 pb-1">
         {numbers.map(n => {
           const isSelected = n === count
           return (
@@ -130,10 +52,8 @@ export default function SeatCountPicker({
               key={n}
               type="button"
               onClick={() => onChange(n)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                isSelected
-                  ? 'scale-105 font-semibold text-[16px]'
-                  : 'font-normal text-[14px] hover:bg-bg-muted'
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-transform active:scale-95 ${
+                isSelected ? 'font-normal text-[17px]' : 'font-normal text-[17px]'
               }`}
               style={{
                 backgroundColor: isSelected ? 'var(--bms-red)' : 'transparent',

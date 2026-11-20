@@ -23,7 +23,7 @@ export default function AmountHeader({
           {label}
         </span>
         <span
-          className="text-[20px] leading-[26px] font-bold text-text-primary"
+          className="text-[20px] leading-[26px] font-medium text-text-primary"
           style={{ color: 'var(--text-primary)' }}
         >
           {amount}

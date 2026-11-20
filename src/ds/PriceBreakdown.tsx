@@ -32,7 +32,7 @@ export default function PriceBreakdown({
       <div className="flex flex-col gap-2.5">
         {items.map(item => (
           <div key={item.label} className="flex flex-col gap-0.5">
-            <div className="flex items-center justify-between text-[14px] leading-[20px]">
+            <div className="flex items-center justify-between text-[15px] leading-[22px]">
               <span
                 className="text-text-primary font-normal"
                 style={{ color: 'var(--text-primary)' }}
@@ -40,7 +40,7 @@ export default function PriceBreakdown({
                 {item.label}
               </span>
               <span
-                className="text-text-primary font-medium text-right shrink-0"
+                className="text-text-primary font-normal text-right shrink-0"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {item.amount}
@@ -81,13 +81,13 @@ export default function PriceBreakdown({
       {/* Total row */}
       <div className="flex items-center justify-between">
         <span
-          className="text-[16px] leading-[22px] font-bold text-text-primary"
+          className="text-[16px] leading-[22px] font-medium text-text-primary"
           style={{ color: 'var(--text-primary)' }}
         >
           {totalLabel}
         </span>
         <span
-          className="text-[18px] leading-[24px] font-bold text-text-primary"
+          className="text-[18px] leading-[24px] font-medium text-text-primary"
           style={{ color: 'var(--text-primary)' }}
         >
           {totalAmount}

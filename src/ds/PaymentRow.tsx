@@ -22,7 +22,7 @@ export default function PaymentRow({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center justify-between p-4 bg-bg-surface border-b border-divider hover:bg-bg-muted active:opacity-80 transition-colors text-left ${className}`}
+      className={`w-full flex items-center justify-between px-4 py-3.5 bg-bg-surface border-b border-divider hover:bg-bg-muted active:opacity-80 transition-colors text-left ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderBottomColor: 'var(--divider)',
@@ -35,14 +35,14 @@ export default function PaymentRow({
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2">
             <span
-              className="text-[14px] leading-[20px] font-medium text-text-primary truncate"
+              className="text-[15px] leading-[20px] font-normal text-text-primary truncate"
               style={{ color: 'var(--text-primary)' }}
             >
               {title}
             </span>
             {lastUsed && (
               <span
-                className="text-[10px] leading-none font-semibold px-1.5 py-0.5 rounded-[2px] bg-bg-info text-text-link shrink-0"
+                className="text-[10px] leading-none font-medium px-1.5 py-0.5 rounded-[2px] bg-bg-info text-text-link shrink-0"
                 style={{
                   backgroundColor: 'var(--bg-info)',
                   color: 'var(--text-link)',
@@ -54,7 +54,7 @@ export default function PaymentRow({
           </div>
           {subtitle && (
             <span
-              className="text-[12px] leading-[16px] text-text-secondary truncate mt-0.5"
+              className="text-[13px] leading-[17px] text-text-secondary truncate mt-0.5 font-normal"
               style={{ color: 'var(--text-secondary)' }}
             >
               {subtitle}

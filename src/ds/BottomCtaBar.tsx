@@ -47,7 +47,7 @@ export default function BottomCtaBar({
                 </span>
               )}
               <span
-                className="text-[18px] leading-[24px] font-bold text-text-primary truncate"
+                className="text-[18px] leading-[24px] font-medium text-text-primary truncate"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {totalAmount}

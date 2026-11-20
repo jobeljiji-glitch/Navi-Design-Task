@@ -45,7 +45,7 @@ export default function SummaryCard({
           {title}
         </h2>
         <span
-          className="text-[18px] leading-[22px] font-bold text-text-primary shrink-0"
+          className="text-[18px] leading-[22px] font-medium text-text-primary shrink-0"
           style={{ color: 'var(--text-primary)' }}
         >
           {ticketCount}
