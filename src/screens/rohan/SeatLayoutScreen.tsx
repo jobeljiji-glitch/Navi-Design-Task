@@ -249,7 +249,7 @@ export default function SeatLayoutScreen({
           <button
             type="button"
             onClick={() => setIsCountSheetOpen(true)}
-            className="flex items-center gap-1 text-[13px] font-medium hover:opacity-85 shrink-0"
+            className="hit-44 flex items-center gap-1 text-[13px] font-medium hover:opacity-85 shrink-0"
             style={{ color: 'var(--bms-red-text)' }}
             aria-label="Edit ticket count"
           >
@@ -332,7 +332,7 @@ export default function SeatLayoutScreen({
 
             <button
               type="button"
-              className="px-3 py-1.5 rounded-[4px] bg-white border border-amber-500 text-[12px] font-medium text-amber-900 shrink-0"
+              className="hit-44 px-3 py-1.5 rounded-[4px] bg-white border border-amber-500 text-[12px] font-medium text-amber-900 shrink-0"
             >
               Add Club
             </button>

@@ -79,7 +79,7 @@ export default function PriceBreakdown({
                     <button
                       type="button"
                       onClick={item.onAction}
-                      className="font-medium hover:underline shrink-0"
+                      className="hit-44 font-medium hover:underline shrink-0"
                       style={{ color: 'var(--bms-red-text)' }}
                     >
                       {item.actionLabel}
@@ -147,7 +147,7 @@ export default function PriceBreakdown({
           <button
             type="button"
             onClick={() => setIsFeeExpanded(prev => !prev)}
-            className="flex items-center justify-between text-[14px] leading-[20px] text-left w-full hover:opacity-90"
+            className="hit-44 flex items-center justify-between text-[14px] leading-[20px] text-left w-full hover:opacity-90"
           >
             <div className="flex items-center gap-1">
               <span
@@ -196,7 +196,7 @@ export default function PriceBreakdown({
               <span style={{ color: 'var(--text-secondary)' }}>(₹1 per ticket)</span>
               <button
                 type="button"
-                className="underline hover:opacity-85 font-medium"
+                className="hit-44 underline hover:opacity-85 font-medium"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 VIEW T&C
@@ -214,7 +214,7 @@ export default function PriceBreakdown({
             <button
               type="button"
               onClick={onAddMusicians}
-              className="text-[12px] leading-[16px] font-medium hover:opacity-85"
+              className="hit-44 text-[12px] leading-[16px] font-medium hover:opacity-85"
               style={{ color: 'var(--bms-red-text)' }}
             >
               {musiciansAddText}

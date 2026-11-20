@@ -33,7 +33,7 @@ export default function StatusBadge({
       className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-[4px] text-[13px] leading-none font-medium tracking-wide uppercase select-none ${className}`}
       style={{
         backgroundColor: getBadgeBg(),
-        color: 'var(--badge-text)',
+        color: status === 'GROUP HOLD' ? 'var(--badge-hold-text)' : 'var(--badge-text)',
       }}
     >
       {status}

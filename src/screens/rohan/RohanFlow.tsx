@@ -412,7 +412,7 @@ export default function RohanFlow() {
         <div className="absolute inset-0 z-[70] flex items-center justify-center px-12" style={{ backgroundColor: 'var(--scrim-light)' }}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="hold-alert" className="w-full max-w-[270px] rounded-[14px] overflow-hidden text-center" style={{ backgroundColor: 'var(--ios-sheet-bg)', fontFamily: 'var(--font-system)' }} data-testid="hold-alert">
             <p id="hold-alert" className="px-4 pt-5 pb-4 text-[15px] leading-[20px]" style={{ color: 'var(--text-primary)' }}>{failureOf(state).alert ?? state.errorMessage}</p>
-            <button type="button" autoFocus onClick={() => dispatch(failureOf(state).alert ? { type: 'DISMISS_ALERT' } : { type: 'CLEAR_ERROR' })} className="w-full h-11 text-[17px] font-medium" style={{ borderTop: '0.5px solid var(--ios-separator)', color: 'var(--text-link)' }}>OK</button>
+            <button type="button" ref={(b) => { if (b && b.offsetParent) b.focus() }} onClick={() => dispatch(failureOf(state).alert ? { type: 'DISMISS_ALERT' } : { type: 'CLEAR_ERROR' })} className="w-full h-11 text-[17px] font-medium" style={{ borderTop: '0.5px solid var(--ios-separator)', color: 'var(--text-link)' }}>OK</button>
           </div>
         </div>
       )}

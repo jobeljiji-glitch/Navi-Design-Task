@@ -80,3 +80,18 @@ html[data-standalone] .device-frame-mobile {
 html[data-standalone] .stage-app[data-bar='open'] .device-frame-mobile {
   border-top-width: 0;
 }
+
+/* 08: tap targets ≥ 44 pt without changing the look (refs measure some controls smaller, e.g. 39 pt showtime pills).
+   An invisible pseudo-element grows the hit area around the element's centre. */
+.hit-44 {
+  position: relative;
+}
+.hit-44::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}

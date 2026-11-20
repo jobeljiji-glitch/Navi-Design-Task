@@ -124,7 +124,7 @@ export default function ShowtimesScreen({
           <button
             type="button"
             onClick={onBack}
-            className="p-1 -ml-1 flex items-center justify-center active:opacity-70"
+            className="hit-44 p-1 -ml-1 flex items-center justify-center active:opacity-70"
             aria-label="Back"
           >
             <ChevronLeft size={24} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
@@ -148,14 +148,14 @@ export default function ShowtimesScreen({
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            className="p-1.5 flex items-center justify-center active:opacity-70"
+            className="hit-44 p-1.5 flex items-center justify-center active:opacity-70"
             aria-label="Search"
           >
             <Search size={20} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
           </button>
           <button
             type="button"
-            className="p-1.5 flex items-center justify-center active:opacity-70"
+            className="hit-44 p-1.5 flex items-center justify-center active:opacity-70"
             aria-label="Filter showtimes"
           >
             <SlidersHorizontal size={20} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
@@ -205,7 +205,7 @@ export default function ShowtimesScreen({
         {/* Sort by: rounded rectangle (radius 8), grey border, red icon + chevron */}
         <button
           type="button"
-          className="h-[32px] flex items-center gap-1.5 px-3 rounded-[8px] border text-[13px] font-normal whitespace-nowrap bg-bg-surface shrink-0"
+          className="hit-44 h-[32px] flex items-center gap-1.5 px-3 rounded-[8px] border text-[13px] font-normal whitespace-nowrap bg-bg-surface shrink-0"
           style={{ borderColor: 'var(--border-grey)' }}
         >
           <ArrowUpDown size={14} strokeWidth={1.75} style={{ color: 'var(--bms-red-text)' }} />
@@ -223,7 +223,7 @@ export default function ShowtimesScreen({
           <button
             key={chip.label}
             type="button"
-            className="h-[32px] flex items-center gap-1.5 px-3 rounded-full border text-[13px] font-normal whitespace-nowrap bg-bg-surface shrink-0"
+            className="hit-44 h-[32px] flex items-center gap-1.5 px-3 rounded-full border text-[13px] font-normal whitespace-nowrap bg-bg-surface shrink-0"
             style={{ borderColor: 'var(--bms-red)', color: 'var(--bms-red-text)' }}
           >
             <span>{chip.label}</span>
@@ -265,7 +265,7 @@ export default function ShowtimesScreen({
                 </h2>
                 <button
                   type="button"
-                  className="w-[44px] h-[44px] -mt-1.5 -mr-2.5 flex items-center justify-center shrink-0"
+                  className="hit-44 w-[44px] h-[44px] -mt-1.5 -mr-2.5 flex items-center justify-center shrink-0"
                   aria-label="Favorite cinema"
                 >
                   <Heart size={20} strokeWidth={1.25} style={{ color: 'var(--icon-light)' }} />
@@ -336,10 +336,10 @@ export default function ShowtimesScreen({
             <button
               type="button"
               onClick={() => setIsSubtitleNoticeVisible(false)}
-              className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-bg-muted"
+              className="hit-44 w-5 h-5 rounded-full flex items-center justify-center hover:bg-bg-muted"
               aria-label="Dismiss notice"
             >
-              <X size={14} strokeWidth={2} />
+              <X size={14} strokeWidth={1.75} />
             </button>
           </div>
         </div>

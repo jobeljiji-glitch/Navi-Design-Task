@@ -1,4 +1,4 @@
-import { useRef, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react'
 import { motion, AnimatePresence, useDragControls, type PanInfo } from 'motion/react'
 
 /**
@@ -53,6 +53,44 @@ export default function BottomSheet({
     if (!locked) controls.start(e)
   }
 
+  // 08: a11y. Focus moves into the open sheet, Tab cycles inside it, Escape closes, focus returns on close.
+  // Only the visible copy takes focus (DeviceFrame renders its children twice).
+  useEffect(() => {
+    if (!isOpen) return
+    const before = document.activeElement as HTMLElement | null
+    const t = setTimeout(() => {
+      const el = sheetRef.current
+      if (el && el.offsetParent !== null && !el.contains(document.activeElement)) el.focus({ preventScroll: true })
+    }, 0)
+    return () => {
+      clearTimeout(t)
+      if (before && before.isConnected && before.offsetParent !== null) before.focus({ preventScroll: true })
+    }
+  }, [isOpen])
+
+  const trapKeys = (e: ReactKeyboardEvent) => {
+    if (e.key === 'Escape' && !locked) {
+      e.stopPropagation()
+      onClose()
+      return
+    }
+    if (e.key !== 'Tab' || !sheetRef.current) return
+    const items = Array.from(
+      sheetRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+    ).filter((x) => x.offsetParent !== null)
+    if (items.length === 0) return
+    const first = items[0]
+    const last = items[items.length - 1]
+    const active = document.activeElement
+    if (e.shiftKey && (active === first || active === sheetRef.current)) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const h = sheetRef.current?.offsetHeight ?? 600
     if (info.offset.y > h * 0.3 || info.velocity.y > 800) onClose()
@@ -80,6 +118,8 @@ export default function BottomSheet({
             aria-modal="true"
             aria-label={title}
             data-testid={testId}
+            tabIndex={-1}
+            onKeyDown={trapKeys}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -92,7 +132,7 @@ export default function BottomSheet({
             dragSnapToOrigin
             dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
             onDragEnd={handleDragEnd}
-            className={`relative z-10 w-full flex flex-col max-h-[88%] select-none ${className}`}
+            className={`relative z-10 w-full flex flex-col max-h-[88%] select-none outline-none ${className}`}
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderTopLeftRadius: 'var(--sheet-radius)',

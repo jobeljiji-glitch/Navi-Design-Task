@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { MotionConfig } from 'motion/react'
 
 // Every route is its own chunk (D-102): the demo stage, the two flows, the component kit and the
 // dev overlay load on demand, so the entry chunk is only React, the router and the store.
@@ -11,6 +12,8 @@ const ReferenceOverlay = lazy(() => import('@/dev/ReferenceOverlay'))
 
 export default function App() {
   return (
+    // 08: every route honours the system "Reduce motion" setting (sheets, banners, coach marks)
+    <MotionConfig reducedMotion="user">
     <Suspense fallback={<div className="min-h-[var(--app-h)] bg-bg-page" />}>
       <Routes>
         <Route path="/" element={<DemoStage />} />
@@ -37,5 +40,6 @@ export default function App() {
       </Routes>
       <ReferenceOverlay />
     </Suspense>
+    </MotionConfig>
   )
 }

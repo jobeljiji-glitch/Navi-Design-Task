@@ -36,7 +36,7 @@ export default function SeatGrid({
   }
 
   return (
-    <div className={`w-full flex flex-col gap-5 py-2 ${className}`}>
+    <div className={`w-full flex flex-col gap-5 py-2 ${className}`} data-seat-grid>
       {tiers.map(group => {
         const price = tierPrices?.[group.tierName]
         return (

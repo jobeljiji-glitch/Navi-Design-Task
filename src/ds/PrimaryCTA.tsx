@@ -35,7 +35,7 @@ export default function PrimaryCTA({
       case 'outline':
         return {
           backgroundColor: 'transparent',
-          color: 'var(--bms-red)',
+          color: 'var(--bms-red-text)', // 08: text needs 4.5:1; the brand red stays on the border
           border: '1.5px solid var(--bms-red)',
         }
       case 'default':

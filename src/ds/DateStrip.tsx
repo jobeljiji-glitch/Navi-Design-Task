@@ -43,9 +43,11 @@ export default function DateStrip({
                 ? 'var(--text-on-brand)'
                 : isAvailable
                   ? 'var(--text-primary)'
-                  : 'var(--text-disabled, #A3A3A3)',
+                  : 'var(--text-disabled)',
             }}
             aria-label={`${item.day} ${item.date} ${item.month}`}
+            aria-disabled={!isAvailable || undefined}
+            data-contrast-ok={!isAvailable || undefined}
           >
             <span
               className="text-[12px] uppercase leading-none font-normal"
@@ -54,7 +56,7 @@ export default function DateStrip({
                   ? 'var(--text-on-brand)'
                   : isAvailable
                     ? 'var(--text-secondary)'
-                    : 'var(--text-disabled, #A3A3A3)',
+                    : 'var(--text-disabled)',
               }}
             >
               {item.day}
@@ -66,7 +68,7 @@ export default function DateStrip({
                   ? 'var(--text-on-brand)'
                   : isAvailable
                     ? 'var(--text-primary)'
-                    : 'var(--text-disabled, #A3A3A3)',
+                    : 'var(--text-disabled)',
               }}
             >
               {item.date}
@@ -78,7 +80,7 @@ export default function DateStrip({
                   ? 'var(--text-on-brand)'
                   : isAvailable
                     ? 'var(--text-secondary)'
-                    : 'var(--text-disabled, #A3A3A3)',
+                    : 'var(--text-disabled)',
               }}
             >
               {item.month}

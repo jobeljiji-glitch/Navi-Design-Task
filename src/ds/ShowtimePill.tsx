@@ -28,7 +28,7 @@ export default function ShowtimePill({
       <button
         type="button"
         onClick={onClick}
-        className={`w-[110px] h-[39px] rounded-[3px] flex items-center justify-center transition-all active:scale-95 ${className}`}
+        className={`hit-44 w-[110px] h-[39px] rounded-[3px] flex items-center justify-center transition-all active:scale-95 ${className}`}
         style={{
           backgroundColor: 'var(--showtime-green)',
           color: 'var(--text-on-brand)',
@@ -47,16 +47,16 @@ export default function ShowtimePill({
     <button
       type="button"
       onClick={onClick}
-      className={`relative w-[110px] h-[39px] bg-white rounded-[3px] flex items-center overflow-hidden transition-transform active:scale-95 border border-solid ${className}`}
+      className={`hit-44 relative w-[110px] h-[39px] bg-white rounded-[3px] flex items-center transition-transform active:scale-95 border border-solid ${className}`}
       style={{
         borderColor: 'var(--showtime-green)',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'var(--bg-surface)',
       }}
       aria-label={`Showtime ${time}${effectiveSubtitle ? ` ${effectiveSubtitle}` : ''}${effectiveCaption ? ` ${effectiveCaption}` : ''}`}
     >
       {/* 4pt solid green bar on the left */}
       <div
-        className="w-[4px] h-full absolute left-0 top-0 bottom-0 shrink-0"
+        className="w-[4px] h-full absolute left-0 top-0 bottom-0 shrink-0 rounded-l-[2px]"
         style={{ backgroundColor: 'var(--showtime-green)' }}
       />
 

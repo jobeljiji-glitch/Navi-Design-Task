@@ -6,40 +6,11 @@ import { test, expect, type Page } from '@playwright/test'
  * Worst case: 110% text zoom, emulated by scaling every element's font-size and line-height.
  */
 
-const SCREENS: Array<{ route: string; name: string; shot?: string }> = [
-  { route: '#/rohan/held', name: 'Group hold', shot: '04e-held' },
-  { route: '#/friend/amit?screen=pay', name: 'Friend pay page', shot: '04e-friend-pay' },
-  { route: '#/friend/sana?after=amit&screen=pay', name: 'Friend pay page (after Amit)' },
-  { route: '#/friend/sana?conflict=1', name: 'Friend pay page (conflict)' },
-  { route: '#/friend/sana?after=amit&screen=ticket', name: 'Friend ticket', shot: '04e-ticket' },
-  { route: '#/friend/priya?screen=pending', name: 'Friend pending' },
-  { route: '#/friend/neha?screen=declined', name: 'Friend declined' },
-  { route: '#/rohan/confirm', name: 'Confirm booking', shot: '04e-confirm' },
-  { route: '#/rohan/showtimes', name: 'Showtimes' },
-  { route: '#/rohan/hold', name: 'Hold sheet', shot: '04e-hold-sheet' },
-  // 06
-  { route: '#/rohan/board?at=310', name: 'Board (3:10 PM)', shot: '06e-board' },
-  { route: '#/rohan/board?at=neha', name: "Board (Neha can't make it)" },
-  { route: '#/rohan/board?at=t30', name: 'Board (T−30 band)' },
-  { route: '#/rohan/board?at=grace', name: 'Board (settling in grace)' },
-  { route: '#/rohan/board?at=310&clock=1630&sheet=release', name: 'Release sheet (fee kept)' },
-  { route: '#/rohan/board?at=t30&sheet=t30', name: 'T−30 sheet' },
-  { route: '#/rohan/receipt?at=receipt', name: 'Receipt', shot: '06e-receipt' },
-  { route: '#/rohan/receipt?at=late', name: 'Receipt (Kabir paid late)' },
-  { route: '#/rohan/orders?at=310', name: 'Your Bookings (group hold)' },
-  { route: '#/rohan/orders?at=late', name: 'Your Bookings (settled)' },
-  { route: '#/friend/kabir?at=810', name: 'Friend late page', shot: '06e-friend-late' },
-  { route: '#/friend/kabir?at=showtime', name: 'Friend: show started' },
-  { route: '#/friend/sana?at=receipt', name: 'Friend ticket (group set)' },
-  // 07 demo stage: the phone inside the stage, plus its own overlays (intro, done card)
-  { route: '#/', name: 'Stage: intro', shot: '07-intro' },
-  { route: '#/?step=3', name: 'Stage: step 3 (hold sheet)', shot: '07-step-03' },
-  { route: '#/?step=8', name: 'Stage: step 8 (board, banner)' },
-  { route: '#/?step=12', name: 'Stage: step 12 (T−30 sheet)', shot: '07-step-12' },
-  { route: '#/?step=13', name: 'Stage: step 13 (receipt)' },
-  { route: '#/?step=14', name: 'Stage: step 14 (Kabir late)' },
-  { route: '#/?explore=1&moment=receipt', name: 'Stage: explore (receipt)', shot: '07-explore' },
-]
+import { SCREENS as BASE } from './routes'
+
+// Failure screens with cards (the limit toasts and #7 sit on the seat layout, which has none; qa.spec covers them)
+const FAILURES = ['no-blocking', 'no-card', 'upi-declined', 'cancel-block', 'conflict', 'friend-fails', 'cant-make-it', 'pending', 'nobody', 'showtime-pending', 'showtime-expired', 'after-show', 'cinema']
+const SCREENS: Array<{ route: string; name: string; shot?: string }> = [...BASE, ...FAILURES.map((id) => ({ route: `#/?explore=1&failure=${id}`, name: `08 failure: ${id}` }))]
 
 async function zoomText(page: Page, factor = 1.1) {
   await page.evaluate((f) => {
