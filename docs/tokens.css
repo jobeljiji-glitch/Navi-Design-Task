@@ -29,6 +29,11 @@
   --text-success: #0B7221;
   --text-link: #1E63D6;                 /* est */
   --text-on-brand: #FFFFFF;
+  --text-pill: #555555;                 /* new: showtime pill time */
+  --text-visited: #4A5090;              /* new: Visited tag text */
+  --bg-visited: #E8EAF6;                /* new: Visited tag pale lavender */
+  --icon-light: #BDBDBD;                /* new: thin light-grey heart */
+  --border-grey: #BDBDBD;               /* new: Sort by chip border */
 
   /* Surfaces */
   --bg-page: #F2F6F9;

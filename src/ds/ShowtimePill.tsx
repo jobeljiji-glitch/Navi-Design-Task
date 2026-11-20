@@ -64,27 +64,33 @@ export default function ShowtimePill({
       <div className="flex-1 flex flex-col items-center justify-center pl-1.5 pr-0.5 select-none leading-none">
         <div className="flex items-center justify-center gap-1">
           <span
-            className="text-[15px] font-normal whitespace-nowrap leading-none"
-            style={{ color: 'var(--text-primary)' }}
+            className="text-[14px] font-normal whitespace-nowrap leading-none"
+            style={{ color: 'var(--text-pill)' }}
           >
             {time}
           </span>
           {effectiveSubtitle && (
-            <span
-              className="text-[9px] uppercase font-normal tracking-wide px-1 py-0.5 border border-divider rounded-[2px] leading-none"
-              style={{
-                color: 'var(--text-secondary)',
-                borderColor: 'var(--divider)',
-              }}
+            <svg
+              width="18"
+              height="14"
+              viewBox="0 0 18 14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="shrink-0"
+              style={{ color: 'var(--text-secondary)' }}
             >
-              {effectiveSubtitle}
-            </span>
+              <path d="M1.5 1.5h15v8.5H8l-3 2.5V10H1.5Z" />
+              <text x="9" y="7.8" textAnchor="middle" fontSize="5" fontWeight="500" fill="currentColor" stroke="none">{effectiveSubtitle}</text>
+            </svg>
           )}
         </div>
 
         {effectiveCaption && (
           <span
-            className="text-[10px] uppercase font-normal tracking-wide text-text-secondary mt-0.5 leading-none"
+            className="text-[9px] uppercase font-normal tracking-wide text-text-secondary mt-1 leading-none"
             style={{ color: 'var(--text-secondary)' }}
           >
             {effectiveCaption}
