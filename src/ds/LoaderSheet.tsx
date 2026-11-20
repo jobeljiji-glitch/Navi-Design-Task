@@ -14,7 +14,7 @@ export default function LoaderSheet({
   subMessage,
 }: LoaderSheetProps) {
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} scrimClose={false}>
+    <BottomSheet isOpen={isOpen} onClose={onClose} scrimClose={false} locked>
       <div className="w-full flex flex-col items-center py-6 gap-4 text-center">
         {/* Animated ticket illustration */}
         <div className="w-[120px] h-[64px] flex items-center justify-center">

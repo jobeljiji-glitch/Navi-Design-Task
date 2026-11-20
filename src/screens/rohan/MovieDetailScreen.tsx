@@ -16,8 +16,8 @@ export default function MovieDetailScreen({
       style={{
         backgroundColor: 'var(--bg-surface)',
         color: 'var(--text-primary)',
-        width: 402,
-        height: 874,
+        width: '100%',
+        height: '100%',
       }}
     >
       {/* Top App Header */}
@@ -200,7 +200,7 @@ export default function MovieDetailScreen({
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderTopColor: 'var(--divider)',
-          paddingBottom: 'calc(var(--safe-bottom) + 12px)',
+          paddingBottom: 'calc(var(--sab, 0px) + 9px)',
         }}
       >
         <button

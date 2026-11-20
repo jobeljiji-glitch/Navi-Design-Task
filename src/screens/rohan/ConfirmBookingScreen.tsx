@@ -49,8 +49,8 @@ export default function ConfirmBookingScreen({
       style={{
         backgroundColor: '#F2F3F5',
         color: 'var(--text-primary)',
-        width: 402,
-        height: 874,
+        width: '100%',
+        height: '100%',
       }}
     >
       {/* Header: sits on same grey, no white bar, 20 pt wt 400 */}
@@ -150,7 +150,7 @@ export default function ConfirmBookingScreen({
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderTopColor: 'var(--divider)',
-          paddingBottom: 'calc(var(--safe-bottom) + 12px)',
+          paddingBottom: 'calc(var(--sab, 0px) + 9px)',
         }}
       >
         <div className="flex flex-col text-left">

@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, type ReactNode } from 'react'
-import { ChevronLeft, Edit3 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit3 } from 'lucide-react'
 import { DEMO_SHOW, createInitialSeats } from '@/logic/seed'
 import type { Seat as LogicSeat, SeatTier } from '@/logic/types'
 import { pickSeats } from '@/logic/seatPick'
@@ -14,6 +14,7 @@ import {
   ShowtimePill,
   DemandBanner,
   DualCtaBar,
+  PrimaryCTA,
   type SeatGridRow,
   type SeatState,
 } from '@/ds'
@@ -69,6 +70,7 @@ export default function SeatLayoutScreen({
   const show = useDemoStore((st) => st.show)
   const hold = useDemoStore((st) => st.hold)
   const storeSeats = useDemoStore((st) => st.seats)
+  const holdLive = !!hold && (hold.status === 'active' || hold.status === 'resolving')
   const banner = useMemo(() => selectDemandBanner(useDemoStore.getState()), [show]) // eslint-disable-line react-hooks/exhaustive-deps
   const holdStates = useMemo(() => selectHoldSeatStates(useDemoStore.getState()), [hold, storeSeats]) // eslint-disable-line react-hooks/exhaustive-deps
   const totals = useMemo(
@@ -189,8 +191,8 @@ export default function SeatLayoutScreen({
       style={{
         backgroundColor: 'var(--bg-surface)',
         color: 'var(--text-primary)',
-        width: 402,
-        height: 874,
+        width: '100%',
+        height: '100%',
       }}
     >
       {/* Navigation Header: title 17 pt wt 500, cinema 15 pt grey. No ticket control here. */}
@@ -290,7 +292,7 @@ export default function SeatLayoutScreen({
           </div>
 
           {/* Seat Legend */}
-          <div className="w-full mb-3">
+          <div className="mb-3 sticky left-0 w-[min(100vw,402px)]">
             <SeatLegend
               items={
                 Object.keys(holdStates).length > 0
@@ -366,7 +368,19 @@ export default function SeatLayoutScreen({
       )}
 
       {/* Step 1b: 3–10 seats → Hold for group / Pay all */}
-      {totals.canHold && onHoldForGroup && (
+      {/* 04b G: once a hold is live, one bar back to it */}
+      {holdLive && onViewHold && (
+        <div
+          className="w-full px-4 pt-2.5 cta-safe border-t shrink-0"
+          style={{ backgroundColor: 'var(--bg-surface)', borderTopColor: 'var(--divider)' }}
+        >
+          <PrimaryCTA variant="strong" size="lg" onClick={onViewHold}>
+            <span className="inline-flex items-center gap-1">View group hold <ChevronRight size={18} strokeWidth={1.75} /></span>
+          </PrimaryCTA>
+        </div>
+      )}
+
+      {!holdLive && totals.canHold && onHoldForGroup && (
         <DualCtaBar
           leftText="Hold for group"
           leftSub="Friends pay their own"
@@ -377,13 +391,13 @@ export default function SeatLayoutScreen({
         />
       )}
 
-      {selectedSeatIds.length > 0 && !(totals.canHold && onHoldForGroup) && (
+      {!holdLive && selectedSeatIds.length > 0 && !(totals.canHold && onHoldForGroup) && (
         <div
           className="w-full px-4 py-2.5 bg-bg-surface border-t border-divider shrink-0 shadow-lg flex items-center justify-center"
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderTopColor: 'var(--divider)',
-            paddingBottom: 'calc(var(--safe-bottom) + 10px)',
+            paddingBottom: 'calc(var(--sab, 0px) + 9px)',
           }}
         >
           <button

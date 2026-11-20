@@ -132,9 +132,18 @@ export default function DeviceFrame({ time = '9:41', children }: DeviceFrameProp
     top: SAFE_TOP,
     left: 0,
     right: 0,
-    bottom: SAFE_BOTTOM,
+    bottom: 0, // content runs under the home indicator; bars add var(--sab) themselves
     overflow: 'hidden',
     overflowY: 'auto',
+  }
+
+  const overlayStyle: CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 60,
+    pointerEvents: 'none',
   }
 
   return (
@@ -143,6 +152,7 @@ export default function DeviceFrame({ time = '9:41', children }: DeviceFrameProp
       <div
         className="device-frame-desktop"
         style={{
+          ['--sab' as string]: `${SAFE_BOTTOM}px`,
           position: 'relative',
           width: DEVICE_W,
           height: DEVICE_H,
@@ -170,6 +180,9 @@ export default function DeviceFrame({ time = '9:41', children }: DeviceFrameProp
         {/* Content */}
         <div style={contentStyle}>{children}</div>
 
+        {/* Frame-level overlay (iOS banners slide over the status bar) */}
+        <div data-frame-overlay style={overlayStyle} />
+
         {/* Home indicator */}
         <div style={homeIndicatorStyle} aria-hidden />
       </div>
@@ -183,12 +196,14 @@ export default function DeviceFrame({ time = '9:41', children }: DeviceFrameProp
           width: '100%',
           height: '100%',
           paddingTop: 'env(safe-area-inset-top, var(--safe-top))',
-          paddingBottom: 'env(safe-area-inset-bottom, var(--safe-bottom))',
+          // bottom inset is owned by bars via --sab (no double inset)
+          ['--sab' as string]: 'env(safe-area-inset-bottom, 0px)',
           background: 'var(--bg-surface)',
           overflow: 'hidden',
         }}
       >
         {children}
+        <div data-frame-overlay style={overlayStyle} />
       </div>
 
       {/* Responsive breakpoint styles injected as a style tag */}

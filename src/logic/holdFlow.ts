@@ -10,7 +10,7 @@
  */
 import { formatINR, seatPrice, stillBlocked } from './money';
 import { demoReducer } from './reducer';
-import { DEMAND_WINDOWS, getEdgeReleasableSeats } from './rules';
+import { DEMAND_WINDOWS } from './rules';
 import { DEMO_HOLD_START_MS } from './seed';
 import type { Action, DemandTier, DemoState, Hold, Seat } from './types';
 
@@ -42,6 +42,16 @@ function sortSeatIds(ids: string[], seats: Record<string, Seat>): string[] {
     if (sa.row !== sb.row) return sa.row.localeCompare(sb.row);
     return sa.num - sb.num;
   });
+}
+
+/** Seats Rohan covers: alternate far edge / near edge inwards, skipping the owner seat. */
+export function coverOrder(seatIds: string[], ownerSeatId: string, seats: Record<string, Seat>, count: number): string[] {
+  const others = sortSeatIds(seatIds, seats).filter((id) => id !== ownerSeatId);
+  const out: string[] = [];
+  let lo = 0;
+  let hi = others.length - 1;
+  for (let i = 0; i < count && lo <= hi; i++) out.push(i % 2 === 0 ? others[hi--] : others[lo++]);
+  return out;
 }
 
 /** Middle seat of the block (D07 for D05–D10): the organiser's default seat. */
@@ -124,15 +134,11 @@ export function holdFlowReducer(state: DemoState, action: FlowAction): DemoState
       let s = demoReducer(state, { type: 'SUBMIT_UPI_PIN', pin: action.pin });
       s = { ...s, errorMessage: null };
 
-      // Covered seats: Rohan pays for them now. Take them edge-first, never the owner seat.
+      // Covered seats: Rohan pays for them now. Edges first (far end, then near end), never the owner seat.
       if (cover > 0 && s.hold) {
         const seats = { ...s.seats };
-        for (let i = 0; i < cover; i++) {
-          const edges = getEdgeReleasableSeats(s.hold, seats)
-            .filter((x) => x.id !== s.hold!.ownerSeatId)
-            .sort((a, b) => b.num - a.num);
-          if (edges.length === 0) break;
-          seats[edges[0].id] = { ...seats[edges[0].id], state: 'covered', payerName: 'Rohan' };
+        for (const id of coverOrder(s.hold.seatIds, s.hold.ownerSeatId, seats, cover)) {
+          seats[id] = { ...seats[id], state: 'covered', payerName: 'Rohan' };
         }
         s = { ...s, seats };
       }
@@ -277,6 +283,29 @@ export interface HoldSheetView {
   cta: string;
   upiAmount: string;
   status: Hold['status'];
+  // 04b picture → timeline → settings
+  tiles: SeatTileView[];
+  summaryNow: string;
+  summaryAside: string | null;
+  mostLine: string;
+  timeline: TimelineStop[];
+  seatsModeLabel: string;
+  coverLabel: string;
+  railLabel: string;
+  caption: string;
+}
+
+export interface SeatTileView {
+  id: string;
+  kind: 'owner' | 'paid' | 'covered' | 'held' | 'paying' | 'kept' | 'released';
+  caption: string;
+}
+
+export interface TimelineStop {
+  key: 'now' | 'free' | 'deadline' | 'keep';
+  label: string;
+  detail: string;
+  done: boolean;
 }
 
 export function selectHoldSheet(state: DemoState): HoldSheetView | null {
@@ -293,15 +322,31 @@ export function selectHoldSheet(state: DemoState): HoldSheetView | null {
   const show = state.show;
   const startsAt = formatClockIST(show.startsAt);
 
+  const holdCount = friends - cover;
   const cta = fallback
     ? `Pay ${formatINR(hold.blockAmount)}`
     : blockedPaise === 0
       ? `Pay ${formatINR(nowPaise)}`
-      : `Pay ${formatINR(nowPaise)} and block ${formatINR(blockedPaise)}`;
+      : `Pay ${formatINR(nowPaise)} · Hold ${holdCount} ${holdCount === 1 ? 'seat' : 'seats'}`;
+  const sorted = sortSeatIds(hold.seatIds, state.seats);
+  const coveredPreview = new Set(coverOrder(hold.seatIds, hold.ownerSeatId, state.seats, cover));
+  const tiles: SeatTileView[] = sorted.map((id) => {
+    if (id === hold.ownerSeatId) return { id, kind: 'owner', caption: 'You' };
+    if (coveredPreview.has(id)) return { id, kind: 'covered', caption: 'Covered' };
+    return { id, kind: 'held', caption: '' };
+  });
+  const deadlineTime = formatClockIST(hold.deadline);
+  const freeTime = hold.freeReleaseUntil !== null && show.tier !== 'low' ? formatClockIST(hold.freeReleaseUntil) : null;
+  const timeline: TimelineStop[] = [
+    { key: 'now', label: 'Now', detail: 'Seats held', done: true },
+    ...(freeTime ? [{ key: 'free' as const, label: 'Free release', detail: `ends ${freeTime}`, done: false }] : []),
+    { key: 'deadline', label: 'Friends pay', detail: `by ${deadlineTime}`, done: false },
+    { key: 'keep', label: 'Unpaid seats', detail: 'you keep', done: false },
+  ];
 
   return {
     title: `Hold ${n} seats for your group`,
-    subtitle: `${show.filmTitle} · Fri ${startsAt} · ${formatSeatRange(hold.seatIds, state.seats)}`,
+    subtitle: `${show.filmTitle} · Fri, ${startsAt} · ${formatSeatRange(hold.seatIds, state.seats)}`,
     seatIds: sortSeatIds(hold.seatIds, state.seats),
     ownerSeatId: hold.ownerSeatId,
     perSeat: formatINR(per),
@@ -332,6 +377,15 @@ export function selectHoldSheet(state: DemoState): HoldSheetView | null {
     cta,
     upiAmount: formatINR(fallback ? hold.blockAmount : hold.blockAmount - per * cover),
     status: hold.status,
+    tiles,
+    summaryNow: formatINR(fallback ? hold.blockAmount : nowPaise),
+    summaryAside: fallback || blockedPaise === 0 ? null : formatINR(blockedPaise),
+    mostLine: `Unblocked seat by seat as friends pay. Most you could pay ${formatINR(hold.blockAmount)}`,
+    timeline,
+    seatsModeLabel: hold.assignMode === 'friends_pick' ? 'Friends pick their own' : 'You assign them',
+    coverLabel: cover === 0 ? 'None' : `${cover} ${cover === 1 ? 'seat' : 'seats'}`,
+    railLabel: hold.paymentRail === 'card_preauth' ? 'Card' : fallback ? 'UPI · pay all now' : `UPI ${hold.organiser.upi}`,
+    caption: fallback ? 'One UPI PIN · Refunds come back to this account' : 'One UPI PIN · Unused money is unblocked automatically',
   };
 }
 
@@ -345,6 +399,21 @@ export interface HoldSuccessView {
   fallback: boolean;
   shareMessage: string;
   link: string;
+  // 04b
+  statusLine: string;
+  filmLine: string;
+  dateLine: string;
+  cinemaLine: string;
+  tiles: SeatTileView[];
+  paidCount: number;
+  totalCount: number;
+  paidLine: string;
+  setAsideLabel: string;
+  setAsideCaption: string;
+  ownerSeatId: string;
+  ticketSeat: string;
+  ticketAmount: string;
+  ticketBanner: string;
 }
 
 export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
@@ -357,6 +426,24 @@ export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
   const deadline = formatClockIST(hold.deadline);
   const day = relativeDayIST(hold.deadline, state.clock.now);
   const fallback = hold.paymentRail === 'pay_and_refund';
+  const now = state.clock.now;
+  const left = hold.deadline - now;
+  const tiles: SeatTileView[] = sortSeatIds(hold.seatIds, state.seats).map((id) => {
+    const seat = state.seats[id];
+    switch (seat?.state) {
+      case 'paid_owner': return { id, kind: 'owner', caption: 'You ✓' };
+      case 'paid_friend': return { id, kind: 'paid', caption: seat.payerName ?? 'Paid' };
+      case 'covered': return { id, kind: 'covered', caption: 'Covered' };
+      case 'paying':
+      case 'locked': return { id, kind: 'paying', caption: seat.lockedBy ?? 'Paying' };
+      case 'kept': return { id, kind: 'kept', caption: 'Kept' };
+      case 'released': return { id, kind: 'released', caption: 'Released' };
+      default: return { id, kind: 'held', caption: 'Waiting' };
+    }
+  });
+  const paidCount = tiles.filter((t) => t.kind === 'owner' || t.kind === 'paid' || t.kind === 'covered').length;
+  const ownerSeat = state.seats[hold.ownerSeatId];
+  const tierCode = ownerSeat?.tier === 'primePlus' ? 'PP' : ownerSeat?.tier === 'recliner' ? 'RC' : ownerSeat?.tier === 'classic' ? 'CL' : 'PR';
   return {
     title: `${n} seats held for your group`,
     ticketLine: `Your ticket ${hold.ownerSeatId} is confirmed`,
@@ -366,9 +453,23 @@ export function selectHoldSuccess(state: DemoState): HoldSuccessView | null {
     payBy: `${deadline}${day ? ` ${day}` : ''}`,
     fallback,
     shareMessage:
-      `Held ${n} seats for ${state.show.filmTitle}, Fri ${formatClockIST(state.show.startsAt)}. Pick your seat and pay your share:\n` +
+      `Held ${n} seats for ${state.show.filmTitle}, Fri, ${formatClockIST(state.show.startsAt)}. Pick your seat and pay your share:\n` +
       `Pay by ${deadline}${day ? ` ${day}` : ''} · ${GROUP_LINK}`,
     link: GROUP_LINK,
+    statusLine: left > 0 ? `Friends pay by ${deadline} · ${formatDuration(left)} left` : `Friends paid by ${deadline}`,
+    filmLine: `${state.show.filmTitle} · ${state.show.language}, ${state.show.format}`,
+    dateLine: `Fri, 20 Nov · ${formatClockIST(state.show.startsAt)}`,
+    cinemaLine: `${state.show.cinemaName} · ${state.show.screen}`,
+    tiles,
+    paidCount,
+    totalCount: n,
+    paidLine: `${paidCount} of ${n} paid`,
+    setAsideLabel: fallback ? `Back to you as ${unpaid} friends pay` : `Set aside for ${unpaid} ${unpaid === 1 ? 'friend' : 'friends'}`,
+    setAsideCaption: fallback ? `${formatINR(per)} comes back each time a friend pays` : 'Unblocks as friends pay',
+    ownerSeatId: hold.ownerSeatId,
+    ticketSeat: `${tierCode}-${hold.ownerSeatId}`,
+    ticketAmount: formatINR(per),
+    ticketBanner: `Your seat in the group · ${paidCount} of ${n} paid`,
   };
 }
 

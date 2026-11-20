@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { Film, MessageSquare } from 'lucide-react'
 
@@ -13,6 +14,8 @@ export interface IosNotificationProps {
   onDismiss?: () => void
   autoDismissMs?: number
   className?: string
+  /** Render into DeviceFrame's [data-frame-overlay] so the banner sits over the status bar, like iOS */
+  inFrameOverlay?: boolean
 }
 
 export default function IosNotification({
@@ -25,16 +28,25 @@ export default function IosNotification({
   onDismiss,
   autoDismissMs = 4000,
   className = '',
+  inFrameOverlay = false,
 }: IosNotificationProps) {
+  const dismissRef = useRef(onDismiss)
+  dismissRef.current = onDismiss
   useEffect(() => {
-    if (!visible || !onDismiss || autoDismissMs <= 0) return
-    const timer = setTimeout(() => {
-      onDismiss()
-    }, autoDismissMs)
+    if (!visible || autoDismissMs <= 0) return
+    const timer = setTimeout(() => dismissRef.current?.(), autoDismissMs)
     return () => clearTimeout(timer)
-  }, [visible, onDismiss, autoDismissMs])
+  }, [visible, autoDismissMs])
 
-  return (
+  const anchorRef = useRef<HTMLSpanElement>(null)
+  const [target, setTarget] = useState<Element | null>(null)
+  useLayoutEffect(() => {
+    if (!inFrameOverlay || !anchorRef.current) return
+    const frame = anchorRef.current.closest('.device-frame-desktop, .device-frame-mobile')
+    setTarget(frame?.querySelector('[data-frame-overlay]') ?? null)
+  }, [inFrameOverlay])
+
+  const banner = (
     <AnimatePresence>
       {visible && (
         <motion.div
@@ -43,7 +55,7 @@ export default function IosNotification({
           exit={{ y: -80, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 280 }}
           onClick={onClick}
-          className={`absolute top-3 left-3 right-3 z-50 rounded-[22px] p-3.5 flex items-start gap-3 backdrop-blur-xl shadow-lg cursor-pointer active:scale-[0.98] transition-transform select-none ${className}`}
+          className={`absolute top-3 left-3 right-3 z-50 pointer-events-auto rounded-[22px] p-3.5 flex items-start gap-3 backdrop-blur-xl shadow-lg cursor-pointer active:scale-[0.98] transition-transform select-none ${className}`}
           style={{
             backgroundColor: 'var(--ios-notif-bg)',
             color: 'var(--text-on-brand)',
@@ -80,5 +92,13 @@ export default function IosNotification({
         </motion.div>
       )}
     </AnimatePresence>
+  )
+
+  if (!inFrameOverlay) return banner
+  return (
+    <>
+      <span ref={anchorRef} hidden />
+      {target ? createPortal(banner, target) : banner}
+    </>
   )
 }

@@ -21,8 +21,8 @@ export default function PaymentScreen({
       style={{
         backgroundColor: 'var(--bg-page)',
         color: 'var(--text-primary)',
-        width: 402,
-        height: 874,
+        width: '100%',
+        height: '100%',
       }}
     >
       {/* Top Header */}
@@ -55,7 +55,7 @@ export default function PaymentScreen({
       </div>
 
       {/* Payment Options Scrollable Area */}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-sab">
         {/* Preferred Payments Section Header: 11 pt uppercase */}
         <div className="pt-3 pb-1.5 px-4">
           <span

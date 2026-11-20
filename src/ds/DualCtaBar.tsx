@@ -32,7 +32,7 @@ export default function DualCtaBar({
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderTopColor: 'var(--divider)',
-        paddingBottom: 'calc(var(--safe-bottom) + 10px)',
+        paddingBottom: 'calc(var(--sab, 0px) + 9px)',
       }}
     >
       <div className="flex-1 min-w-0" data-testid="hold-for-group">

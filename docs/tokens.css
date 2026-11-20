@@ -60,6 +60,15 @@
   --ios-sheet-bg: #F6F6F6;              /* measured */
   --ios-group-bg: #EBEBEB;              /* measured */
   --ios-notif-bg: rgba(40, 40, 40, 0.72); /* est, with backdrop blur */
+  --ios-separator: #D1D1D6;             /* new 04b: share-sheet hairlines (ref 17) */
+  --ios-label-secondary: #6C6C70;       /* new 04b: preview text (ref 17), 5:1 on sheet bg */
+  --ios-action-bg: #E3E3E8;             /* new 04b: action circles (ref 17) */
+  --ios-icon-dark: #1C1C1E;             /* new 04b: dark app squircles (ref 17) */
+  --ios-airdrop-blue: #0A84FF;          /* new 04b */
+  --ios-messages-green: #30D158;        /* new 04b */
+  --whatsapp-green: #25D366;            /* new 04b: user-approved stylised WhatsApp tile/badge (D-041) */
+  --ios-group-pink: #FFD6DF;            /* new 04b: group contact avatar (ref 17) */
+  --ios-avatar-bg: #E3E3E8;             /* new 04b: initials avatars */
   --scrim: rgba(0, 0, 0, 0.70);
   --sheet-handle: #C9C7CC;
   --divider: #E6E6E6;                   /* est */

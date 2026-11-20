@@ -26,3 +26,13 @@ html, body, #root {
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, var(--safe-bottom));
 }
+
+/* Bottom CTA spacing (04b): DeviceFrame owns --sab (34px in the desktop frame,
+   env(safe-area-inset-bottom) full-screen). Bars add 9 pt on top, so the CTA sits
+   43 pt from the screen bottom as measured in refs 05, 11 and 22. */
+.cta-safe {
+  padding-bottom: calc(var(--sab, 0px) + 9px);
+}
+.pb-sab {
+  padding-bottom: var(--sab, 0px);
+}

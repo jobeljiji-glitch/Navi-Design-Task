@@ -31,7 +31,7 @@ export default function DemandBanner({ tier, pctLeft, holdHours, className = '' 
       data-testid="demand-banner"
       className={`w-full px-4 py-2 shrink-0 text-[13px] leading-[18px] ${className}`}
       style={{
-        backgroundColor: tier === 'low' ? 'var(--bg-success)' : 'var(--bg-warning)',
+        backgroundColor: tier === 'high' ? 'var(--bg-warning)' : 'var(--bg-success)',
         color: 'var(--text-primary)',
       }}
     >

@@ -26,7 +26,7 @@ export default function BottomCtaBar({
 }: BottomCtaBarProps) {
   return (
     <div
-      className={`w-full bg-bg-surface border-t border-divider px-4 py-2.5 flex items-center justify-between gap-4 shrink-0 ${className}`}
+      className={`w-full bg-bg-surface border-t border-divider px-4 pt-2.5 cta-safe flex items-center justify-between gap-4 shrink-0 ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderTopColor: 'var(--divider)',

@@ -108,8 +108,8 @@ export default function ShowtimesScreen({
       style={{
         backgroundColor: 'var(--bg-page)',
         color: 'var(--text-primary)',
-        width: 402,
-        height: 874,
+        width: '100%',
+        height: '100%',
       }}
     >
       {/* Top Header: plain chevron, 24 pt, no grey circle background */}
@@ -233,7 +233,7 @@ export default function ShowtimesScreen({
       </div>
 
       {/* Cinema listings: ONE continuous white panel on the grey page, 12 pt side margins */}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-sab">
         <div
           className="mx-3 mt-3 px-3 pt-3 pb-3 flex flex-col gap-[22px]"
           style={{ backgroundColor: 'var(--bg-surface)' }}
