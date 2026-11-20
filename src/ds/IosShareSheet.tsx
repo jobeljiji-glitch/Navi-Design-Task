@@ -1,4 +1,4 @@
-import { X, Copy, Bookmark, BookOpen, Printer, Folder, FileText, Search } from 'lucide-react'
+import { X, Copy, Bookmark, BookOpen, Printer, Folder, FileText, Search, MessagesSquare } from 'lucide-react'
 import { motion, AnimatePresence, type PanInfo } from 'motion/react'
 
 export interface IosShareContact {
@@ -158,14 +158,12 @@ export default function IosShareSheet({
                       )}
                     </div>
 
-                    {/* 22 pt rounded squircle WhatsApp-green badge with white chat glyph */}
+                    {/* 22 pt rounded squircle: small generic chat badge (no third-party logo) */}
                     <div
                       className="absolute -bottom-1 -right-1 w-[22px] h-[22px] rounded-[6px] flex items-center justify-center shadow"
-                      style={{ backgroundColor: '#25D366' }}
+                      style={{ backgroundColor: 'var(--text-secondary)' }}
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-                        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z" />
-                      </svg>
+                      <MessagesSquare size={12} strokeWidth={2} color="white" />
                     </div>
                   </div>
 
@@ -229,20 +227,19 @@ export default function IosShareSheet({
                 <span className="text-[13px] text-black text-center">Mail</span>
               </button>
 
-              {/* WhatsApp */}
+              {/* Chat (generic, simulated — spec §4 step 4; no third-party branding) */}
               <button
                 type="button"
-                onClick={() => onSelectApp?.('WhatsApp')}
+                onClick={() => onSelectApp?.('Chat')}
                 className="flex flex-col items-center gap-1.5 shrink-0 w-[68px] active:scale-95 transition-transform"
               >
-                <div className="w-16 h-16 rounded-[14px] bg-[#1C1C1E] flex items-center justify-center shadow-sm">
-                  <div className="w-11 h-11 rounded-full bg-[#25D366] flex items-center justify-center">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-                      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z" />
-                    </svg>
-                  </div>
+                <div
+                  className="w-16 h-16 rounded-[14px] flex items-center justify-center shadow-sm"
+                  style={{ backgroundColor: 'var(--text-secondary)' }}
+                >
+                  <MessagesSquare size={32} strokeWidth={1.75} color="white" />
                 </div>
-                <span className="text-[13px] text-black text-center">WhatsApp</span>
+                <span className="text-[13px] text-black text-center">Chat</span>
               </button>
             </div>
 

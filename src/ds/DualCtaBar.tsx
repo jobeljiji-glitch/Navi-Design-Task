@@ -1,5 +1,10 @@
 import PrimaryCTA from './PrimaryCTA'
 
+/**
+ * DualCtaBar (step 1b): "Hold for group" (outline) + "Pay ₹X" (filled).
+ * Same bar anatomy as the existing seat-layout pay bar: white, top hairline,
+ * 16 pt margins, 48 pt buttons, safe-area bottom padding.
+ */
 export interface DualCtaBarProps {
   leftText: string
   leftSub?: string
@@ -23,30 +28,20 @@ export default function DualCtaBar({
 }: DualCtaBarProps) {
   return (
     <div
-      className={`w-full bg-bg-surface border-t border-divider px-4 py-2.5 flex items-center gap-3 shrink-0 ${className}`}
+      className={`w-full border-t px-4 pt-2.5 flex items-center gap-3 shrink-0 ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderTopColor: 'var(--divider)',
+        paddingBottom: 'calc(var(--safe-bottom) + 10px)',
       }}
     >
-      <div className="flex-1 min-w-0">
-        <PrimaryCTA
-          variant="outline"
-          onClick={onLeftClick}
-          subLabel={leftSub}
-          disabled={disabled}
-        >
+      <div className="flex-1 min-w-0" data-testid="hold-for-group">
+        <PrimaryCTA variant="outline" size="lg" onClick={onLeftClick} subLabel={leftSub} disabled={disabled}>
           {leftText}
         </PrimaryCTA>
       </div>
-
       <div className="flex-1 min-w-0">
-        <PrimaryCTA
-          variant="default"
-          onClick={onRightClick}
-          subLabel={rightSub}
-          disabled={disabled}
-        >
+        <PrimaryCTA variant="strong" size="lg" onClick={onRightClick} subLabel={rightSub} disabled={disabled}>
           {rightText}
         </PrimaryCTA>
       </div>

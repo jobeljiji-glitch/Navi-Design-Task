@@ -1,8 +1,10 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, type ReactNode } from 'react'
 import { ChevronLeft, Edit3 } from 'lucide-react'
 import { DEMO_SHOW, createInitialSeats } from '@/logic/seed'
 import type { Seat as LogicSeat, SeatTier } from '@/logic/types'
 import { pickSeats } from '@/logic/seatPick'
+import { selectDemandBanner, selectHoldSeatStates, selectSelectionTotals } from '@/logic/holdFlow'
+import { useDemoStore } from '@/store'
 import {
   SeatGrid,
   ScreenShape,
@@ -10,6 +12,8 @@ import {
   SeatCountSheet,
   LoaderSheet,
   ShowtimePill,
+  DemandBanner,
+  DualCtaBar,
   type SeatGridRow,
   type SeatState,
 } from '@/ds'
@@ -20,6 +24,11 @@ export interface SeatLayoutScreenProps {
   initialSelectedSeatIds?: string[]
   initialSeatCount?: number
   isCountSheetOpenInitially?: boolean
+  /** Step 1b: "Hold for group". Return an error message to toast, or null on success. */
+  onHoldForGroup?: (seatIds: string[]) => { message: string; viewHold?: boolean } | null
+  onViewHold?: () => void
+  /** Overlays (hold summary sheet) rendered above the screen */
+  children?: ReactNode
 }
 
 const TIER_DISPLAY_NAMES: Record<SeatTier, string> = {
@@ -45,17 +54,40 @@ export default function SeatLayoutScreen({
   initialSelectedSeatIds = [],
   initialSeatCount = 6,
   isCountSheetOpenInitially = false,
+  onHoldForGroup,
+  onViewHold,
+  children,
 }: SeatLayoutScreenProps) {
   const [seatCount, setSeatCount] = useState(initialSeatCount)
   const [isCountSheetOpen, setIsCountSheetOpen] = useState(isCountSheetOpenInitially)
   const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>(initialSelectedSeatIds)
   const [isLoaderOpen, setIsLoaderOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [toastAction, setToastAction] = useState(false)
+
+  // Store-driven values (step 1b): demand banner, live hold seat states, totals incl. fees
+  const show = useDemoStore((st) => st.show)
+  const hold = useDemoStore((st) => st.hold)
+  const storeSeats = useDemoStore((st) => st.seats)
+  const banner = useMemo(() => selectDemandBanner(useDemoStore.getState()), [show]) // eslint-disable-line react-hooks/exhaustive-deps
+  const holdStates = useMemo(() => selectHoldSeatStates(useDemoStore.getState()), [hold, storeSeats]) // eslint-disable-line react-hooks/exhaustive-deps
+  const totals = useMemo(
+    () => selectSelectionTotals(useDemoStore.getState(), selectedSeatIds),
+    [selectedSeatIds, show, storeSeats], // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Initial seat map from seed.ts
-  const initialSeats = useMemo(() => createInitialSeats(), [])
+  // Seed map plus any live hold (D05–D10 held / paid owner) so it survives navigation
+  const seedSeats = useMemo(() => createInitialSeats(), [])
+  const initialSeats = useMemo(() => {
+    const ids = Object.keys(holdStates)
+    if (ids.length === 0) return seedSeats
+    const map = { ...seedSeats }
+    for (const id of ids) map[id] = { ...map[id], state: holdStates[id] }
+    return map
+  }, [seedSeats, holdStates])
 
   // Dynamic seat state map based on user selections
   const currentSeats = useMemo(() => {
@@ -107,16 +139,22 @@ export default function SeatLayoutScreen({
   }, [currentSeats])
 
   // Handle seat clicks using group seat picking logic
+  const showToast = (message: string, withAction = false) => {
+    setToastMessage(message)
+    setToastAction(withAction)
+    setTimeout(() => {
+      setToastMessage(null)
+      setToastAction(false)
+    }, withAction ? 4000 : 2500)
+  }
+
   const handleSeatClick = (seatId: string) => {
+    // Seats already in the live hold are not pickable again
+    if (initialSeats[seatId]?.state !== 'available' && !selectedSeatIds.includes(seatId)) return
     const result = pickSeats(initialSeats, selectedSeatIds, seatId, seatCount)
     setSelectedSeatIds([...result])
 
-    if (result.message) {
-      setToastMessage(result.message)
-      setTimeout(() => {
-        setToastMessage(null)
-      }, 2500)
-    }
+    if (result.message) showToast(result.message)
   }
 
   // Calculate total ticket price from selected seats
@@ -129,6 +167,11 @@ export default function SeatLayoutScreen({
   }, [selectedSeatsList])
 
   const totalRupees = Math.floor(totalPaise / 100)
+
+  const handleHoldClick = () => {
+    const err = onHoldForGroup?.(selectedSeatIds)
+    if (err) showToast(err.message, Boolean(err.viewHold))
+  }
 
   // Handle Pay action: show loader for 1,200 ms, then transition to confirm booking
   const handlePayClick = () => {
@@ -221,6 +264,9 @@ export default function SeatLayoutScreen({
         </div>
       </div>
 
+      {/* Step 1b: demand banner under the header strip */}
+      <DemandBanner tier={banner.tier} pctLeft={banner.pctLeft} holdHours={banner.holdHours} />
+
       {/* Main Horizontally & Vertically Scrollable Seat Grid Container */}
       <div
         ref={scrollContainerRef}
@@ -245,7 +291,18 @@ export default function SeatLayoutScreen({
 
           {/* Seat Legend */}
           <div className="w-full mb-3">
-            <SeatLegend />
+            <SeatLegend
+              items={
+                Object.keys(holdStates).length > 0
+                  ? [
+                      { label: 'Available', state: 'available' },
+                      { label: 'Selected', state: 'selected' },
+                      { label: 'Sold', state: 'sold' },
+                      { label: 'Held', state: 'held' },
+                    ]
+                  : undefined
+              }
+            />
           </div>
 
           {/* Static Club Banner */}
@@ -282,14 +339,45 @@ export default function SeatLayoutScreen({
       {/* Floating toast for seat selection info */}
       {toastMessage && (
         <div className="absolute top-36 left-4 right-4 z-50 flex justify-center pointer-events-none">
-          <div className="bg-black/85 text-white px-4 py-2 rounded-full text-[13px] font-medium shadow-lg animate-fade-in backdrop-blur-sm">
-            {toastMessage}
+          <div
+            className="bg-black/85 text-white px-4 py-2 rounded-full text-[13px] font-medium shadow-lg animate-fade-in backdrop-blur-sm pointer-events-auto flex items-center gap-3"
+            role="status"
+          >
+            <span>{toastMessage}</span>
+            {toastAction && onViewHold && (
+              <button type="button" onClick={onViewHold} className="font-medium underline underline-offset-2 min-h-[32px] shrink-0">
+                View hold
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* Sticky Bottom Pay bar: appears only once at least 1 seat is selected. 48 pt high, strong red */}
-      {selectedSeatIds.length > 0 && (
+      {/* Step 1b: non-contiguous note */}
+      {selectedSeatIds.length > 1 && !totals.contiguous && (
+        <div
+          className="w-full px-4 py-2 shrink-0 text-[13px] leading-[18px] border-t"
+          style={{ backgroundColor: 'var(--bg-warning)', color: 'var(--text-primary)', borderTopColor: 'var(--divider)' }}
+          data-testid="not-together-note"
+        >
+          Your group isn't seated together.
+        </div>
+      )}
+
+      {/* Step 1b: 3–10 seats → Hold for group / Pay all */}
+      {totals.canHold && onHoldForGroup && (
+        <DualCtaBar
+          leftText="Hold for group"
+          leftSub="Friends pay their own"
+          onLeftClick={handleHoldClick}
+          rightText={`Pay ${totals.total}`}
+          rightSub={`All ${totals.count} seats`}
+          onRightClick={handlePayClick}
+        />
+      )}
+
+      {selectedSeatIds.length > 0 && !(totals.canHold && onHoldForGroup) && (
         <div
           className="w-full px-4 py-2.5 bg-bg-surface border-t border-divider shrink-0 shadow-lg flex items-center justify-center"
           style={{
@@ -317,6 +405,8 @@ export default function SeatLayoutScreen({
         onChangeCount={setSeatCount}
         onSelectSeats={() => setIsCountSheetOpen(false)}
       />
+
+      {children}
 
       {/* Loader Sheet: 1,200 ms "Confirming your Seats!" */}
       <LoaderSheet

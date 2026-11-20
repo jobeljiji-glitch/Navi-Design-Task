@@ -6,6 +6,10 @@ export interface BottomSheetProps {
   onClose: () => void
   title?: string
   children: ReactNode
+  /** Sticky footer outside the scroll area (CTA), safe-area padded */
+  footer?: ReactNode
+  /** Header node replacing the default title (e.g. 22 pt sheet title like ref 05) */
+  header?: ReactNode
   scrimClose?: boolean
   className?: string
 }
@@ -15,6 +19,8 @@ export default function BottomSheet({
   onClose,
   title,
   children,
+  footer,
+  header,
   scrimClose = true,
   className = '',
 }: BottomSheetProps) {
@@ -70,7 +76,8 @@ export default function BottomSheet({
             </div>
 
             {/* Header */}
-            {title && (
+            {header}
+            {!header && title && (
               <div className="px-4 pt-2 pb-3">
                 <h2
                   className="text-[18px] leading-[24px] font-medium text-text-primary"
@@ -82,9 +89,18 @@ export default function BottomSheet({
             )}
 
             {/* Content body */}
-            <div className="px-4 pb-6 overflow-y-auto">
+            <div className={`px-4 ${footer ? 'pb-3' : 'pb-6'} overflow-y-auto min-h-0`}>
               {children}
             </div>
+
+            {footer && (
+              <div
+                className="px-4 pt-2 shrink-0 border-t"
+                style={{ borderTopColor: 'var(--divider)', paddingBottom: 'calc(var(--safe-bottom) + 8px)' }}
+              >
+                {footer}
+              </div>
+            )}
           </motion.div>
         </div>
       )}

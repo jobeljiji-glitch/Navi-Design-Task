@@ -76,7 +76,7 @@ export default function LoaderSheet({
 
         {/* Message */}
         <h3
-          className="text-[17px] leading-[22px] font-semibold text-text-primary"
+          className="text-[17px] leading-[22px] font-normal text-text-primary"
           style={{ color: 'var(--text-primary)' }}
         >
           {message}

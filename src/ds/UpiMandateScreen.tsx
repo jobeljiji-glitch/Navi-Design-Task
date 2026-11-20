@@ -1,234 +1,214 @@
 import { useState } from 'react'
-import { CheckCircle2, Shield, X } from 'lucide-react'
-import PrimaryCTA from './PrimaryCTA'
+import { BadgeCheck, Delete, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
 
+/**
+ * Generic bank UPI app (step 3). Deliberately NOT BookMyShow-styled:
+ * system font, neutral greys, link-blue accent, no brand marks.
+ * Copy verbatim from spec §4 step 3; `mode="payment"` is the fallback rail.
+ */
 export interface UpiMandateScreenProps {
   amount: string
+  mode?: 'block' | 'payment'
   debitedNow?: string
   furtherDebits?: string
   blockEnds?: string
+  refundLine?: string
   showDetails?: string
+  payerVpa?: string
+  plainNote?: string
   onApprove: (pin: string) => void
   onDecline: () => void
   className?: string
 }
 
+const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del']
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-3 border-b text-[15px] leading-[20px]" style={{ borderColor: 'var(--divider)' }}>
+      <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+      <span className="text-right font-medium" style={{ color: 'var(--text-primary)' }}>{value}</span>
+    </div>
+  )
+}
+
 export default function UpiMandateScreen({
   amount,
+  mode = 'block',
   debitedNow = '₹277.14',
   furtherDebits = 'Only for seats you keep',
   blockEnds = 'Today, 7:45 PM',
+  refundLine = '₹277.14 each time a friend pays',
   showDetails = 'Group hold · Monsoon Heist · Fri 9:15 PM',
+  payerVpa = 'rohan@okbank',
+  plainNote = "This money stays in your account — it's only set aside. You're only charged for seats your friends don't pay for.",
   onApprove,
   onDecline,
   className = '',
 }: UpiMandateScreenProps) {
-  const [pinSheetOpen, setPinSheetOpen] = useState(false)
+  const [pinOpen, setPinOpen] = useState(false)
   const [pin, setPin] = useState('')
+  const isBlock = mode === 'block'
 
-  const handlePinDigit = (digit: string) => {
-    if (pin.length < 4) {
-      const nextPin = pin + digit
-      setPin(nextPin)
-      if (nextPin.length === 4) {
-        setTimeout(() => {
-          onApprove(nextPin)
-        }, 200)
-      }
+  const press = (key: string) => {
+    if (key === 'del') {
+      setPin((p) => p.slice(0, -1))
+      return
     }
-  }
-
-  const handleBackspace = () => {
-    setPin(prev => prev.slice(0, -1))
+    if (!key || pin.length >= 4) return
+    const next = pin + key
+    setPin(next)
+    if (next.length === 4) setTimeout(() => onApprove(next), 250)
   }
 
   return (
     <div
-      className={`relative w-full h-full flex flex-col justify-between p-6 select-none ${className}`}
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        color: 'var(--text-primary)',
-      }}
+      className={`relative w-full h-full flex flex-col select-none ${className}`}
+      style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', fontFamily: 'var(--font-system)' }}
+      data-testid="upi-app"
     >
-      {/* Top Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield size={20} strokeWidth={2} style={{ color: 'var(--text-success)' }} />
-            <span
-              className="text-[14px] font-semibold tracking-tight uppercase"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              UPI Reserve Pay
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onDecline}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg-muted"
-            aria-label="Decline request"
-          >
-            <X size={18} strokeWidth={2} style={{ color: 'var(--text-secondary)' }} />
-          </button>
-        </div>
+      {/* App bar */}
+      <div className="h-[52px] shrink-0 flex items-center justify-between px-2 border-b" style={{ borderColor: 'var(--divider)' }}>
+        <button type="button" onClick={onDecline} className="w-11 h-11 flex items-center justify-center" aria-label="Close and decline">
+          <X size={22} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
+        </button>
+        <span className="text-[16px] font-medium">UPI</span>
+        <span className="w-11" />
+      </div>
 
-        <div className="flex flex-col gap-1 pt-2">
-          <span className="text-[14px] text-text-secondary" style={{ color: 'var(--text-secondary)' }}>
-            Approve a block request from
-          </span>
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-[18px] font-bold text-text-primary" style={{ color: 'var(--text-primary)' }}>
-              BookMyShow
-            </h2>
-            <CheckCircle2 size={16} strokeWidth={2.5} style={{ color: 'var(--showtime-green)' }} />
-          </div>
-          <span className="text-[13px] text-text-secondary" style={{ color: 'var(--text-secondary)' }}>
-            {showDetails}
-          </span>
-        </div>
+      <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4 flex flex-col">
+        <h1 className="text-[22px] leading-[28px] font-medium">{isBlock ? 'Approve a block request' : 'Approve a payment'}</h1>
 
-        {/* Big Block Amount Box */}
-        <div
-          className="rounded-[12px] p-4 flex flex-col items-center justify-center gap-1 border my-2"
-          style={{
-            backgroundColor: 'var(--bg-page)',
-            borderColor: 'var(--divider)',
-          }}
-        >
-          <span className="text-[12px] text-text-secondary" style={{ color: 'var(--text-secondary)' }}>
-            Total amount to be blocked
-          </span>
-          <span className="text-[30px] font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
-            {amount}
-          </span>
-        </div>
-
-        {/* Breakdown Rows */}
-        <div className="flex flex-col gap-2.5 text-[13px] pt-1">
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--text-secondary)' }}>Debited now</span>
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{debitedNow}</span>
+        {/* Merchant */}
+        <div className="flex items-center gap-3 mt-4">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center text-[16px] font-medium shrink-0" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-secondary)' }}>
+            B
           </div>
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--text-secondary)' }}>Further debits</span>
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{furtherDebits}</span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--text-secondary)' }}>Block ends</span>
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{blockEnds}</span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--text-secondary)' }}>Type</span>
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>UPI Reserve Pay</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1">
+              <span className="text-[16px] leading-[22px] font-medium">BookMyShow</span>
+              <BadgeCheck size={16} strokeWidth={1.75} style={{ color: 'var(--text-link)' }} aria-label="Verified merchant" />
+            </div>
+            <p className="text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>{showDetails}</p>
           </div>
         </div>
 
-        <p className="text-[11px] leading-[15px] text-text-secondary mt-1" style={{ color: 'var(--text-secondary)' }}>
-          Unused money is unblocked automatically. You can cancel this block from Mandates.
+        {/* Amount */}
+        <div className="mt-5 py-5 flex flex-col items-center" style={{ backgroundColor: 'var(--bg-page)', borderRadius: 'var(--card-radius)' }}>
+          <span className="text-[34px] leading-[40px] font-medium" data-testid="upi-amount">{amount}</span>
+          <span className="text-[14px] leading-[20px] mt-1" style={{ color: 'var(--text-secondary)' }}>
+            {isBlock ? 'will be blocked in your account' : 'will be debited from your account'}
+          </span>
+        </div>
+
+        {/* Details */}
+        <div className="mt-2">
+          {isBlock ? (
+            <>
+              <DetailRow label="Debited now" value={debitedNow} />
+              <DetailRow label="Further debits" value={furtherDebits} />
+              <DetailRow label="Block ends" value={blockEnds} />
+              <DetailRow label="Type" value="UPI Reserve Pay" />
+            </>
+          ) : (
+            <>
+              <DetailRow label="Debited now" value={amount} />
+              <DetailRow label="Refunds" value={refundLine} />
+              <DetailRow label="Type" value="UPI payment" />
+            </>
+          )}
+        </div>
+
+        {isBlock && (
+          <div className="mt-4 px-4 py-3 text-[14px] leading-[20px]" style={{ backgroundColor: 'var(--bg-info)', borderRadius: 'var(--card-radius)' }} data-testid="upi-plain-note">
+            {plainNote}
+          </div>
+        )}
+        <p className="mt-3 text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
+          {isBlock
+            ? 'Unused money is unblocked automatically. You can cancel this block from Mandates.'
+            : 'Each time a friend pays, their share comes back to this account.'}
         </p>
       </div>
 
-      {/* Buttons */}
-      <div className="flex items-center gap-3 pt-4">
+      {/* Actions */}
+      <div className="shrink-0 px-4 pt-3 pb-3 flex gap-3 border-t" style={{ borderColor: 'var(--divider)' }}>
         <button
           type="button"
           onClick={onDecline}
-          className="flex-1 h-[40px] rounded-[6px] font-medium text-[15px] border"
-          style={{
-            borderColor: 'var(--divider)',
-            color: 'var(--text-secondary)',
-          }}
+          className="flex-1 h-12 rounded-[8px] border text-[16px] font-medium"
+          style={{ borderColor: 'var(--border-grey)', color: 'var(--text-primary)' }}
         >
           Decline
         </button>
-        <div className="flex-1">
-          <PrimaryCTA onClick={() => setPinSheetOpen(true)}>
-            Approve with PIN
-          </PrimaryCTA>
-        </div>
+        <button
+          type="button"
+          onClick={() => setPinOpen(true)}
+          className="flex-1 h-12 rounded-[8px] text-[16px] font-medium"
+          style={{ backgroundColor: 'var(--text-link)', color: 'var(--text-on-brand)' }}
+          data-testid="approve-with-pin"
+        >
+          Approve with PIN
+        </button>
       </div>
 
-      {/* UPI PIN Sheet Overlay */}
-      {pinSheetOpen && (
-        <div
-          className="absolute inset-0 z-50 flex flex-col justify-end"
-          style={{ backgroundColor: 'var(--scrim)' }}
-        >
-          <div
-            className="w-full rounded-t-[18px] p-6 flex flex-col items-center gap-5 shadow-2xl"
+      {/* PIN pad */}
+      <AnimatePresence>
+        {pinOpen && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="absolute inset-0 z-50 flex flex-col"
             style={{ backgroundColor: 'var(--bg-surface)' }}
+            data-testid="upi-pin"
           >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[14px] font-semibold text-text-primary" style={{ color: 'var(--text-primary)' }}>
-                Enter 4-digit UPI PIN
+            <div className="h-[52px] shrink-0 flex items-center px-2 border-b" style={{ borderColor: 'var(--divider)' }}>
+              <button type="button" onClick={() => { setPinOpen(false); setPin('') }} className="w-11 h-11 flex items-center justify-center" aria-label="Close PIN entry">
+                <X size={22} strokeWidth={1.75} />
+              </button>
+              <span className="text-[15px] ml-1" style={{ color: 'var(--text-secondary)' }}>{payerVpa}</span>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center pt-8 px-4">
+              <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>
+                {isBlock ? 'Block' : 'Pay'} {amount} · BookMyShow
               </span>
-              <button
-                type="button"
-                onClick={() => setPinSheetOpen(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-bg-muted"
-              >
-                <X size={16} strokeWidth={2} style={{ color: 'var(--text-secondary)' }} />
-              </button>
+              <span className="text-[20px] leading-[26px] font-medium mt-6">Enter 4-digit UPI PIN</span>
+              <div className="flex gap-5 mt-6" aria-label={`${pin.length} of 4 digits entered`}>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="w-9 flex flex-col items-center gap-2">
+                    <span className="h-3 w-3 rounded-full" style={{ backgroundColor: i < pin.length ? 'var(--text-primary)' : 'transparent' }} />
+                    <span className="w-9 h-[2px]" style={{ backgroundColor: i < pin.length ? 'var(--text-primary)' : 'var(--border-grey)' }} />
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* PIN Dots */}
-            <div className="flex items-center gap-4 my-2">
-              {[0, 1, 2, 3].map(idx => (
-                <div
-                  key={idx}
-                  className="w-3.5 h-3.5 rounded-full border transition-all"
-                  style={{
-                    backgroundColor: idx < pin.length ? 'var(--text-primary)' : 'transparent',
-                    borderColor: 'var(--text-primary)',
-                  }}
-                />
-              ))}
+            <div className="shrink-0 grid grid-cols-3 gap-[6px] p-[6px]" style={{ backgroundColor: 'var(--bg-tag)' }}>
+              {KEYS.map((k, i) =>
+                k === '' ? (
+                  <span key={i} />
+                ) : (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => press(k)}
+                    className="h-[52px] rounded-[6px] flex items-center justify-center text-[24px] font-normal active:opacity-60"
+                    style={{ backgroundColor: k === 'del' ? 'transparent' : 'var(--bg-surface)', color: 'var(--text-primary)' }}
+                    aria-label={k === 'del' ? 'Delete digit' : `Digit ${k}`}
+                    data-testid={`pin-key-${k}`}
+                  >
+                    {k === 'del' ? <Delete size={24} strokeWidth={1.75} /> : k}
+                  </button>
+                ),
+              )}
             </div>
-
-            {/* 3x4 Number Pad */}
-            <div className="grid grid-cols-3 gap-3 w-full max-w-[280px]">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(d => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => handlePinDigit(d)}
-                  className="h-12 rounded-[8px] text-[20px] font-medium flex items-center justify-center border hover:bg-bg-muted active:scale-95"
-                  style={{
-                    borderColor: 'var(--divider)',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {d}
-                </button>
-              ))}
-              <div />
-              <button
-                type="button"
-                onClick={() => handlePinDigit('0')}
-                className="h-12 rounded-[8px] text-[20px] font-medium flex items-center justify-center border hover:bg-bg-muted active:scale-95"
-                style={{
-                  borderColor: 'var(--divider)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                0
-              </button>
-              <button
-                type="button"
-                onClick={handleBackspace}
-                className="h-12 rounded-[8px] text-[14px] font-medium flex items-center justify-center border hover:bg-bg-muted active:scale-95"
-                style={{
-                  borderColor: 'var(--divider)',
-                  color: 'var(--text-secondary)',
-                }}
-                aria-label="Delete digit"
-              >
-                Del
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

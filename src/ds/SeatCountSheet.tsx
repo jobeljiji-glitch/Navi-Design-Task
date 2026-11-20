@@ -2,6 +2,7 @@ import { motion, AnimatePresence, type PanInfo } from 'motion/react'
 import SeatCountPicker from './SeatCountPicker'
 import PriceTierList, { type PriceTier } from './PriceTierList'
 import PrimaryCTA from './PrimaryCTA'
+import GroupHint from './GroupHint'
 
 export interface SeatCountSheetProps {
   isOpen: boolean
@@ -109,6 +110,13 @@ export default function SeatCountSheet({
             <div className="px-4">
               <PriceTierList tiers={tiers} />
             </div>
+
+            {/* Step 1a: group hint above the CTA when 3 or more seats */}
+            {count >= 3 && (
+              <div className="px-4 pt-3" data-testid="group-hint">
+                <GroupHint />
+              </div>
+            )}
 
             {/* CTA Button pinned at the bottom with 16 pt side margins and home-indicator safe area */}
             <div

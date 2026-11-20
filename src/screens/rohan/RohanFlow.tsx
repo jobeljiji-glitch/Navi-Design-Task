@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import DeviceFrame from '@/demo/DeviceFrame'
 import MovieDetailScreen from './MovieDetailScreen'
@@ -6,12 +6,25 @@ import ShowtimesScreen from './ShowtimesScreen'
 import SeatLayoutScreen from './SeatLayoutScreen'
 import ConfirmBookingScreen from './ConfirmBookingScreen'
 import PaymentScreen from './PaymentScreen'
+import HoldSummarySheet from './HoldSummarySheet'
+import HoldSuccessScreen from './HoldSuccessScreen'
 import type { Seat as LogicSeat } from '@/logic/types'
 import { DEMO_SHOW } from '@/logic/seed'
+import { selectHoldSheet } from '@/logic/holdFlow'
+import { useDemoStore } from '@/store'
+import { LoaderSheet, UpiMandateScreen } from '@/ds'
+
+const DEMO_GROUP = ['D05', 'D06', 'D07', 'D08', 'D09', 'D10']
+const ALREADY_HOLDING = "You're already holding seats for this show."
+const UPI_OPENING_MS = 600
 
 export default function RohanFlow() {
   const location = useLocation()
   const navigate = useNavigate()
+  const state = useDemoStore()
+  const { dispatch, hold } = state
+  const holdView = selectHoldSheet(state)
+  const holdPaths = ['/rohan/hold', '/rohan/upi-opening', '/rohan/upi', '/rohan/held']
 
   // Selected seats state across the booking flow (defaulting to 6 seats: D05-D10)
   const [selectedSeats, setSelectedSeats] = useState<LogicSeat[]>([
@@ -31,8 +44,107 @@ export default function RohanFlow() {
   const feePaise = DEMO_SHOW.fee * selectedSeats.length
   const totalPaise = ticketPaise + feePaise
 
+  // Deep links (screenshots, tutorial "restart from step"): seed the demo hold if the store has none.
+  // `?fallback=1` turns bank blocking off first. Lives here, not in screens: DeviceFrame mounts children twice.
+  useEffect(() => {
+    if (!holdPaths.includes(path)) return
+    const s = useDemoStore.getState()
+    if (!s.hold) {
+      if (new URLSearchParams(location.search).get('fallback') === '1') {
+        s.dispatch({ type: 'CONTROLLER_TOGGLE_BANK_BLOCKING', supported: false })
+      }
+      s.dispatch({ type: 'BEGIN_GROUP_HOLD', seatIds: DEMO_GROUP })
+      if (path === '/rohan/upi' || path === '/rohan/upi-opening') s.dispatch({ type: 'OPEN_UPI' })
+      if (path === '/rohan/held') {
+        s.dispatch({ type: 'OPEN_UPI' })
+        s.dispatch({ type: 'APPROVE_HOLD', pin: '0000' })
+      }
+    } else if (path === '/rohan/hold' && (s.hold.status === 'active' || s.hold.status === 'resolving')) {
+      navigate('/rohan/held', { replace: true })
+    }
+  }, [path]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Step 3 transition: "Opening your UPI app…" for 600 ms
+  useEffect(() => {
+    if (path !== '/rohan/upi-opening') return
+    const t = setTimeout(() => navigate('/rohan/upi', { replace: true }), UPI_OPENING_MS)
+    return () => clearTimeout(t)
+  }, [path]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleHoldForGroup = (seatIds: string[]) => {
+    dispatch({ type: 'BEGIN_GROUP_HOLD', seatIds })
+    const s = useDemoStore.getState()
+    if (s.errorMessage && (!s.hold || s.hold.status !== 'draft')) {
+      const message = s.errorMessage
+      dispatch({ type: 'CLEAR_ERROR' })
+      return { message, viewHold: message === ALREADY_HOLDING }
+    }
+    navigate('/rohan/hold')
+    return null
+  }
+
+  const seatLayoutCommon = {
+    onBack: () => navigate('/rohan/showtimes'),
+    onHoldForGroup: handleHoldForGroup,
+    onViewHold: () => navigate('/rohan/held'),
+    initialSeatCount: 6,
+    onPay: (seats: LogicSeat[]) => {
+      setSelectedSeats(seats)
+      navigate('/rohan/confirm')
+    },
+  }
+  const holdSeatIds = hold?.seatIds ?? DEMO_GROUP
+
   const renderActiveScreen = () => {
     switch (path) {
+      case '/rohan/hold':
+        return (
+          <SeatLayoutScreen {...seatLayoutCommon} initialSelectedSeatIds={holdSeatIds} initialSeatCount={holdSeatIds.length}>
+            <HoldSummarySheet
+              isOpen={!!hold && hold.status === 'draft'}
+              onClose={() => {
+                dispatch({ type: 'CLEAR_ERROR' })
+                navigate('/rohan/seats', { state: { selectedSeatIds: holdSeatIds } })
+              }}
+              onConfirm={() => {
+                dispatch({ type: 'OPEN_UPI' })
+                navigate('/rohan/upi-opening')
+              }}
+            />
+          </SeatLayoutScreen>
+        )
+
+      case '/rohan/upi-opening':
+        return (
+          <SeatLayoutScreen {...seatLayoutCommon} initialSelectedSeatIds={holdSeatIds} initialSeatCount={holdSeatIds.length}>
+            <LoaderSheet isOpen message="Opening your UPI app…" />
+          </SeatLayoutScreen>
+        )
+
+      case '/rohan/upi':
+        if (!holdView) return null
+        return (
+          <UpiMandateScreen
+            mode={holdView.fallback ? 'payment' : 'block'}
+            amount={holdView.upiAmount}
+            debitedNow={holdView.leavesNow}
+            blockEnds={holdView.blockEnds}
+            refundLine={`${holdView.perSeat} each time a friend pays`}
+            showDetails={`Group hold · ${DEMO_SHOW.filmTitle} · Fri 9:15 PM`}
+            onApprove={(pin) => {
+              dispatch({ type: 'APPROVE_HOLD', pin })
+              navigate('/rohan/held', { replace: true })
+            }}
+            onDecline={() => {
+              dispatch({ type: 'UPI_DECLINED' })
+              navigate('/rohan/hold', { replace: true })
+            }}
+          />
+        )
+
+      case '/rohan/held':
+        return <HoldSuccessScreen onBack={() => navigate('/rohan/seats')} />
+
       case '/rohan/showtimes':
         return (
           <ShowtimesScreen
@@ -57,18 +169,16 @@ export default function RohanFlow() {
         )
 
       case '/rohan/seats': {
-        const fromShowtime = Boolean((location.state as { fromShowtime?: boolean } | null)?.fromShowtime)
+        const navState = location.state as { fromShowtime?: boolean; selectedSeatIds?: string[] } | null
+        const fromShowtime = Boolean(navState?.fromShowtime)
+        const keep = navState?.selectedSeatIds ?? []
         return (
           <SeatLayoutScreen
             key={location.key}
-            onBack={() => navigate('/rohan/showtimes')}
-            initialSelectedSeatIds={[]}
-            initialSeatCount={6}
+            {...seatLayoutCommon}
+            initialSelectedSeatIds={keep}
+            initialSeatCount={keep.length || 6}
             isCountSheetOpenInitially={fromShowtime}
-            onPay={(seats) => {
-              setSelectedSeats(seats)
-              navigate('/rohan/confirm')
-            }}
           />
         )
       }
@@ -76,14 +186,9 @@ export default function RohanFlow() {
       case '/rohan/seats-selected':
         return (
           <SeatLayoutScreen
-            onBack={() => navigate('/rohan/showtimes')}
-            initialSelectedSeatIds={['D05', 'D06', 'D07', 'D08', 'D09', 'D10']}
-            initialSeatCount={6}
+            {...seatLayoutCommon}
+            initialSelectedSeatIds={DEMO_GROUP}
             isCountSheetOpenInitially={false}
-            onPay={(seats) => {
-              setSelectedSeats(seats)
-              navigate('/rohan/confirm')
-            }}
           />
         )
 

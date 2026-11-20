@@ -5,6 +5,8 @@ export interface PrimaryCTAProps {
   onClick?: () => void
   disabled?: boolean
   variant?: 'default' | 'strong' | 'outline'
+  /** md = 40 pt (ref 05), lg = 48 pt (seat-layout pay bar, D-027) */
+  size?: 'md' | 'lg'
   subLabel?: string
   fullWidth?: boolean
   className?: string
@@ -16,6 +18,7 @@ export default function PrimaryCTA({
   onClick,
   disabled = false,
   variant = 'default',
+  size = 'md',
   subLabel,
   fullWidth = true,
   className = '',
@@ -50,17 +53,17 @@ export default function PrimaryCTA({
       type={type}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      className={`h-[40px] px-4 rounded-[6px] font-medium flex flex-col items-center justify-center transition-opacity active:opacity-80 select-none ${
+      className={`${size === 'lg' ? 'h-[48px]' : 'h-[40px]'} px-4 rounded-[6px] font-medium flex flex-col items-center justify-center transition-opacity active:opacity-80 select-none ${
         fullWidth ? 'w-full' : 'w-auto'
       } ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'} ${className}`}
       style={getVariantStyles()}
     >
-      <span className="text-[16px] leading-[20px] font-medium truncate">
+      <span className={`${subLabel ? 'text-[15px] leading-[19px]' : 'text-[16px] leading-[20px]'} font-medium truncate`}>
         {children}
       </span>
       {subLabel && (
         <span
-          className="text-[11px] leading-[14px] font-normal opacity-90 truncate -mt-0.5"
+          className="text-[12px] leading-[15px] font-normal opacity-90 truncate"
         >
           {subLabel}
         </span>

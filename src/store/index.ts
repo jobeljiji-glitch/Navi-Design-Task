@@ -1,10 +1,10 @@
 import { create } from 'zustand';
-import { demoReducer } from '../logic/reducer';
+import { holdFlowReducer, type FlowAction } from '../logic/holdFlow';
 import { createInitialDemoState } from '../logic/seed';
-import type { Action, DemoState } from '../logic/types';
+import type { DemoState } from '../logic/types';
 
 export interface DemoStore extends DemoState {
-  dispatch: (action: Action) => void;
+  dispatch: (action: FlowAction) => void;
   advanceClockMinutes: (minutes: number) => void;
   setClockTime: (timeMs: number) => void;
   setLiveClock: (isLive: boolean) => void;
@@ -16,8 +16,8 @@ export const useDemoStore = create<DemoStore>((set, get) => {
   return {
     ...createInitialDemoState(),
 
-    dispatch: (action: Action) => {
-      set((state) => demoReducer(state, action));
+    dispatch: (action: FlowAction) => {
+      set((state) => holdFlowReducer(state, action));
     },
 
     advanceClockMinutes: (minutes: number) => {

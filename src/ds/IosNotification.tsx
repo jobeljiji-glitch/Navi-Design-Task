@@ -1,11 +1,13 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Film } from 'lucide-react'
+import { Film, MessageSquare } from 'lucide-react'
 
 export interface IosNotificationProps {
   title: string
   body: string
   time?: string
+  /** bms = BookMyShow app tile; sms = generic Messages tile (bank SMS) */
+  app?: 'bms' | 'sms'
   visible?: boolean
   onClick?: () => void
   onDismiss?: () => void
@@ -17,6 +19,7 @@ export default function IosNotification({
   title,
   body,
   time = 'now',
+  app = 'bms',
   visible = true,
   onClick,
   onDismiss,
@@ -51,15 +54,19 @@ export default function IosNotification({
           {/* App icon tile */}
           <div
             className="w-9 h-9 rounded-[9px] flex items-center justify-center shrink-0 shadow-sm"
-            style={{ backgroundColor: 'var(--bms-red)' }}
+            style={{ backgroundColor: app === 'sms' ? 'var(--showtime-green)' : 'var(--bms-red)' }}
           >
-            <Film size={20} strokeWidth={2} className="text-white" />
+            {app === 'sms' ? (
+              <MessageSquare size={20} strokeWidth={1.75} className="text-white" />
+            ) : (
+              <Film size={20} strokeWidth={1.75} className="text-white" />
+            )}
           </div>
 
           {/* Notification text */}
           <div className="flex-1 min-w-0 pr-1">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[14px] leading-tight font-semibold truncate text-white">
+              <span className="text-[14px] leading-tight font-medium truncate text-white">
                 {title}
               </span>
               <span className="text-[12px] leading-none opacity-60 text-white shrink-0">
