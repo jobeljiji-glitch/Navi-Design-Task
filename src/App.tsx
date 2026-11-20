@@ -11,7 +11,7 @@ const ReferenceOverlay = lazy(() => import('@/dev/ReferenceOverlay'))
 
 export default function App() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-bg-page" />}>
+    <Suspense fallback={<div className="min-h-[var(--app-h)] bg-bg-page" />}>
       <Routes>
         <Route path="/" element={<DemoStage />} />
         <Route path="/rohan/*" element={<RohanFlow />} />
@@ -22,7 +22,7 @@ export default function App() {
           element={
             <div
               style={{
-                minHeight: '100vh',
+                minHeight: 'var(--app-h)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

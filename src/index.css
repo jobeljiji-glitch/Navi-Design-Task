@@ -37,10 +37,15 @@ html, body, #root {
   padding-bottom: var(--sab, 0px);
 }
 
+/* App viewport height (07b). Standalone routes: the dynamic viewport. Inside the demo stage the
+   app viewport (below the demo bar) overrides it with its measured height. */
+:root { --app-h: 100vh; }
+@supports (height: 100dvh) { :root { --app-h: 100dvh; } }
+
 /* 07 demo stage */
-.stage-interstitial { position: fixed; inset: 0; }
+.stage-interstitial { position: absolute; inset: 0; }
 @media (min-width: 431px) {
-  .stage-interstitial { position: absolute; border-radius: 52px; }
+  .stage-interstitial { border-radius: 52px; }
 }
 @keyframes coach-pulse {
   0%, 100% { box-shadow: 0 0 0 2px var(--coach-ring), 0 0 0 7px var(--coach-glow); }
@@ -51,15 +56,14 @@ html, body, #root {
   .coach-ring { animation: none; }
 }
 
-/* 07: in explore mode on a phone, the app sits below the demo bar instead of under it (D-098) */
-@media (max-width: 430px) {
-  .demo-stage[data-mode='explore'] .device-frame-mobile,
-  .demo-stage[data-mode='done'] .device-frame-mobile {
-    top: calc(env(safe-area-inset-top, 0px) + var(--stage-bar)) !important;
-    padding-top: 0 !important;
-  }
+/* 07b: on a phone the stage is a 100dvh column [demo bar][app viewport]. The full-screen frame fills
+   the app viewport (not the window); when the bar is open it already sits below the top inset,
+   so the frame drops its own top padding. The bottom inset stays with the frame (--sab, cta-safe). */
+.stage-app .device-frame-mobile {
+  position: absolute !important;
+  inset: 0 !important;
+  height: auto !important;
 }
-@media (min-width: 431px) {
-  .explore-chips { left: auto !important; background: transparent !important; top: 8px !important; --chip-bg: var(--stage-ink); }
-  .explore-chips .stage-bar-label { display: none; }
+.stage-app[data-bar='open'] .device-frame-mobile {
+  padding-top: 0 !important;
 }

@@ -19,6 +19,7 @@ shots/*
 !shots/05-*.png
 !shots/04e-*.png
 !shots/07-*.png
+!shots/07b-*.png
 
 # Editor
 .vscode/

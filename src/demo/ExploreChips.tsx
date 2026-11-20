@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { ChevronDown, MoreHorizontal, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, MoreHorizontal, X } from 'lucide-react'
 import { useDemoStore } from '@/store'
 import { useStageStore } from '@/store/stage'
 import { formatClockIST } from '@/logic/holdFlow'
@@ -10,10 +10,14 @@ import { restartDemo, startTour } from './stageActions'
 type Menu = 'persona' | 'clock' | 'more' | null
 
 /**
- * Explore mode below 1024 px: a slim demo bar above the app (D-098), so the chips never cover it.
+ * Demo controls below 1024 px (07b, D-106).
+ * - `bar` (phone, open): a 40 pt row in the stage's column above the app viewport, below the top inset.
+ *   Tapping the title (or ⌃) collapses it.
+ * - `pill` (phone, collapsed): a 28 pt tab at the top-right edge, over the app; it takes no height.
+ * - `float` (431–1023 px): the chips float top-right, outside the framed phone.
  * Persona chip · clock chip · ⋯ (restart, guided demo, moments, failures).
  */
-export default function ExploreChips() {
+export default function ExploreChips({ layout = 'float', onToggle }: { layout?: 'bar' | 'pill' | 'float'; onToggle?: () => void }) {
   const [menu, setMenu] = useState<Menu>(null)
   const path = useStageStore((s) => s.path)
   const now = useDemoStore((s) => s.clock.now)
@@ -21,38 +25,78 @@ export default function ExploreChips() {
   const close = () => setMenu(null)
   const toggle = (m: Menu) => setMenu((x) => (x === m ? null : m))
 
-  const chipCls = 'h-8 px-2.5 rounded-full inline-flex items-center gap-1 text-[13px] font-medium'
-  const chipStyle = { backgroundColor: 'var(--chip-bg)', color: 'var(--stage-ink-text)' }
+  const chipCls = 'h-7 px-2.5 rounded-full inline-flex items-center gap-1 text-[13px] font-medium'
+  const chipStyle = { backgroundColor: layout === 'float' ? 'var(--stage-ink)' : 'var(--chip-bg)', color: 'var(--stage-ink-text)' }
+  const menuTop = layout === 'bar' ? 'calc(env(safe-area-inset-top, 0px) + var(--stage-bar) + 6px)' : 'calc(env(safe-area-inset-top, 0px) + 46px)'
+
+  if (layout === 'pill') {
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={false}
+        aria-label="Show demo controls"
+        className="fixed right-0 z-[97] pl-2 pr-1 py-2"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 2px)' }}
+        data-stage-overlay
+        data-testid="demo-pill"
+      >
+        <span className="h-7 pl-2.5 pr-2 rounded-l-full inline-flex items-center gap-1 text-[13px] font-medium" style={{ backgroundColor: 'var(--stage-ink)', color: 'var(--stage-ink-text)', boxShadow: 'var(--coach-shadow)' }}>
+          Demo <ChevronDown size={14} strokeWidth={1.75} aria-hidden />
+        </span>
+      </button>
+    )
+  }
 
   return (
     <>
       {menu && <button type="button" aria-label="Close menu" className="fixed inset-0 z-[96] cursor-default" onClick={close} />}
       <div
-        className="explore-chips fixed left-0 right-0 top-0 z-[97] flex items-center justify-end gap-1 px-2"
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(env(safe-area-inset-top, 0px) + var(--stage-bar))', backgroundColor: 'var(--stage-ink)' }}
+        className={
+          layout === 'bar'
+            ? 'relative shrink-0 z-[97] flex items-center gap-1 px-2'
+            : 'fixed right-2 top-2 z-[97] flex items-center gap-1'
+        }
+        style={
+          layout === 'bar'
+            ? { paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(env(safe-area-inset-top, 0px) + var(--stage-bar))', backgroundColor: 'var(--stage-ink)' }
+            : undefined
+        }
         data-stage-overlay
         data-testid="explore-chips"
       >
-        <span className="stage-bar-label mr-auto pl-1 text-[13px] font-medium" style={{ color: 'var(--stage-ink-muted)' }}>Group Hold demo</span>
-        {/* each chip has a 44 pt hit area around its 32 pt pill */}
-        <button type="button" className="p-1.5 -m-1.5" onClick={() => toggle('persona')} aria-haspopup="menu" aria-expanded={menu === 'persona'} aria-label={`Phone: ${persona}. Switch person`} data-testid="persona-chip">
+        {layout === 'bar' && (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded
+            aria-label="Group Hold demo. Hide demo controls"
+            className="mr-auto h-10 pl-1 pr-2 inline-flex items-center gap-1 text-[13px] font-medium"
+            style={{ color: 'var(--stage-ink-muted)' }}
+            data-testid="demo-bar-title"
+          >
+            Group Hold demo <ChevronUp size={14} strokeWidth={1.75} aria-hidden />
+          </button>
+        )}
+        {/* chips are 28 pt pills inside 40 pt+ hit areas */}
+        <button type="button" className="py-1.5 px-0.5" onClick={() => toggle('persona')} aria-haspopup="menu" aria-expanded={menu === 'persona'} aria-label={`Phone: ${persona}. Switch person`} data-testid="persona-chip">
           <span className={chipCls} style={chipStyle}>
             {persona} <ChevronDown size={14} strokeWidth={1.75} aria-hidden />
           </span>
         </button>
-        <button type="button" className="p-1.5 -m-1.5 ml-0" onClick={() => toggle('clock')} aria-haspopup="menu" aria-expanded={menu === 'clock'} aria-label={`Clock: ${formatClockIST(now)}. Skip ahead`} data-testid="clock-chip">
+        <button type="button" className="py-1.5 px-0.5 ml-0" onClick={() => toggle('clock')} aria-haspopup="menu" aria-expanded={menu === 'clock'} aria-label={`Clock: ${formatClockIST(now)}. Skip ahead`} data-testid="clock-chip">
           <span className={`${chipCls} tabular-nums`} style={chipStyle}>
             {formatClockIST(now)}
           </span>
         </button>
-        <button type="button" className="p-1.5 -m-1.5" onClick={() => toggle('more')} aria-haspopup="menu" aria-expanded={menu === 'more'} aria-label="Demo menu" data-testid="more-chip">
+        <button type="button" className="py-1.5 px-0.5" onClick={() => toggle('more')} aria-haspopup="menu" aria-expanded={menu === 'more'} aria-label="Demo menu" data-testid="more-chip">
           <span className={`${chipCls} w-8 justify-center px-0`} style={chipStyle}>
             <MoreHorizontal size={16} strokeWidth={1.75} aria-hidden />
           </span>
         </button>
       </div>
       {menu && (
-        <Popover onClose={close} title={menu === 'persona' ? 'Whose phone' : menu === 'clock' ? 'Clock' : 'Demo'}>
+        <Popover top={menuTop} onClose={close} title={menu === 'persona' ? 'Whose phone' : menu === 'clock' ? 'Clock' : 'Demo'}>
           {menu === 'persona' && <PersonaSwitch onPick={close} />}
           {menu === 'clock' && <ClockControls onPick={close} />}
           {menu === 'more' && (
@@ -106,15 +150,15 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-function Popover({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+function Popover({ title, top, onClose, children }: { title: string; top: string; onClose: () => void; children: ReactNode }) {
   return (
     <div
       role="menu"
       aria-label={title}
       className="fixed right-2 left-2 sm:left-auto sm:w-[340px] z-[98] rounded-[14px] p-4 flex flex-col gap-3 overflow-y-auto"
       style={{
-        top: 'calc(env(safe-area-inset-top, 0px) + var(--stage-bar) + 6px)',
-        maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - 70px)',
+        top,
+        maxHeight: 'calc(var(--app-h) - 24px)',
         backgroundColor: 'var(--stage-panel)',
         boxShadow: 'var(--coach-shadow)',
         color: 'var(--text-primary)',

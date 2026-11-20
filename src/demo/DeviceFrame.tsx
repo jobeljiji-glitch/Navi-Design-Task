@@ -210,7 +210,9 @@ export default function DeviceFrame({ time = '9:41', children }: DeviceFrameProp
       <style>{`
         @media (max-width: ${BREAKPOINT}px) {
           .device-frame-desktop { display: none !important; }
-          .device-frame-mobile  { display: flex !important; position: fixed; inset: 0; }
+          /* Full-screen: sized from --app-h (100dvh standalone; the demo stage's app viewport
+             sets it to the height left under its demo bar, 07b). Never 100vh. */
+          .device-frame-mobile  { display: flex !important; position: fixed; top: 0; left: 0; right: 0; height: var(--app-h, 100dvh); }
         }
       `}</style>
     </>

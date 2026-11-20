@@ -187,6 +187,11 @@ export function restartDemo(toIntro = false) {
 // Explore
 // ---------------------------------------------------------------------------
 
+/** Remount the phone on a given screen (explore deep link `&phone=`). */
+export function openPhoneAt(path: string) {
+  useStageStore.setState((s) => ({ path, rohanPath: path.startsWith('/rohan') ? path : s.rohanPath, phoneKey: s.phoneKey + 1 }))
+}
+
 export function switchPersona(p: Persona) {
   if (personaOf(stage().path) === p) return
   const s = stage()

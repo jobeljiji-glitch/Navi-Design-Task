@@ -110,7 +110,7 @@
   --coach-glow: rgba(235, 78, 99, 0.28);/* new 07 */
   --coach-shadow: 0 12px 32px rgba(0, 0, 0, 0.22), 0 0 0 0.5px rgba(0, 0, 0, 0.08); /* new 07: bubble elevation */
   --chip-bg: rgba(255, 255, 255, 0.14); /* new 07: chips on the demo bar */
-  --stage-bar: 44px;                    /* new 07: demo bar height (explore on a phone) */
+  --stage-bar: 40px;                    /* new 07b: demo bar height on a phone (below the top inset) */
 
   /* Type */
   --font-app: "Roboto", -apple-system, "SF Pro Text", system-ui, sans-serif;

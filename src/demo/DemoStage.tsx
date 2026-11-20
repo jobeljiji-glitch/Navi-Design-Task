@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { MotionConfig } from 'motion/react'
 import { Route, Routes, useSearchParams } from 'react-router-dom'
 import RohanFlow from '@/screens/rohan/RohanFlow'
@@ -11,7 +11,7 @@ import CoachBubble from './CoachBubble'
 import ExploreChips from './ExploreChips'
 import { DoneCard, Interstitial, Intro } from './Overlays'
 import { ControlPanel, StoryPanel } from './Panels'
-import { advanceFrom, backStep, exploreFreely, jumpTo, jumpToMoment, nextStep, skipTour } from './stageActions'
+import { advanceFrom, backStep, exploreFreely, jumpTo, jumpToMoment, nextStep, openPhoneAt, skipTour } from './stageActions'
 
 const DEVICE_W = 402
 const DEVICE_H = 874
@@ -38,9 +38,38 @@ function useViewportHeight() {
 }
 
 /**
+ * Demo bar open/closed on a phone, remembered for the session (07b). The tour starts collapsed
+ * (its bubble has the controls); explore starts open. Each remembers the viewer's last choice.
+ */
+function useBarState(mode: string): [boolean, () => void] {
+  const key = mode === 'tour' ? 'demoBar:tour' : 'demoBar:explore'
+  const read = () => {
+    try {
+      const v = sessionStorage.getItem(key)
+      if (v === 'open' || v === 'closed') return v === 'open'
+    } catch {
+      /* storage blocked: use the default */
+    }
+    return mode !== 'tour'
+  }
+  const [open, setOpen] = useState(read)
+  useEffect(() => setOpen(read()), [key]) // eslint-disable-line react-hooks/exhaustive-deps
+  const toggle = () =>
+    setOpen((o) => {
+      try {
+        sessionStorage.setItem(key, o ? 'closed' : 'open')
+      } catch {
+        /* ignore */
+      }
+      return !o
+    })
+  return [open, toggle]
+}
+
+/**
  * `#/` demo stage (07). One phone that changes hands as the story moves (D-093).
- * ≥ 1024 px: story steps · phone · controls. Narrower: the phone (full-screen on an iPhone)
- * with the bubble and explore chips as overlays.
+ * ≥ 1024 px: story steps · phone · controls. 431–1023 px: the framed phone with floating chips.
+ * ≤ 430 px (07b, D-106): a 100dvh column [demo bar][app viewport]; the app gets the rest.
  */
 export default function DemoStage() {
   const [params] = useSearchParams()
@@ -50,8 +79,8 @@ export default function DemoStage() {
   const vh = useViewportHeight()
   const scale = framed ? Math.min(1, (vh - 32) / DEVICE_H) : 1
 
-  // Deep links: `?step=8` (tour at step 8), `?explore=1[&moment=receipt]`. Once per distinct query
-  // (the ref also absorbs StrictMode's second effect run).
+  // Deep links: `?step=8` (tour at step 8), `?explore=1[&moment=receipt][&phone=/rohan/confirm]`.
+  // Once per distinct query (the ref also absorbs StrictMode's second effect run).
   const linked = useRef<string | null>(null)
   const query = params.toString()
   useEffect(() => {
@@ -63,6 +92,8 @@ export default function DemoStage() {
       exploreFreely()
       const m = params.get('moment') as MomentId | null
       if (m && MOMENTS.some((x) => x.id === m)) jumpToMoment(m)
+      const ph = params.get('phone')
+      if (ph && /^\/(rohan|friend)\//.test(ph)) openPhoneAt(ph)
     }
   }, [query]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -75,23 +106,51 @@ export default function DemoStage() {
     if (s?.done?.(demo, path)) advanceFrom(step)
   }, [demo, path, mode, step])
 
-  const phone = (
-    <div
-      data-phone
-      className="relative shrink-0"
-      style={framed ? { width: DEVICE_W * scale, height: DEVICE_H * scale } : undefined}
-    >
-      <div className="relative" style={framed && scale < 1 ? { transform: `scale(${scale})`, transformOrigin: 'top left', width: DEVICE_W, height: DEVICE_H } : undefined}>
-        <PhoneRouter key={phoneKey} initialPath={useStageStore.getState().path} onPath={(p) => useStageStore.setState({ path: p })} isCurrent={() => useStageStore.getState().phoneKey === phoneKey}>
-          <Routes>
-            <Route path="/friend/:name" element={<FriendFlow />} />
-            <Route path="*" element={<RohanFlow />} />
-          </Routes>
-        </PhoneRouter>
-        <Interstitial text={interstitial} />
+  const phoneContent = (
+    <>
+      <PhoneRouter
+        key={phoneKey}
+        initialPath={useStageStore.getState().path}
+        onPath={(p) => useStageStore.setState({ path: p })}
+        isCurrent={() => useStageStore.getState().phoneKey === phoneKey}
+      >
+        <Routes>
+          <Route path="/friend/:name" element={<FriendFlow />} />
+          <Route path="*" element={<RohanFlow />} />
+        </Routes>
+      </PhoneRouter>
+      <Interstitial text={interstitial} />
+    </>
+  )
+
+  // Framed phone (≥ 431 px): 402 × 874, scaled to fit the height.
+  const framedPhone = (
+    <div data-phone className="relative shrink-0" style={{ width: DEVICE_W * scale, height: DEVICE_H * scale }}>
+      <div
+        className="relative"
+        style={{ width: DEVICE_W, height: DEVICE_H, ...(scale < 1 ? { transform: `scale(${scale})`, transformOrigin: 'top left' } : {}) }}
+      >
+        {phoneContent}
       </div>
     </div>
   )
+
+  // Phone (≤ 430 px): the app viewport takes whatever height the demo bar leaves; its measured
+  // height is published as --app-h on the stage column (screens, sheets, popovers read it).
+  const [barOpen, toggleBar] = useBarState(mode)
+  const showBar = mode !== 'intro'
+  const columnRef = useRef<HTMLDivElement>(null)
+  const appRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const app = appRef.current
+    const col = columnRef.current
+    if (!app || !col) return
+    const set = () => col.style.setProperty('--app-h', `${app.clientHeight}px`)
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(app)
+    return () => ro.disconnect()
+  }, [framed, wide])
 
   const tourStep = mode === 'tour' ? TOUR_STEPS[step] : null
 
@@ -106,25 +165,40 @@ export default function DemoStage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="demo-stage min-h-[100dvh] w-full" style={{ backgroundColor: 'var(--stage-bg)', color: 'var(--text-primary)' }} data-mode={mode}>
+      <div className="demo-stage w-full" style={{ backgroundColor: 'var(--stage-bg)', color: 'var(--text-primary)' }} data-mode={mode}>
         <div ref={bodyRef}>
-        {wide ? (
-          <div className="grid h-[100dvh] gap-6 px-6" style={{ gridTemplateColumns: 'minmax(220px, 280px) auto minmax(260px, 320px)' }}>
-            <div className="overflow-y-auto py-6 no-scrollbar">
-              <StoryPanel />
+          {wide ? (
+            <div className="grid h-[var(--app-h)] gap-6 px-6" style={{ gridTemplateColumns: 'minmax(220px, 280px) auto minmax(260px, 320px)' }}>
+              <div className="overflow-y-auto py-6 no-scrollbar">
+                <StoryPanel />
+              </div>
+              <div className="flex items-center justify-center">{framedPhone}</div>
+              <div className="overflow-y-auto py-6 no-scrollbar">
+                <ControlPanel top={mode === 'done' ? <DoneCard wide /> : undefined} />
+              </div>
             </div>
-            <div className="flex items-center justify-center">{phone}</div>
-            <div className="overflow-y-auto py-6 no-scrollbar">
-              <ControlPanel top={mode === 'done' ? <DoneCard wide /> : undefined} />
+          ) : framed ? (
+            <div className="min-h-[var(--app-h)] flex items-center justify-center px-4">
+              {framedPhone}
+              {(mode === 'explore' || mode === 'done') && <ExploreChips layout="float" />}
+              {mode === 'done' && <DoneCard wide={false} />}
             </div>
-          </div>
-        ) : (
-          <div className="min-h-[100dvh] flex items-center justify-center px-4">
-            {phone}
-            {(mode === 'explore' || mode === 'done') && <ExploreChips />}
-            {mode === 'done' && <DoneCard wide={false} />}
-          </div>
-        )}
+          ) : (
+            <div ref={columnRef} className="stage-column flex flex-col overflow-hidden" style={{ height: '100dvh' }} data-testid="stage-column">
+              {showBar && barOpen && <ExploreChips layout="bar" onToggle={toggleBar} />}
+              <div
+                ref={appRef}
+                data-phone
+                className="stage-app relative flex-1 min-h-0 overflow-hidden"
+                data-bar={showBar && barOpen ? 'open' : 'closed'}
+                data-testid="stage-app"
+              >
+                {phoneContent}
+              </div>
+              {showBar && !barOpen && <ExploreChips layout="pill" onToggle={toggleBar} />}
+              {mode === 'done' && <DoneCard wide={false} />}
+            </div>
+          )}
         </div>
 
         {tourStep && (
