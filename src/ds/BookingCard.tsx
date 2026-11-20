@@ -41,7 +41,8 @@ export default function BookingCard({
       {/* Main card */}
       <div
         onClick={onClick}
-        className="w-full bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 cursor-pointer relative overflow-hidden"
+        className="w-full shrink-0 bg-bg-surface rounded-[8px] p-4 flex flex-col gap-3 cursor-pointer relative"
+        data-card
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderRadius: 'var(--card-radius)',

@@ -76,7 +76,7 @@ export default function ConfirmBookingScreen({
       </header>
 
       {/* Scrollable Booking Details with 12 pt side margins (px-3) */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-3 no-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-6 flex flex-col gap-3 no-scrollbar [&>*]:shrink-0">
         {/* Movie Summary Card with cancellation band inside (no fixed height, no clipping) */}
         <SummaryCard
           title={DEMO_SHOW.filmTitle}

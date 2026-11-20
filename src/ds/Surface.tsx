@@ -32,10 +32,14 @@ export function Card({
   band,
 }: BaseProps & { padded?: boolean; band?: ReactNode }) {
   return (
+    // 04e: no overflow:hidden and no shrinking. In a flex-column scroller, overflow:hidden turns the
+    // card's automatic min-height into 0, so iOS Safari squeezed cards to fit the viewport and clipped them.
+    // Height is always auto from content; the flush band rounds its own bottom corners instead.
     <Tag
-      className="w-full overflow-hidden flex flex-col"
+      className="w-full shrink-0 flex flex-col"
       style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--card-radius)', boxShadow: 'var(--card-shadow)' }}
       data-testid={testId}
+      data-card
     >
       <div className={`min-w-0 ${padded ? 'p-4' : ''} ${className}`}>{children}</div>
       {band}
@@ -60,7 +64,14 @@ export function Band({
   return (
     <div
       className="px-4 py-3 flex flex-col gap-0.5"
-      style={{ backgroundColor: 'var(--bg-success)', borderRadius: standalone ? 'var(--card-radius)' : undefined }}
+      style={{
+        backgroundColor: 'var(--bg-success)',
+        // Standalone: fully rounded. In a Card's band slot: it is the card's bottom edge, so it rounds
+        // its own bottom corners (the card no longer clips its children).
+        ...(standalone
+          ? { borderRadius: 'var(--card-radius)' }
+          : { borderBottomLeftRadius: 'var(--card-radius)', borderBottomRightRadius: 'var(--card-radius)' }),
+      }}
       data-testid={testId}
     >
       <div className="flex items-start justify-between gap-3">

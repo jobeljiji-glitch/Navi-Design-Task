@@ -25,7 +25,7 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
     <div className="w-full h-full flex flex-col overflow-hidden relative select-none" style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid="friend-pay">
       <FriendHeader title="Group hold" onBack={() => dispatch({ type: 'FRIEND_BACK', name })} />
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 flex flex-col gap-3 no-scrollbar" style={{ overscrollBehavior: 'contain' }}>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 flex flex-col gap-3 no-scrollbar [&>*]:shrink-0" style={{ overscrollBehavior: 'contain' }}>
         {/* Card 1: who's holding, the show, who's in */}
         <Card className="flex flex-col gap-3">
           <div>
@@ -89,7 +89,7 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
           </div>
           )}
           <Hairline dashed />
-          <button type="button" onClick={() => setCancelOpen(true)} className="-my-2 h-11 flex items-center justify-between text-left active:opacity-70">
+          <button type="button" onClick={() => setCancelOpen(true)} className="-my-2 min-h-11 flex items-center justify-between text-left active:opacity-70">
             <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>{v.cancellation}</span>
             <ChevronRight size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />
           </button>

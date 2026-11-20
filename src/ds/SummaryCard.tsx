@@ -33,13 +33,13 @@ export default function SummaryCard({
 }: SummaryCardProps) {
   return (
     <div
-      className={`w-full bg-bg-surface rounded-[8px] flex flex-col ${className}`}
+      className={`w-full shrink-0 bg-bg-surface rounded-[8px] flex flex-col ${className}`}
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderRadius: 'var(--card-radius)',
         boxShadow: 'var(--card-shadow)',
-        overflow: 'hidden',
       }}
+      data-card
     >
       <div className="p-4 flex flex-col gap-2">
         {/* Line 1: Title & Ticket Count Row at 18 pt, weight 500 */}

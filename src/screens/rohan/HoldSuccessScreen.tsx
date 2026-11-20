@@ -91,7 +91,7 @@ export default function HoldSuccessScreen({ onBack, onOpenChat, showSms = true }
         <h1 className="text-[20px] leading-[26px] font-normal ml-0.5">Group hold</h1>
       </header>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col gap-3 no-scrollbar" style={{ overscrollBehavior: 'contain' }}>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col gap-3 no-scrollbar [&>*]:shrink-0" style={{ overscrollBehavior: 'contain' }}>
         {/* Card 1: status, with the rules as the ref-22 band flush on its bottom edge */}
         <Card testId="status-card" className="flex flex-col gap-3" band={<Band title={v.rulesBand.split(' · ')[0]} testId="status-band">{v.rulesBand.split(' · ')[1]}</Band>}>
           <div className="flex items-center gap-3 flex-wrap">
@@ -144,7 +144,7 @@ export default function HoldSuccessScreen({ onBack, onOpenChat, showSms = true }
           <button
             type="button"
             onClick={() => setTicketOpen(true)}
-            className="w-full h-[52px] px-4 flex items-center justify-between text-left"
+            className="w-full p-4 flex items-center justify-between text-left"
             data-testid="ticket-row"
           >
             <span className="text-[14px]">Your ticket</span>

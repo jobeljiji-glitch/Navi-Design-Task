@@ -94,7 +94,8 @@ export default function TicketCard({
 
       {/* Ticket card */}
       <div className="w-full px-5">
-        <div className="w-full rounded-[16px] flex flex-col relative overflow-hidden" style={{ backgroundColor: 'var(--bg-surface)', boxShadow: 'var(--card-shadow)' }}>
+        {/* No overflow:hidden (04e): the perforation cutouts are page-grey circles, so their outer halves vanish on the grey page */}
+        <div className="w-full shrink-0 rounded-[16px] flex flex-col relative" style={{ backgroundColor: 'var(--bg-surface)', boxShadow: 'var(--card-shadow)' }} data-card>
           <div className="p-4 flex gap-3 relative">
             <PosterArt title="Monsoon Heist" titleSize={13} className="w-[80px] h-[104px] rounded-[8px] shrink-0" />
             <div className="flex-1 flex flex-col justify-between pr-7 min-w-0">
@@ -139,7 +140,7 @@ export default function TicketCard({
             <span className="text-[12px] leading-tight" style={secondary} data-testid="ticket-note">{cancellationText}</span>
           </div>
 
-          <div className="px-5 py-3.5 flex items-center justify-between">
+          <div className="px-5 py-3.5 flex items-center justify-between rounded-b-[16px]">
             <span className="text-[15px]" style={primary}>Total Amount</span>
             <span className="text-[18px] font-medium" style={primary}>{totalAmount}</span>
           </div>

@@ -102,7 +102,7 @@ export function FriendUpiChoiceScreen({ name }: { name: FriendName }) {
               key={a.id}
               type="button"
               onClick={() => choose(a.name)}
-              className="h-[96px] flex flex-col items-center justify-center gap-2 active:opacity-70"
+              className="py-4 flex flex-col items-center justify-center gap-2 active:opacity-70"
               style={{ backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--card-radius)', boxShadow: 'var(--card-shadow)' }}
               data-testid={`upi-app-${a.id}`}
             >
@@ -171,7 +171,7 @@ export function FriendPendingScreen({ name }: { name: FriendName }) {
     <div className={page} style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid={failed ? 'friend-failed' : 'friend-pending'}>
       <FriendHeader title="Payment" onBack={failed ? () => dispatch({ type: 'FRIEND_BACK', name }) : undefined} />
       <div className="flex-1 min-h-0 px-4 pt-2">
-        <Card className="flex flex-col items-center text-center gap-3 py-8">
+        <Card className="flex flex-col items-center text-center gap-3">
           {failed ? (
             <AlertCircle size={40} strokeWidth={1.75} style={{ color: 'var(--bms-red)' }} />
           ) : (
@@ -253,7 +253,7 @@ export function FriendDeclinedScreen({ name }: { name: FriendName }) {
     <div className={page} style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid="friend-declined">
       <FriendHeader title="Group hold" onBack={() => dispatch({ type: 'FRIEND_BACK', name })} />
       <div className="px-4 pt-2">
-        <Card className="flex flex-col items-center text-center gap-3 py-8">
+        <Card className="flex flex-col items-center text-center gap-3">
           <MessageCircle size={36} strokeWidth={1.75} style={{ color: 'var(--text-success)' }} />
           <h2 className="text-[20px] leading-[26px] font-normal">Thanks. {organiser}'s been told.</h2>
         </Card>
@@ -270,7 +270,7 @@ export function FriendEndedScreen({ name }: { name: FriendName }) {
     <div className={page} style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }} data-testid="friend-ended">
       <FriendHeader title="Group hold" onBack={() => dispatch({ type: 'FRIEND_GOTO', name, screen: 'chat' })} />
       <div className="px-4 pt-2">
-        <Card className="flex flex-col gap-1 py-6">
+        <Card className="flex flex-col gap-1">
           <h2 className="text-[18px] leading-[24px] font-medium">{v?.endedTitle ?? 'This hold has ended.'}</h2>
           <p className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v?.film}</p>
         </Card>
