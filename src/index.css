@@ -1,0 +1,28 @@
+/* Import BookMyShow design tokens */
+@import '../docs/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-app);
+  color: var(--text-primary);
+  background: var(--bg-page);
+}
+
+/* Safe-area padding utilities (real device) */
+.safe-top {
+  padding-top: env(safe-area-inset-top, var(--safe-top));
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, var(--safe-bottom));
+}
