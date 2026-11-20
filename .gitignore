@@ -42,3 +42,6 @@ coverage/
 test-results/
 playwright-report/
 !shots/08-*.png
+
+# Reference screens are served by the dev server only (08)
+public/reference/

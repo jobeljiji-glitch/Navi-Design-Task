@@ -54,7 +54,7 @@ function getImageForRoute(pathname: string): string | null {
 
 function getBaseUrl(): string {
   // In production on GitHub Pages the base is /Navi-Design-Task/
-  // Vite copies reference screens to public/reference/ at build time.
+  // Dev only: the Vite dev server serves reference/screens at <base>reference/ (vite.config.ts).
   const base = import.meta.env.BASE_URL ?? '/'
   return base.endsWith('/') ? base : `${base}/`
 }

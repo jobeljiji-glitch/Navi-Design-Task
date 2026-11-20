@@ -1,24 +1,31 @@
 {
-  "name": "Group Hold",
-  "short_name": "GroupHold",
-  "description": "BookMyShow Group Hold prototype",
+  "name": "Group Hold · BookMyShow prototype",
+  "short_name": "Group Hold",
+  "description": "Interactive prototype: hold seats for your group, friends pay their own share.",
   "start_url": "/Navi-Design-Task/#/",
+  "scope": "/Navi-Design-Task/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#1C1C1C",
+  "theme_color": "#1C1C1C",
   "icons": [
     {
       "src": "/Navi-Design-Task/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/Navi-Design-Task/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/Navi-Design-Task/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

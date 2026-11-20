@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Group Hold prototype icon (our own drawing, not a BookMyShow logo): a ticket with three seats,
+       two paid (filled) and one held (dashed). Colour = --bms-red. -->
+  <rect width="512" height="512" rx="112" fill="#EB4E63"/>
+  <path fill="#FFFFFF" d="M120 156h272a28 28 0 0 1 28 28v44a28 28 0 0 0 0 56v44a28 28 0 0 1-28 28H120a28 28 0 0 1-28-28v-44a28 28 0 0 0 0-56v-44a28 28 0 0 1 28-28z"/>
+  <g fill="#EB4E63">
+    <rect x="146" y="214" width="60" height="60" rx="12"/>
+    <rect x="226" y="214" width="60" height="60" rx="12"/>
+  </g>
+  <rect x="311" y="219" width="50" height="50" rx="10" fill="none" stroke="#EB4E63" stroke-width="10" stroke-dasharray="14 9"/>
+  <rect x="146" y="292" width="215" height="12" rx="6" fill="#EB4E63" opacity="0.35"/>
+</svg>

@@ -8,7 +8,8 @@ const DemoStage = lazy(() => import('@/demo/DemoStage'))
 const RohanFlow = lazy(() => import('@/screens/rohan/RohanFlow'))
 const FriendFlow = lazy(() => import('@/screens/friend/FriendFlow'))
 const KitPage = lazy(() => import('@/screens/KitPage'))
-const ReferenceOverlay = lazy(() => import('@/dev/ReferenceOverlay'))
+// 08: dev only. In production `import.meta.env.DEV` is false, so the import is dropped from the bundle.
+const ReferenceOverlay = import.meta.env.DEV ? lazy(() => import('@/dev/ReferenceOverlay')) : () => null
 
 export default function App() {
   return (
