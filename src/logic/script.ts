@@ -16,6 +16,13 @@ export function ist(h: number, m: number): number {
 
 export const DEMO_GROUP = ['D05', 'D06', 'D07', 'D08', 'D09', 'D10'];
 
+/** Script times (10), IST [h, m]. The hold starts at 4:15 PM; halfway (free release ends) is 5:45 PM. */
+export const AMIT_AT: [number, number] = [16, 30];
+export const SANA_AT: [number, number] = [17, 5];
+export const NEHA_AT: [number, number] = [17, 20];
+export const RELEASE_AT: [number, number] = [17, 21];
+export const HALFWAY_AT: [number, number] = [17, 45];
+
 export const SCRIPT_STEPS = [
   'hold',
   'amit',
@@ -123,16 +130,17 @@ export function applyStep(s: BoardState, step: ScriptStep, r: Reduce = R): Board
   switch (step) {
     case 'hold':
       return shareToGroup(approveHold(openUpi(beginHold(s, r), r), r), r);
+    // 10: the hold starts at 4:15 PM (3h window); friends act before halfway (5:45 PM)
     case 'amit':
-      return friendCompletesPay(friendOpensLink(at(s, 14, 2, r), 'Amit', r), 'Amit', 'success', r);
+      return friendCompletesPay(friendOpensLink(at(s, ...AMIT_AT, r), 'Amit', r), 'Amit', 'success', r);
     case 'sana':
-      return friendCompletesPay(friendOpensLink(at(s, 15, 10, r), 'Sana', r), 'Sana', 'success', r);
+      return friendCompletesPay(friendOpensLink(at(s, ...SANA_AT, r), 'Sana', r), 'Sana', 'success', r);
     case 'neha':
-      return r(at(s, 15, 30, r), { type: 'FRIEND_CANT_MAKE_IT', name: 'Neha' });
+      return r(at(s, ...NEHA_AT, r), { type: 'FRIEND_CANT_MAKE_IT', name: 'Neha' });
     case 'release':
-      return r(at(s, 15, 31, r), { type: 'RELEASE_SEATS', seatIds: ['D05'] });
+      return r(at(s, ...RELEASE_AT, r), { type: 'RELEASE_SEATS', seatIds: ['D05'] });
     case 'halfway':
-      return at(s, 16, 15, r);
+      return at(s, ...HALFWAY_AT, r);
     case 't30':
       return at(s, 18, 45, r);
     case 'priyaPending':
@@ -160,10 +168,14 @@ export function runScriptTo(s: BoardState, step: ScriptStep, r: Reduce = R): Boa
   return s;
 }
 
-/** Deep-link shorthands: `?at=310` etc. */
+/** Deep-link shorthands: `?at=505` etc. (`202` / `310` are the pre-10 names, kept so old links work.) */
 export const AT_PARAM: Record<string, ScriptStep> = {
   hold: 'hold',
+  amit: 'amit',
+  '430': 'amit',
   '202': 'amit',
+  sana: 'sana',
+  '505': 'sana',
   '310': 'sana',
   neha: 'neha',
   release: 'release',

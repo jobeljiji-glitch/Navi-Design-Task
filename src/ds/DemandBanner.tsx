@@ -8,24 +8,25 @@ export type DemandTierType = 'low' | 'medium' | 'high'
 export interface DemandBannerProps {
   tier: DemandTierType
   pctLeft?: number
-  holdHours?: number
+  /** "3h", "8h", "90 min" (10) */
+  holdLabel?: string
   className?: string
 }
 
-function demandBannerParts(tier: DemandTierType, pctLeft?: number, holdHours?: number): [string, string] {
+function demandBannerParts(tier: DemandTierType, pctLeft?: number, holdLabel?: string): [string, string] {
   switch (tier) {
     case 'low':
-      return ['Plenty of seats', ` · group hold: ${holdHours ?? 24}h`]
+      return ['Plenty of seats', ` · group hold: ${holdLabel ?? '8h'}`]
     case 'high':
-      return ['Filling fast', ` · ${pctLeft ?? 18}% left · group hold: ${holdHours ?? 2}h`]
+      return ['Filling fast', ` · ${pctLeft ?? 18}% left · group hold: ${holdLabel ?? '90 min'}`]
     case 'medium':
     default:
-      return ['Selling steadily', ` · ${pctLeft ?? 41}% left · group hold: ${holdHours ?? 6}h`]
+      return ['Selling steadily', ` · ${pctLeft ?? 41}% left · group hold: ${holdLabel ?? '3h'}`]
   }
 }
 
-export default function DemandBanner({ tier, pctLeft, holdHours, className = '' }: DemandBannerProps) {
-  const [lead, rest] = demandBannerParts(tier, pctLeft, holdHours)
+export default function DemandBanner({ tier, pctLeft, holdLabel, className = '' }: DemandBannerProps) {
+  const [lead, rest] = demandBannerParts(tier, pctLeft, holdLabel)
   return (
     <div
       data-testid="demand-banner"

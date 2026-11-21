@@ -42,17 +42,17 @@ Design principles (use them to settle any doubt):
 | Group total (6) | **₹1,662.84** |
 | Organiser | **Rohan** (rohan@okbank), his seat **D07** (first tapped) |
 | Friends | Amit, Sana, Priya, Neha, Kabir |
-| Demand tier | **Medium** ("Selling steadily · 41% left") → 6 h window |
-| Hold starts | 1:15 PM → deadline **7:15 PM** · free release until **4:15 PM** · reminder at 4:15 PM and **6:45 PM** · grace until **7:25 PM** · late payments close **9:00 PM** (grace to 9:10 PM) · block ends and settles at showtime **9:15 PM** |
+| Demand tier | **Medium** ("Selling steadily · 41% left") → 3 h window |
+| Hold starts | 4:15 PM → deadline **7:15 PM** · free release until **5:45 PM** · reminder at 5:45 PM and **6:45 PM** · grace until **7:25 PM** · late payments close **9:00 PM** (grace to 9:10 PM) · block ends and settles at showtime **9:15 PM** |
 
 ### Scripted outcome (the tutorial path)
 
 | Who | Behaviour | Seat | Result |
 | --- | --- | --- | --- |
 | Rohan | Pays own seat at hold start | D07 | ₹277.14 charged; ₹1,662.84 blocked |
-| Amit | Pays immediately (2:02 PM) | D08 | ₹277.14 less to cover |
-| Sana | Pays (3:10 PM) | D09 | ₹277.14 less to cover |
-| Neha | Taps "Can't make it" (3:30 PM) → Rohan releases 1 seat (free, before 4:15 PM) | D05 released (edge) | ₹277.14 less to cover |
+| Amit | Pays soon after (4:30 PM) | D08 | ₹277.14 less to cover |
+| Sana | Pays (5:05 PM) | D09 | ₹277.14 less to cover |
+| Neha | Taps "Can't make it" (5:20 PM) → Rohan releases 1 seat (free, before 5:45 PM) | D05 released (edge) | ₹277.14 less to cover |
 | Priya | Pays at 7:13 PM, payment pending past the deadline, succeeds at 7:19 PM in grace | D10 | ₹277.14 less to cover |
 | Kabir | No response → seat kept at 7:15 PM (not charged) | D06 | Charged at 9:15 PM unless a friend pays |
 | Kabir (late) | Opens the link at 8:10 PM, pays for the kept seat (before 9:00 PM) | D06 | Ticket moves to Kabir; D06 is never charged to Rohan (no refund) |
@@ -121,7 +121,7 @@ releaseFee(hold, t)        = (tier !== 'low' && t > freeReleaseUntil) ? show.fee
 | Rule | Value |
 | --- | --- |
 | Group size | 3–10 seats. Under 3: "Hold for group" hidden |
-| Demand windows | low 24 h · medium 6 h · high 2 h |
+| Demand windows | low 8 h · medium 3 h · high 90 min (starting values, tuned per cinema from fill rate, release rate and resale of released seats) |
 | Deadline | `min(createdAt + window, show.startsAt − 2h)`. Fixed at creation |
 | Hold unavailable | if `show.startsAt − now < 3h` |
 | Free release window | medium/high only: until the halfway point of the window |
@@ -132,7 +132,7 @@ releaseFee(hold, t)        = (tier !== 'low' && t > freeReleaseUntil) ? show.fee
 | Deadline outcome | Unpaid seats become **kept**: still Rohan's, still blocked, **not charged** |
 | Late payment for a kept seat | Until **showtime − 15 min (9:00 PM)**; a payment already with the bank gets 10 min (9:10 PM). The ticket moves; the seat is never charged to Rohan (no refund) |
 | Settlement | At showtime: charge kept seats + fees kept from the block, unblock the rest **once**, finalise the receipt |
-| Reminders | BMS nudges automatically at 50% of window and at T−30 min (to anyone who entered a phone number but didn't pay); Rohan notified at the same times |
+| Reminders | BMS nudges automatically at 50% of window and at T−30 min to every friend who **opened** the link and didn't pay: entered a phone number, or opened it while logged in to BookMyShow. A friend who tapped "Remind me" gets the T−30 nudge only. Never-opened seats: only Rohan's "Share a reminder". Rohan notified at the same times |
 | Rohan's "Share a reminder" | For never-opened seats only: the iOS share sheet with a BMS-written progress card, no names ("2 seats still waiting for Friday 🍿 / Pick yours by 7:15 PM" + link). Rohan picks the group or one chat. No limit (09, user) |
 | Limits | 1 active group hold per account (one Reserve Pay mandate per user): "You already have a group hold running. Finish it or book these seats now."; on high-tier shows group holds capped at 15% of remaining seats; block ≤ ₹10,000: "Group holds can block up to ₹10,000. Pick fewer seats or pay now." |
 | Seat release order | Always from the **edges** of the block, never the middle |
@@ -160,9 +160,9 @@ Copy is final unless marked *(draft)*. Currency always shows two decimals, like 
 
 ### Step 1b: Seat layout with new options
 - `DemandBanner` under the header strip, by tier:
-  - low: "Plenty of seats · group hold: 24h"
-  - medium: "Selling steadily · 41% left · group hold: 6h"
-  - high: "Filling fast · 18% left · group hold: 2h"
+  - low: "Plenty of seats · group hold: 8h"
+  - medium: "Selling steadily · 41% left · group hold: 3h"
+  - high: "Filling fast · 18% left · group hold: 90 min"
 - Non-contiguous selection: inline note "Your group isn't seated together."
 - `DualCtaBar` when 3–10 seats selected:
   - Outline: **Hold for group** / sub-label "Friends pay their own"
@@ -175,7 +175,7 @@ Copy is final unless marked *(draft)*. Currency always shows two decimals, like 
 ### Step 2: Hold summary (bottom sheet)
 - Title: **Hold 6 seats for your group** · subtitle "Monsoon Heist · Fri 9:15 PM · D05–D10"
 - Rows: `Your seat [D07 ▾]` → "₹277.14 now" · `5 friends' seats` → "₹1,385.70 blocked"
-- 09 layout (fits at 874 pt with no scrolling): seat tiles row · one money line **"₹1,662.84 blocked · ₹277.14 charged now ⌄"** expanding to the breakdown (Your seat (D07) ₹277.14 · Charged now / 5 friends' seats ₹1,385.70 · Blocked, not charged / Blocked on UPI ₹1,662.84) · two icon rule rows **"Friends pay by 7:15 PM"** + `Shorten` and **"Unpaid seats are kept · release free till 4:15 PM"** · one settings row **"Friends pick seats · No seats covered · UPI ›"** (opens Seats / Cover a friend / Pay with)
+- 09 layout (fits at 874 pt with no scrolling): seat tiles row · one money line **"₹1,662.84 blocked · ₹277.14 charged now ⌄"** expanding to the breakdown (Your seat (D07) ₹277.14 · Charged now / 5 friends' seats ₹1,385.70 · Blocked, not charged / Blocked on UPI ₹1,662.84) · two icon rule rows **"Friends pay by 7:15 PM"** + `Shorten` and **"Unpaid seats are kept · release free till 5:45 PM"** · one settings row **"Friends pick seats · No seats covered · UPI ›"** (opens Seats / Cover a friend / Pay with)
 - CTA (pinned): **Block ₹1,662.84 on UPI** / "₹277.14 charged now for your seat" · caption "One UPI PIN · Unused money is unblocked at 9:15 PM"
 - **Fallback** ladder (bank lacks Reserve Pay): card pre-authorisation, then pay all now ("₹1,662.84 charged now · refunded as friends pay", CTA **Pay ₹1,662.84**)
 - Above the ₹10,000 cap: the hold is refused before the sheet opens (§3)
@@ -205,6 +205,7 @@ Copy is final unless marked *(draft)*. Currency always shows two decimals, like 
 - Rows: "Your seat D09 · ₹277.14 incl. fees" · "Held for you until 7:15 PM today" · "Cancellation: Cinema's rules apply" (opens sheet)
 - CTA: **Pay ₹277.14 for D09**
 - Secondary: `Pay for more seats` (stepper up to unpaid count) · `Can't make it`
+- Quiet option under the CTA (10): "Not sure yet? **Remind me before 7:15 PM**" → consent sheet "Remind you before 7:15 PM?" / "BookMyShow sends one reminder at 6:45 PM. Nothing else." (phone number field if BMS doesn't know them; none if logged in) · `Remind me` / `Not now` → toast "We'll remind you at 6:45 PM"; the option becomes "Reminder set for 6:45 PM". Marks the friend opened + reminder-requested. Hidden after 6:45 PM
 - Can't make it → confirm sheet: "Let Rohan know you can't make it?" `Yes, let him know` / `Cancel` → "Thanks. Rohan's been told." (Only Rohan is notified.)
 - Assigned mode: map shows names on seats; header "Which one is you?"
 - Conflict: "Kabir is paying for D09 right now. Pick another seat."
@@ -218,12 +219,12 @@ Copy is final unless marked *(draft)*. Currency always shows two decimals, like 
 - Simultaneously on Rohan: notification "Sana's in! 🎉" / "₹277.14 less for you to cover"; board updates
 
 ### Step 7: Group status board (Rohan)
-- Header: "Friday movie" · "Monsoon Heist · Fri 9:15 PM" · pill "Pay by 7:15 PM · 4h 05m" (example at 3:10 PM)
+- Header: "Friday movie" · "Monsoon Heist · Fri 9:15 PM" · pill "Pay by 7:15 PM · 2h 10m" (example at 5:05 PM)
 - Headline: **"₹831.42 left to cover"** with sub **"₹1,385.70 blocked · unblocked at showtime"** (live; blocked = block − charged)
 - `BlockMeter`: Charged to you · Friends paid · Left to cover (+ legend amounts)
 - Seat map: names on paid seats, dashed held seats, amber paying seats
-- `GroupStatusList`, one row per seat, names only when BMS knows them: "Amit · D08 · Paid" · "Priya · D10 · Paying now" · "Sana · D09 · Opened, not paid" (entered a phone number) · "D10 · Not opened yet" · after the deadline "D06 · Kept" / "Charged at 9:15 PM unless a friend pays". Then Can't make it (`Release a seat` / `Keep`) and "N seats waiting" (`Cover seats` / `Share a reminder` for never-opened seats)
-- "Release free until 4:15 PM"
+- `GroupStatusList`, one row per seat, names only when BMS knows them: "Amit · D08 · Paid" · "Priya · D10 · Paying now" · "Sana · D09 · Opened, not paid" (entered a phone number, or opened the link logged in; sub-line "Asked for a reminder" if they tapped Remind me) · "D10 · Not opened yet" · after the deadline "D06 · Kept" / "Charged at 9:15 PM unless a friend pays". Then Can't make it (`Release a seat` / `Keep`) and "N seats waiting" (`Cover seats` / `Share a reminder` for never-opened seats)
+- "Release free until 5:45 PM"
 - Pinned footer: `More` (Shorten deadline · Add a seat · Cancel hold) · **Share link again**. After the deadline: **View receipt** ("Final receipt at 9:15 PM")
 - Notifications (iOS banner style from `15-notifications.jpg`; title, then body):
   - "Amit's in! 🎉" / "₹277.14 less for you to cover"
@@ -231,7 +232,7 @@ Copy is final unless marked *(draft)*. Currency always shows two decimals, like 
   - "Halfway there ⏳" / "3 of 6 in · 3h left for friends to pay."
   - "30 min left ⏰" / "2 seats unpaid. They're kept at 7:15 PM unless you release them."
   - Deadline: "Seats kept 🎟" / "1 seat kept. Charged at 9:15 PM unless a friend pays."
-  - Friend reminder (to people who entered a phone number): "Your seat's waiting 🍿" / "Rohan's holding a seat for Monsoon Heist. Pay by 7:15 PM."
+  - Friend reminder (to every opened friend who hasn't paid): "Your seat's waiting 🍿" / "Rohan's holding a seat for Monsoon Heist. Pay by 7:15 PM."
   - Settled (9:15 PM): "Your group is set! 🎬" / "5 of 6 in. ₹1,385.70 unblocked."
   - Late payer: "Kabir took D06 🙌" / "D06 won't be charged to you"
 
@@ -303,7 +304,7 @@ Copy is final unless marked *(draft)*. Currency always shows two decimals, like 
 
 A panel next to the phones (on mobile: the ⚙ tab). Every event is logged with a timestamp in a "What just happened" feed.
 
-**Clock:** current simulated time (starts 1:10 PM) · buttons: `+15 min` · `Halfway` · `T−30` · `Deadline` · `After grace` · `8:10 PM` · `9:00 PM` · `Showtime`
+**Clock:** current simulated time (starts 4:10 PM) · buttons: `+15 min` · `Halfway` · `T−30` · `Deadline` · `After grace` · `8:10 PM` · `9:00 PM` · `Showtime`
 
 **Show settings (before hold):** demand tier low / medium / high · "Bank supports blocking" on/off · "Less than 3h to show"
 
@@ -336,7 +337,7 @@ A panel next to the phones (on mobile: the ⚙ tab). Every event is logged with 
 | 1 | Rohan | Book tickets | "Rohan's planning Friday's movie with five friends. Not everyone has confirmed." |
 | 2 | Rohan | 9:15 PM pill | "He picks the 9:15 PM show." |
 | 3 | Rohan | Number 6 | "Six seats. Notice the new hint: he can hold seats for the group." |
-| 4 | Rohan | Demand banner | "An honest signal: seats are selling, and the hold would last 6 hours." |
+| 4 | Rohan | Demand banner | "An honest signal: seats are selling, and the hold would last 3 hours." |
 | 5 | Rohan | Hold for group | "Instead of paying ₹1,662.84 for everyone, he holds the seats." |
 | 6 | Rohan | Money ledger | "Only his seat is charged now. The rest is blocked in his account, not charged." |
 | 7 | Rohan | Approve with PIN | "This is his bank app. One PIN: ₹1,662.84 blocked, ₹277.14 charged now." |
@@ -345,7 +346,7 @@ A panel next to the phones (on mobile: the ⚙ tab). Every event is logged with 
 | 10 | Amit | Avatar stack | "Seeing who's in makes 'yes' easier." |
 | 11 | Amit | Pay button | "Picking a seat and paying is one step. No signup." |
 | 12 | Both | Ticket + block meter | "Amit has his own ticket. On Rohan's phone, ₹277.14 less to cover." |
-| 13 | Rohan | Can't make it row | "Neha can't make it. Rohan releases a seat from the end of the row, free before 4:15 PM." |
+| 13 | Rohan | Can't make it row | "Neha can't make it. Rohan releases a seat from the end of the row, free before 5:45 PM." |
 | 14 | Rohan | T−30 sheet | "30 minutes left. Do nothing and unpaid seats are kept." |
 | 15 | Rohan | Board, kept row | "7:15 PM. Kabir didn't answer, so D06 is kept. Nothing is charged yet." |
 | 16 | Kabir | Late pay page | "Kabir pays before 9:00 PM. The ticket moves to him. D06 is never charged to Rohan." |

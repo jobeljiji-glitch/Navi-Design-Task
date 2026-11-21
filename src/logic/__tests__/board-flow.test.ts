@@ -57,7 +57,7 @@ describe('09 scripted outcome through the board wrapper', () => {
         const b = selectBoard(s)!;
         expect(b.headline).toBe('₹831.42 left to cover');
         expect(b.headlineSub).toBe('₹1,385.70 blocked · unblocked at showtime');
-        expect(b.pill).toBe('Pay by 7:15 PM · 4h 05m');
+        expect(b.pill).toBe('Pay by 7:15 PM · 2h 10m');
         expect(b.paidLine).toBe('3 of 6 paid');
         expect(b.rows.map(seatRowText)).toEqual([
           'D05 · Not opened yet',
@@ -78,7 +78,7 @@ describe('09 scripted outcome through the board wrapper', () => {
         const sheet = selectReleaseSheet(s)!;
         expect(sheet.seatId).toBe('D05');
         expect(sheet.candidates).toEqual(['D05', 'D10']);
-        expect(sheet.feeLine).toBe('Free until 4:15 PM');
+        expect(sheet.feeLine).toBe('Free until 5:45 PM');
         expect(sheet.cta).toBe('Release D05 · ₹277.14 less to cover');
       }
       if (step === 'release') {
@@ -188,9 +188,9 @@ describe('09 board rows: names only when BookMyShow knows them', () => {
 });
 
 describe('release', () => {
-  it('keeps the ₹27.14 fee per seat after 4:15 PM, charged at showtime', () => {
+  it('keeps the ₹27.14 fee per seat after 5:45 PM, charged at showtime', () => {
     let s = runScriptTo(fresh(), 'sana');
-    s = run(s, { type: 'SET_CLOCK', now: ist(16, 30) });
+    s = run(s, { type: 'SET_CLOCK', now: ist(18, 0) });
     const sheet = selectReleaseSheet(s)!;
     expect(sheet.feeLine).toBe('₹27.14 fee per seat is kept');
     expect(sheet.backRow).toEqual({ label: 'Unblocked at 9:15 PM', value: '₹250.00' });
@@ -278,9 +278,9 @@ describe('deadline, grace, cut-off and showtime', () => {
 
   it('halfway copy is derived from state', () => {
     let s = runScriptTo(fresh(), 'sana');
-    s = run(s, { type: 'SET_CLOCK', now: ist(16, 15) });
+    s = run(s, { type: 'SET_CLOCK', now: ist(17, 45) });
     const n = s.notifications.find((x) => x.type === 'halfway')!;
-    expect(n.body).toBe('3 of 6 in · 3h left for friends to pay.');
+    expect(n.body).toBe('3 of 6 in · 1h 30m left for friends to pay.');
   });
 });
 

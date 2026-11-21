@@ -75,8 +75,8 @@ describe('08 Rohan approval failures', () => {
     s = R(s, { type: 'UPI_DECLINED' });
     expect(s.hold!.status).toBe('draft');
     expect(s.errorMessage).toBe('Block not approved. Try again or pay for all 6.');
-    expect(selectHoldingLine(s)).toBe("We're holding these seats for you until 1:25 PM.");
-    expect(selectHoldingLine(at(s, 13, 26, r) as FailureState)).toBeNull();
+    expect(selectHoldingLine(s)).toBe("We're holding these seats for you until 4:25 PM.");
+    expect(selectHoldingLine(at(s, 16, 26, r) as FailureState)).toBeNull();
   });
 
   it('bank timeout: plain copy, nothing charged, then a retry succeeds', () => {

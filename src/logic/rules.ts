@@ -1,10 +1,20 @@
 import type { DemandTier, Hold, Seat } from './types';
 
+/**
+ * Demand-based hold windows (10): starting values, tuned per cinema from fill rate,
+ * release rate and resale of released seats.
+ */
 export const DEMAND_WINDOWS: Record<DemandTier, number> = {
-  low: 24 * 60 * 60 * 1000,   // 24 hours
-  medium: 6 * 60 * 60 * 1000,  // 6 hours
-  high: 2 * 60 * 60 * 1000,   // 2 hours
+  low: 8 * 60 * 60 * 1000,    // 8 hours
+  medium: 3 * 60 * 60 * 1000, // 3 hours
+  high: 90 * 60 * 1000,       // 90 minutes
 };
+
+/** "8h", "3h", "90 min": the window as shown in the demand banner. */
+export function formatWindow(ms: number): string {
+  const min = Math.round(ms / 60000);
+  return min % 60 === 0 ? `${min / 60}h` : `${min} min`;
+}
 
 export const MIN_GROUP_SIZE = 3;
 export const MAX_GROUP_SIZE = 10;

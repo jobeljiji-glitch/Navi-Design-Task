@@ -63,6 +63,10 @@ export interface FriendSession {
   verified: boolean;
   upiApp: string | null;
   conflict: string | null;
+  /** 10: tapped Rohan's link at least once (BMS knows who it is only if logged in, or a phone was given). */
+  opened: boolean;
+  /** 10: "Not sure yet? Remind me before 7:15 PM": BMS sends the T−30 nudge only. */
+  remindRequested: boolean;
 }
 
 export interface FriendFlowSlice {
@@ -75,7 +79,7 @@ export interface FriendFlowSlice {
 export type AppState = DemoState & { friendFlow: FriendFlowSlice };
 
 export function initialSession(): FriendSession {
-  return { screen: 'chat', seatId: null, extra: 0, phone: '', verified: false, upiApp: null, conflict: null };
+  return { screen: 'chat', seatId: null, extra: 0, phone: '', verified: false, upiApp: null, conflict: null, opened: false, remindRequested: false };
 }
 
 export function initialFriendFlow(): FriendFlowSlice {
@@ -108,6 +112,8 @@ export type FriendFlowAction =
   | { type: 'FRIEND_RESOLVE'; name: FriendName; outcome?: PaymentOutcome }
   | { type: 'FRIEND_RETRY'; name: FriendName }
   | { type: 'FRIEND_CANT_MAKE_IT'; name: FriendName }
+  /** 10: consent to one BMS reminder at T−30. `phone` is needed unless BMS already knows the friend. */
+  | { type: 'FRIEND_REMIND_ME'; name: FriendName; phone?: string }
   | { type: 'FRIEND_BACK'; name: FriendName }
   | { type: 'FRIEND_GOTO'; name: FriendName; screen: FriendScreen }
   | { type: 'FRIEND_CLEAR_CONFLICT'; name: FriendName }
@@ -187,15 +193,34 @@ export function hasPaid(state: DemoState, name: string): boolean {
 }
 
 /**
- * 09 board realism: BookMyShow knows a friend once they entered a phone number (or are logged in and
- * started paying). Returns the seat they last picked, or null if BMS doesn't know them yet.
+ * 09/10 board realism: BookMyShow knows a friend once they entered a phone number, asked for a reminder,
+ * or opened the link while logged in to BookMyShow (identity known without a phone number).
  */
-export function openedSeat(state: AppState, name: FriendName): string | null {
+export function isKnownToBms(state: AppState, name: FriendName): boolean {
   const session = state.friendFlow.sessions[name];
   const payment = state.friendPayments.find((p) => p.name === name);
-  const known = session.verified || !!session.phone || !!payment?.phone || (state.friendFlow.loggedIn && !!payment);
-  if (!known) return null;
-  return payment?.seatIds[0] ?? session.seatId;
+  return (
+    session.verified ||
+    !!session.phone ||
+    !!payment?.phone ||
+    session.remindRequested ||
+    (state.friendFlow.loggedIn && (session.opened || !!payment))
+  );
+}
+
+/** The seat a known friend last picked (or was suggested), or null if BMS doesn't know them yet. */
+export function openedSeat(state: AppState, name: FriendName): string | null {
+  if (!isKnownToBms(state, name)) return null;
+  const payment = state.friendPayments.find((p) => p.name === name);
+  return payment?.seatIds[0] ?? state.friendFlow.sessions[name].seatId ?? suggestedSeat(state, name);
+}
+
+/** 10: when the reminder a friend asks for is sent (T−30), or null once that time has passed. */
+export function reminderTime(state: DemoState): number | null {
+  const h = state.hold;
+  if (!h || h.status !== 'active') return null;
+  const t = h.deadline - 30 * MIN;
+  return state.clock.now < t ? t : null;
 }
 
 export function hasDeclined(state: DemoState, name: string): boolean {
@@ -272,7 +297,19 @@ export function friendFlowReducer(state: AppState, action: AppAction): AppState 
       if (hasDeclined(state, name)) return setSession(state, name, { screen: 'declined' });
       const session = state.friendFlow.sessions[name];
       const keep = session.seatId && isFreeFor(state.seats[session.seatId], name, state.clock.now);
-      return setSession(state, name, { screen: 'pay', seatId: keep ? session.seatId : suggestedSeat(state, name), conflict: null });
+      return setSession(state, name, { screen: 'pay', seatId: keep ? session.seatId : suggestedSeat(state, name), conflict: null, opened: true });
+    }
+
+    case 'FRIEND_REMIND_ME': {
+      const { name } = action;
+      if (state.hold?.status !== 'active' || reminderTime(state) === null) return state;
+      if (hasPaid(state, name) || hasDeclined(state, name)) return state;
+      const session = state.friendFlow.sessions[name];
+      const phone = action.phone?.trim() || session.phone;
+      const known = state.friendFlow.loggedIn || session.verified || !!phone;
+      if (!known) return state;
+      const s = setSession(state, name, { opened: true, remindRequested: true, phone, seatId: session.seatId ?? suggestedSeat(state, name) });
+      return log(s, 'FRIEND_REMIND_ME', `${name} asked for a reminder at ${formatClockIST(reminderTime(state)!)}`);
     }
 
     case 'FRIEND_PICK_SEAT': {
@@ -524,6 +561,26 @@ export interface FriendTile {
   tappable: boolean;
 }
 
+/** 10: the quiet "Not sure yet?" option under the pay CTA. */
+export interface RemindMeView {
+  /** "Not sure yet?" */
+  lead: string;
+  /** "Remind me before 7:15 PM" */
+  action: string;
+  /** Consent sheet */
+  sheetTitle: string;
+  sheetBody: string;
+  /** Ask for a phone number (not logged in, no number given yet) */
+  needsPhone: boolean;
+  demoPhone: string;
+  confirm: string;
+  /** "We'll remind you at 6:45 PM" */
+  toast: string;
+  /** Already asked: the option is replaced by this line */
+  requested: boolean;
+  requestedLine: string;
+}
+
 export interface FriendPageView {
   live: boolean;
   alreadyPaid: boolean;
@@ -551,6 +608,31 @@ export interface FriendPageView {
   maxExtra: number;
   perSeat: string;
   endedTitle: string;
+  remind: RemindMeView | null;
+}
+
+export function selectRemindMe(state: AppState, name: FriendName): RemindMeView | null {
+  const hold = state.hold;
+  const at = reminderTime(state);
+  if (!hold || at === null || hasPaid(state, name) || hasDeclined(state, name)) return null;
+  const session = state.friendFlow.sessions[name];
+  const deadline = formatClockIST(hold.deadline);
+  const when = formatClockIST(at);
+  const needsPhone = !state.friendFlow.loggedIn && !session.verified && !session.phone;
+  return {
+    lead: 'Not sure yet?',
+    action: `Remind me before ${deadline}`,
+    sheetTitle: `Remind you before ${deadline}?`,
+    sheetBody: needsPhone
+      ? `BookMyShow sends one reminder at ${when}. Nothing else.`
+      : `BookMyShow sends one reminder to your account at ${when}. Nothing else.`,
+    needsPhone,
+    demoPhone: DEMO_PHONES[name],
+    confirm: 'Remind me',
+    toast: `We'll remind you at ${when}`,
+    requested: session.remindRequested,
+    requestedLine: `Reminder set for ${when}`,
+  };
 }
 
 export function selectFriendPage(state: AppState, name: FriendName): FriendPageView | null {
@@ -614,6 +696,7 @@ export function selectFriendPage(state: AppState, name: FriendName): FriendPageV
     maxExtra: session.seatId && !selectedTaken ? maxExtra(state, name) : 0,
     perSeat: formatINR(per),
     endedTitle: 'This hold has ended.',
+    remind: selectRemindMe(state, name),
   };
 }
 

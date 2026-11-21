@@ -48,7 +48,8 @@ Base: `https://jobeljiji-glitch.github.io/Navi-Design-Task/`
 | Late payer (Kabir pays for the kept seat before 9:00 PM) | [`#/?explore=1&moment=late`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/?explore=1&moment=late) |
 | 9:15 PM: showtime settlement animation | [`#/?explore=1&moment=settlement`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/?explore=1&moment=settlement) |
 | Final receipt ("Your group is set") | [`#/?explore=1&moment=receipt`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/?explore=1&moment=receipt) |
-| Board with all three row states (paid / opened, not paid / not opened yet) | [`#/rohan/board?at=202&opened=sana`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/rohan/board?at=202&opened=sana) |
+| A friend asks for a reminder ("Not sure yet? Remind me before 7:15 PM") | [`#/?explore=1&moment=remind`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/?explore=1&moment=remind) |
+| Board with all three row states (paid / opened, not paid / not opened yet) | [`#/rohan/board?at=430&opened=sana`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/rohan/board?at=430&opened=sana) |
 | Receipt before showtime (provisional) | [`#/rohan/receipt?at=kept`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/rohan/receipt?at=kept) |
 | Receipt after showtime (final) | [`#/rohan/receipt?at=settled`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/rohan/receipt?at=settled) |
 | A friend's pay page on its own (no frame) | [`#/friend/amit`](https://jobeljiji-glitch.github.io/Navi-Design-Task/#/friend/amit) |
@@ -85,7 +86,7 @@ Each one is also under **Try a failure** in the demo controls. Link pattern: `#/
 ## What's simulated
 
 - **No backend, no real money.** All state lives in the browser and resets on reload or with **Restart demo**.
-- **Clock:** a simulated clock (Fri, 20 Nov 2026, from 1:10 PM). The controls jump it to halfway, T−30, the deadline, after grace, 8:10 PM, the 9:00 PM cut-off or showtime, and the timers fire as they would.
+- **Clock:** a simulated clock (Fri, 20 Nov 2026, from 4:10 PM; the hold starts at 4:15 PM). The controls jump it to halfway, T−30, the deadline, after grace, 8:10 PM, the 9:00 PM cut-off or showtime, and the timers fire as they would.
 - **Banks and UPI:** a generic UPI app (any 4-digit PIN works), a generic card check (any code), and a fictional bank ("OKBANK") that sends SMS banners. UPI Reserve Pay (a block that lasts until showtime, ₹10,000 cap, one per account), card pre-authorisation and pay-all-now refunds are modelled, not connected. See [docs/feasibility.md](docs/feasibility.md).
 - **Friends:** five fictional friends. Phone OTP accepts any 4 digits. The chat is labelled "Chat (simulated)".
 - **Out of scope:** home feed, search, food, offers, reviews, login, settings and a real backend.

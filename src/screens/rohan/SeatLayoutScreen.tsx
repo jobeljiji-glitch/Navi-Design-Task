@@ -269,7 +269,7 @@ export default function SeatLayoutScreen({
       </div>
 
       {/* Step 1b: demand banner under the header strip */}
-      <DemandBanner tier={banner.tier} pctLeft={banner.pctLeft} holdHours={banner.holdHours} />
+      <DemandBanner tier={banner.tier} pctLeft={banner.pctLeft} holdLabel={banner.holdLabel} />
 
       {/* Main Horizontally & Vertically Scrollable Seat Grid Container */}
       <div

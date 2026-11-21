@@ -145,7 +145,7 @@ test.describe('phone (402 pt class)', () => {
     await page.getByRole('button', { name: 'Skip tutorial' }).click()
     await page.getByTestId('persona-chip').click()
     await page.getByTestId('persona-Amit').click()
-    await expect(phone(page).locator('[data-tour~="friend-ticket"]')).toBeVisible() // Amit paid at 2:02 PM
+    await expect(phone(page).locator('[data-tour~="friend-ticket"]')).toBeVisible() // Amit paid at 4:30 PM
     await page.getByTestId('clock-chip').click()
     await page.getByRole('button', { name: 'Skip to 6:45 PM' }).click()
     await expect(page.getByTestId('clock-chip')).toContainText('6:45 PM')
@@ -187,7 +187,7 @@ test.describe('desktop (≥ 1024 px)', () => {
 
   test('jump to moment and every failure visibly change the phone', async ({ page }) => {
     await page.goto('#/?explore=1')
-    for (const id of ['board', 'release', 't30', 'kept', 'late', 'settlement', 'receipt']) {
+    for (const id of ['board', 'remind', 'release', 't30', 'kept', 'late', 'settlement', 'receipt']) {
       const before = await phone(page).innerText()
       await page.getByTestId(`moment-${id}`).click()
       await expect.poll(() => phone(page).innerText(), { message: `moment ${id}` }).not.toBe(before)
@@ -201,5 +201,25 @@ test.describe('desktop (≥ 1024 px)', () => {
       await expect.poll(() => phone(page).innerText(), { message: `failure ${id}` }).not.toBe(before)
     }
     await expect(phone(page).getByTestId('hold-alert')).toContainText('The cinema cancelled this show. Everyone gets a full refund, including fees.')
+  })
+
+  test('10: a friend asks for a reminder; Rohan sees "Asked for a reminder"', async ({ page }) => {
+    await page.goto('#/?explore=1&moment=remind')
+    const remind = phone(page).getByTestId('remind-me')
+    await expect(remind).toHaveText('Not sure yet? Remind me before 7:15 PM')
+    await remind.click()
+    const sheet = phone(page).getByTestId('remind-sheet')
+    await expect(sheet).toContainText('Remind you before 7:15 PM?')
+    await expect(sheet).toContainText('BookMyShow sends one reminder at 6:45 PM. Nothing else.')
+    await expect(phone(page).getByTestId('remind-phone')).toHaveValue('98765 43211')
+    await sheet.getByRole('button', { name: 'Remind me' }).click()
+    await expect(phone(page).getByTestId('remind-toast')).toHaveText("We'll remind you at 6:45 PM")
+    await expect(phone(page).getByTestId('remind-set')).toHaveText('Reminder set for 6:45 PM')
+    await expect(phone(page).getByTestId('friend-pay-cta').or(phone(page).locator('[data-tour~="friend-pay-cta"]')).first()).toBeInViewport()
+    await page.getByTestId('persona-Rohan').click() // desktop: the persona switcher is in the side panel
+    const row = phone(page).getByTestId('seat-row-D09')
+    await expect(row).toContainText('Sana · D09')
+    await expect(row).toContainText('Opened, not paid')
+    await expect(row).toContainText('Asked for a reminder')
   })
 })

@@ -25,7 +25,7 @@ function draft(): DemoState {
 }
 
 describe('holdFlow: begin', () => {
-  it('snaps the clock to 1:15 PM, creates a draft with owner D07 and a 7:15 PM deadline', () => {
+  it('snaps the clock to 4:15 PM, creates a draft with owner D07 and a 7:15 PM deadline', () => {
     const s = draft();
     expect(s.clock.now).toBe(DEMO_HOLD_START_MS);
     expect(s.hold?.status).toBe('draft');
@@ -41,7 +41,7 @@ describe('holdFlow: begin', () => {
     expect(v.leavesNow).toBe('₹277.14');
     expect(v.deadlineTime).toBe('7:15 PM');
     expect(v.deadlineDay).toBe('today');
-    expect(v.freeReleaseUntil).toBe('4:15 PM');
+    expect(v.freeReleaseUntil).toBe('5:45 PM');
     expect(v.blockEnds).toBe('Today, 9:15 PM');
     expect(v.ctaTitle).toBe('Block ₹1,662.84 on UPI');
     expect(v.ctaSub).toBe('₹277.14 charged now for your seat');
@@ -54,7 +54,7 @@ describe('holdFlow: begin', () => {
     ]);
     expect(v.rules).toEqual([
       { key: 'deadline', text: 'Friends pay by 7:15 PM', action: 'shorten' },
-      { key: 'kept', text: 'Unpaid seats are kept · release free till 4:15 PM' },
+      { key: 'kept', text: 'Unpaid seats are kept · release free till 5:45 PM' },
     ]);
     expect(v.settingsSummary).toBe('Friends pick seats · No seats covered · UPI');
     expect(v.caption).toBe('One UPI PIN · Unused money is unblocked at 9:15 PM');
@@ -125,7 +125,7 @@ describe('holdFlow: approve / decline', () => {
     expect(ok.ticketLine).toBe('Your ticket D07 is confirmed');
     expect(ok.paid).toBe('₹277.14');
     expect(ok.setAsideLabel).toBe('Blocked for 5 friends');
-    expect(ok.statusLine).toBe('Friends pay by 7:15 PM · 6h left');
+    expect(ok.statusLine).toBe('Friends pay by 7:15 PM · 3h left');
     expect(ok.paidLine).toBe('1 of 6 paid');
     expect(ok.tiles.find((t) => t.id === 'D07')?.caption).toBe('You ✓');
     expect(ok.ticketSeat).toBe('PP-D07');
@@ -137,8 +137,8 @@ describe('holdFlow: approve / decline', () => {
     expect([ok.ticketsLabel, ok.ticketsPrice, ok.feesPrice, ok.orderTotal]).toEqual(['Ticket(s) price · 6 tickets', '₹1,500.00', '₹162.84', '₹1,662.84']);
     expect([ok.splitPaidLabel, ok.splitWaitingLabel]).toEqual(['Paid by you · D07', 'Waiting on 5 friends']);
     expect(ok.splitWaitingSub).toBe('Blocked, not charged · unblocked at 9:15 PM');
-    expect(ok.rulesBand).toBe('Unpaid seats are kept at 7:15 PM · release free till 4:15 PM');
-    expect(ok.moneyNote).toBe('Unpaid seats are kept at 7:15 PM. Release free till 4:15 PM.');
+    expect(ok.rulesBand).toBe('Unpaid seats are kept at 7:15 PM · release free till 5:45 PM');
+    expect(ok.moneyNote).toBe('Unpaid seats are kept at 7:15 PM. Release free till 5:45 PM.');
     expect(ok.payBy).toBe('7:15 PM today');
     expect(ok.shareMessage).toContain('Pay by 7:15 PM today · bms.link/g/k7Qx2');
   });
@@ -176,12 +176,16 @@ describe('holdFlow: approve / decline', () => {
 describe('holdFlow: demand tier', () => {
   it('switching tier changes the banner and the deadline', () => {
     let s = draft();
-    expect(selectDemandBanner(s)).toEqual({ tier: 'medium', pctLeft: 41, holdHours: 6 });
+    expect(selectDemandBanner(s)).toEqual({ tier: 'medium', pctLeft: 41, holdLabel: '3h' });
     s = run(s, { type: 'CONTROLLER_SET_DEMAND_TIER', tier: 'high' });
-    expect(selectDemandBanner(s)).toEqual({ tier: 'high', pctLeft: 18, holdHours: 2 });
-    expect(selectHoldSheet(s)!.deadlineTime).toBe('3:15 PM');
+    expect(selectDemandBanner(s)).toEqual({ tier: 'high', pctLeft: 18, holdLabel: '90 min' });
+    // 4:15 PM + 90 min; free release until 5:00 PM
+    expect(selectHoldSheet(s)!.deadlineTime).toBe('5:45 PM');
+    expect(selectHoldSheet(s)!.freeReleaseUntil).toBe('5:00 PM');
     s = run(s, { type: 'CONTROLLER_SET_DEMAND_TIER', tier: 'low' });
-    expect(selectDemandBanner(s)).toEqual({ tier: 'low', holdHours: 24 });
+    expect(selectDemandBanner(s)).toEqual({ tier: 'low', holdLabel: '8h' });
+    // 4:15 PM + 8h is capped at showtime − 2h
+    expect(selectHoldSheet(s)!.deadlineTime).toBe('7:15 PM');
     expect(selectHoldSheet(s)!.rules[1].text).toBe('Unpaid seats are kept · release free anytime');
     expect(selectHoldSheet(s)!.freeReleaseUntil).toBeNull();
   });
@@ -201,6 +205,31 @@ describe('holdFlow: helpers', () => {
 
   it('shorten options are earlier than the deadline and after now', () => {
     const opts = selectShortenOptions(draft());
-    expect(opts.map((o) => o.label)).toEqual(['6:15 PM today', '5:15 PM today', '4:15 PM today']);
+    // 10: at 4:15 PM with a 7:15 PM deadline, "3 hours earlier" would be now: only 6:15 and 5:15 are offered
+    expect(opts.map((o) => o.label)).toEqual(['6:15 PM today', '5:15 PM today']);
+  });
+});
+
+describe('10: shorter windows through the reducer', () => {
+  const istMs = (h: number, m: number) => Date.UTC(2026, 10, 20, h - 5, m - 30, 0);
+  const at = (h: number, m: number) => run(createInitialDemoState(), { type: 'SET_CLOCK', now: istMs(h, m) });
+
+  it('the demo hold starts at 4:15 PM: medium 7:15 PM, high 5:45 PM, low capped at 7:15 PM', () => {
+    expect(formatClockIST(DEMO_HOLD_START_MS)).toBe('4:15 PM');
+    expect(formatClockIST(draft().hold!.deadline)).toBe('7:15 PM');
+  });
+
+  it('not offered in the last 3 hours (after 6:15 PM for the 9:15 PM show)', () => {
+    const ok = run(at(18, 15), { type: 'BEGIN_GROUP_HOLD', seatIds: GROUP });
+    expect(ok.hold?.status).toBe('draft');
+    const late = run(at(18, 16), { type: 'BEGIN_GROUP_HOLD', seatIds: GROUP });
+    expect(late.hold).toBeNull();
+    expect(late.errorMessage).toBe('Group holds close 3 hours before the show');
+  });
+
+  it('a medium hold started at 6:00 PM is capped at showtime − 2h (7:15 PM), free release until 7:15 PM at most', () => {
+    const s = run(at(18, 0), { type: 'BEGIN_GROUP_HOLD', seatIds: GROUP });
+    expect(formatClockIST(s.hold!.deadline)).toBe('7:15 PM');
+    expect(formatClockIST(s.hold!.freeReleaseUntil!)).toBe('7:15 PM');
   });
 });

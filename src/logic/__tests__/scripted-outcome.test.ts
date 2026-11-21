@@ -32,12 +32,13 @@ describe('Scripted outcome (spec §1) through the full reducer stack', () => {
       seen[step] = s;
     }
 
-    // 1:15 PM: block ₹1,662.84, own seat charged ₹277.14
+    // 4:15 PM (10): block ₹1,662.84, own seat charged ₹277.14
     const hold = seen.hold!;
+    expect(hold.hold!.createdAt).toBe(ist(16, 15));
     expect(hold.hold!.blockAmount).toBe(166284);
     expect(hold.hold!.debited).toBe(27714);
     expect(hold.hold!.deadline).toBe(ist(19, 15));
-    expect(hold.hold!.freeReleaseUntil).toBe(ist(16, 15));
+    expect(hold.hold!.freeReleaseUntil).toBe(ist(17, 45));
     expect(hold.hold!.graceUntil).toBe(ist(19, 25));
     expect(hold.hold!.blockExpiresAt).toBe(ist(21, 15)); // the block lasts until showtime
     expect(selectMoney(hold)!).toMatchObject({ charged: 27714, toCover: 138570, stillBlocked: 138570, unblocked: 0 });
@@ -46,7 +47,16 @@ describe('Scripted outcome (spec §1) through the full reducer stack', () => {
     expect(selectMoney(seen.amit!)!).toMatchObject({ toCover: 110856, stillBlocked: 138570, unblocked: 0 });
     expect(selectMoney(seen.sana!)!).toMatchObject({ toCover: 83142, stillBlocked: 138570, unblocked: 0 });
 
-    // Neha can't make it → D05 released free (before 4:15 PM)
+    // 10: every friend action happens between the hold (4:15) and halfway (5:45)
+    for (const step of ['amit', 'sana', 'neha', 'release'] as const) {
+      expect(seen[step]!.clock.now).toBeGreaterThan(ist(16, 15));
+      expect(seen[step]!.clock.now).toBeLessThan(ist(17, 45));
+    }
+    expect(seen.halfway!.clock.now).toBe(ist(17, 45));
+    expect(seen.t30!.clock.now).toBe(ist(18, 45));
+    expect(seen.halfway!.notifications.some((n) => n.type === 'halfway')).toBe(true);
+
+    // Neha can't make it → D05 released free (before 5:45 PM)
     expect(seen.release!.seats.D05.state).toBe('released');
     expect(selectMoney(seen.release!)!).toMatchObject({ toCover: 55428, feesKept: 0, unblocked: 0 });
 
@@ -102,14 +112,14 @@ describe('Base reducer follows the same model', () => {
     let state: DemoState = createInitialDemoState();
     expect(state.clock.now).toBe(DEMO_CLOCK_START_MS);
     for (const seatId of ['D05', 'D06', 'D07', 'D08', 'D09', 'D10']) state = demoReducer(state, { type: 'SELECT_SEAT', seatId });
-    state = demoReducer(state, { type: 'SET_CLOCK', now: ist(13, 15) });
+    state = demoReducer(state, { type: 'SET_CLOCK', now: ist(16, 15) });
     state = demoReducer(state, { type: 'START_HOLD_DRAFT' });
     state = demoReducer(state, { type: 'SET_HOLD_OWNER_SEAT', seatId: 'D07' });
     state = demoReducer(state, { type: 'SUBMIT_UPI_PIN', pin: '1234' });
     const fee = state.show.fee;
     expect(stillBlocked(state.hold!)).toBe(138570);
 
-    state = demoReducer(state, { type: 'TICK', now: ist(14, 2) });
+    state = demoReducer(state, { type: 'TICK', now: ist(16, 30) });
     state = demoReducer(state, { type: 'CONTROLLER_AMIT_PAYS' });
     expect(toCover(state.hold!, state.seats, fee)).toBe(110856);
     expect(unblocked(state.hold!)).toBe(0);

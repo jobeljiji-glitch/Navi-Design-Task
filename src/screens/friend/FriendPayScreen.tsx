@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, Minus, Plus } from 'lucide-react'
+import { BellRing, ChevronRight, Minus, Plus } from 'lucide-react'
 import { AvatarStack, Band, BottomSheet, Card, Hairline, PinnedFooter, PrimaryCTA, PriceRow, SeatTileRow } from '@/ds'
 import { useDemoStore } from '@/store'
 import { selectFriendPage, type FriendName } from '@/logic/friendFlow'
@@ -15,8 +15,21 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
   const v = selectFriendPage(state, name)
   const [declineOpen, setDeclineOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
+  // 10: "Not sure yet? Remind me before 7:15 PM"
+  const [remindOpen, setRemindOpen] = useState(false)
+  const [remindPhone, setRemindPhone] = useState('')
+  const [toast, setToast] = useState<string | null>(null)
 
   if (!v) return null
+  const remind = v.remind
+  const remindDigits = (remindPhone || remind?.demoPhone || '').replace(/\D/g, '')
+  const confirmRemind = () => {
+    if (!remind) return
+    setRemindOpen(false)
+    dispatch({ type: 'FRIEND_REMIND_ME', name, ...(remind.needsPhone ? { phone: remindPhone || remind.demoPhone } : {}) })
+    setToast(remind.toast)
+    setTimeout(() => setToast(null), 2200)
+  }
 
   const organiser = state.hold?.organiser.name ?? 'Rohan'
   const stepBtn = 'w-11 h-11 flex items-center justify-center rounded-full disabled:opacity-40 active:opacity-70'
@@ -103,10 +116,78 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
             {v.cta}
           </PrimaryCTA>
         </div>
-        <button type="button" onClick={() => setDeclineOpen(true)} className="self-center h-11 px-4 text-[14px] font-medium active:opacity-70" style={{ color: 'var(--bms-red-text)' }} data-testid="cant-make-it">
-          Can't make it
-        </button>
+        <div className="flex items-center justify-center flex-wrap -mb-1">
+          {remind && !remind.requested && (
+            <button
+              type="button"
+              onClick={() => setRemindOpen(true)}
+              className="h-11 px-2 text-[13px] active:opacity-70"
+              data-testid="remind-me"
+              data-tour="remind-me"
+            >
+              <span style={{ color: 'var(--text-secondary)' }}>{remind.lead} </span>
+              <span className="font-medium" style={{ color: 'var(--bms-red-text)' }}>{remind.action}</span>
+            </button>
+          )}
+          {remind?.requested && (
+            <span className="h-11 px-2 flex items-center gap-1.5 text-[13px]" style={{ color: 'var(--text-secondary)' }} data-testid="remind-set">
+              <BellRing size={14} strokeWidth={1.75} aria-hidden />
+              {remind.requestedLine}
+            </span>
+          )}
+          {remind && <span className="text-[13px]" style={{ color: 'var(--divider)' }} aria-hidden>|</span>}
+          <button type="button" onClick={() => setDeclineOpen(true)} className="h-11 px-2 text-[13px] font-medium active:opacity-70" style={{ color: 'var(--bms-red-text)' }} data-testid="cant-make-it">
+            Can't make it
+          </button>
+        </div>
       </PinnedFooter>
+
+      {toast && (
+        <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">
+          <div className="toast-surface px-4 py-2 rounded-full text-[13px] font-medium shadow-lg text-center" role="status" data-testid="remind-toast">{toast}</div>
+        </div>
+      )}
+
+      {remind && (
+        <BottomSheet
+          isOpen={remindOpen}
+          onClose={() => setRemindOpen(false)}
+          title={remind.sheetTitle}
+          subtitle={remind.sheetBody}
+          footerDivider={false}
+          testId="remind-sheet"
+          footer={
+            <div className="flex flex-col gap-1">
+              <PrimaryCTA variant="strong" size="lg" disabled={remind.needsPhone && remindDigits.length !== 10} onClick={confirmRemind}>
+                {remind.confirm}
+              </PrimaryCTA>
+              <button type="button" onClick={() => setRemindOpen(false)} className="h-11 text-[14px] font-medium" style={{ color: 'var(--bms-red-text)' }}>
+                Not now
+              </button>
+            </div>
+          }
+        >
+          {remind.needsPhone && (
+            <div className="pb-2">
+              <label className="flex items-stretch h-12 rounded-[6px] border overflow-hidden" style={{ borderColor: 'var(--border-grey)' }}>
+                <span className="px-3 flex items-center text-[16px] border-r" style={{ borderColor: 'var(--divider)', color: 'var(--text-secondary)' }}>+91</span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={remindPhone || remind.demoPhone}
+                  onChange={(e) => setRemindPhone(e.target.value)}
+                  className="flex-1 min-w-0 px-3 text-[16px] outline-none bg-transparent"
+                  aria-label="Your phone number"
+                  data-testid="remind-phone"
+                />
+              </label>
+              <p className="text-[12px] leading-[16px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+                Only used for this reminder and your ticket.
+              </p>
+            </div>
+          )}
+        </BottomSheet>
+      )}
 
       <BottomSheet
         isOpen={declineOpen}

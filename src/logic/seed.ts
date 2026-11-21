@@ -4,11 +4,11 @@ import type { DemoState, Seat, SeatTier, Show } from './types';
 // IST is UTC+05:30. 2026-11-20 21:15 IST = 2026-11-20 15:45 UTC.
 export const DEMO_SHOW_STARTS_AT = Date.UTC(2026, 10, 20, 15, 45, 0); // 1795189500000
 
-// Simulated clock start: 1:10 PM IST (13:10 IST = 07:40 UTC)
-export const DEMO_CLOCK_START_MS = Date.UTC(2026, 10, 20, 7, 40, 0); // 1795160400000
+// Simulated clock start: 4:10 PM IST (16:10 IST = 10:40 UTC)
+export const DEMO_CLOCK_START_MS = Date.UTC(2026, 10, 20, 10, 40, 0);
 
-// Hold start: 1:15 PM IST (13:15 IST = 07:45 UTC)
-export const DEMO_HOLD_START_MS = Date.UTC(2026, 10, 20, 7, 45, 0); // 1795160700000
+// Hold start (10): 4:15 PM IST (16:15 IST = 10:45 UTC). Medium demand, 3h window → deadline 7:15 PM.
+export const DEMO_HOLD_START_MS = Date.UTC(2026, 10, 20, 10, 45, 0);
 
 export const DEMO_SHOW: Show = {
   id: 'show-monsoon-heist-01',
@@ -100,7 +100,7 @@ export function createInitialDemoState(): DemoState {
         id: 'evt-init',
         at: DEMO_CLOCK_START_MS,
         type: 'INIT',
-        description: 'Demo started at 1:10 PM',
+        description: 'Demo started at 4:10 PM',
       },
     ],
     settings: {

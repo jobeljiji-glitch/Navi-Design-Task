@@ -102,7 +102,7 @@ test('Board: Neha can’t make it → release D05 free → receipts before and a
   await page.waitForTimeout(900)
   const frame = page.locator('.device-frame-mobile')
   await frame.getByRole('button', { name: 'Release a seat', exact: true }).click()
-  await expect(frame.getByTestId('release-fee-band')).toHaveText('Free until 4:15 PM')
+  await expect(frame.getByTestId('release-fee-band')).toHaveText('Free until 5:45 PM')
   await frame.getByRole('button', { name: 'Release D05 · ₹277.14 less to cover' }).click()
   await expect(frame.getByTestId('declined-Neha')).toHaveCount(0)
   await expect(frame.getByTestId('set-aside')).toHaveText('₹554.28 left to cover')

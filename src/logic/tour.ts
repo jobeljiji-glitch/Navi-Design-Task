@@ -13,10 +13,16 @@ import { selectMoney, withBoard, type BoardState } from './boardFlow';
 import { createInitialDemoState } from './seed';
 import { formatINR } from './money';
 import type { FriendName } from './friendFlow';
+import { formatClockIST } from './holdFlow';
 import {
+  AMIT_AT,
+  HALFWAY_AT,
+  NEHA_AT,
+  SANA_AT,
   applyStep,
   approveHold,
   at,
+  ist,
   beginHold,
   friendCompletesPay,
   friendOpensLink,
@@ -25,6 +31,9 @@ import {
   openUpi,
   shareToGroup,
 } from './script';
+
+/** "5:45 PM" for a script time (10: times come from script.ts, so copy can't drift). */
+const T = ([h, m]: [number, number]) => formatClockIST(ist(h, m));
 
 export type Persona = 'Rohan' | FriendName;
 export const PERSONAS: Persona[] = ['Rohan', 'Amit', 'Sana', 'Neha', 'Priya', 'Kabir'];
@@ -51,7 +60,7 @@ export interface TourStep {
   text: string;
   /** One line on why it matters. */
   why: string;
-  /** Next button label (defaults to "Next"). Time skips say "⏩ Skip to 4:15 PM". */
+  /** Next button label (defaults to "Next"). Time skips say "⏩ Skip to 5:45 PM". */
   nextLabel?: string;
   phases: Phase[];
   phaseDelayMs?: number;
@@ -134,7 +143,7 @@ export const TOUR_STEPS: TourStep[] = [
     anchors: ['link-preview'],
     text: "Now you're Amit. Tap Rohan's link.",
     why: 'It opens in the browser or the app. No signup needed.',
-    phases: [(s) => friendOpensLink(at(s, 14, 2), 'Amit')],
+    phases: [(s) => friendOpensLink(at(s, ...AMIT_AT), 'Amit')],
     path: '/friend/amit',
     after: '/friend/amit',
     done: (s) => s.friendFlow.sessions.Amit.screen !== 'chat',
@@ -158,7 +167,7 @@ export const TOUR_STEPS: TourStep[] = [
     anchors: ['block-meter'],
     text: "Amit has his own ticket. On Rohan's phone, ₹277.14 less to cover.",
     why: 'Rohan sees each friend pay without asking anyone.',
-    nextLabel: '⏩ Skip to 3:30 PM',
+    nextLabel: `⏩ Skip to ${T(NEHA_AT)}`,
     phases: [(s) => applyStep(applyStep(s, 'sana'), 'neha')],
     path: '/rohan/board',
     after: '/rohan/board',
@@ -170,8 +179,8 @@ export const TOUR_STEPS: TourStep[] = [
     label: "Neha can't make it",
     persona: 'Rohan',
     anchors: ['release-sheet', 'cant-make-it-row'],
-    text: "Neha can't make it. Rohan releases an end seat, free before 4:15 PM.",
-    why: 'Sana paid at 3:10 PM too. The block shrinks as plans change.',
+    text: `Neha can't make it. Rohan releases an end seat, free before ${T(HALFWAY_AT)}.`,
+    why: `Sana paid at ${T(SANA_AT)} too. The block shrinks as plans change.`,
     nextLabel: 'Release D05',
     phases: [(s) => applyStep(s, 'release')],
     after: '/rohan/board',
@@ -182,15 +191,15 @@ export const TOUR_STEPS: TourStep[] = [
     label: "A seat goes back on sale",
     persona: 'Rohan',
     anchors: ['set-aside', 'pay-by'],
-    text: 'D05 is back on sale. ₹277.14 less to cover. Free release ends at 4:15 PM.',
+    text: `D05 is back on sale. ₹277.14 less to cover. Free release ends at ${T(HALFWAY_AT)}.`,
     why: 'Rohan only ever carries seats that are still open.',
-    nextLabel: '⏩ Skip to 4:15 PM',
+    nextLabel: `⏩ Skip to ${T(HALFWAY_AT)}`,
     phases: [(s) => applyStep(s, 'halfway')],
     after: '/rohan/board',
   },
   {
     id: 'halfway',
-    label: "4:15 PM: the nudge",
+    label: `${T(HALFWAY_AT)}: the nudge`,
     persona: 'Rohan',
     anchors: ['pay-by', 'set-aside'],
     text: "Halfway. BookMyShow nudges whoever hasn't paid, so Rohan doesn't chase anyone.",
@@ -314,6 +323,8 @@ export function selectTourPayoff(s: BoardState): TourPayoff | null {
 /** Explore mode: "Jump to moment". Each is a script step + where the phone goes. */
 export const MOMENTS = [
   { id: 'board', label: 'Group board', step: 'amit', path: '/rohan/board' },
+  // 10: Sana opens the link, isn't sure yet, and asks BookMyShow for a reminder
+  { id: 'remind', label: 'Friend asks for a reminder', step: 'amit', path: '/friend/sana', opens: 'Sana', rohanPath: '/rohan/board' },
   { id: 'release', label: 'Release a seat', step: 'neha', path: '/rohan/board?sheet=release' },
   { id: 't30', label: 'T−30 decision', step: 't30', path: '/rohan/board?sheet=t30' },
   { id: 'kept', label: '7:15 PM: seats kept', step: 'grace', path: '/rohan/board' },
@@ -325,7 +336,7 @@ export type MomentId = (typeof MOMENTS)[number]['id'];
 
 /** Explore mode clock skips (forward only). */
 export const CLOCK_SKIPS: Array<{ label: string; h: number; m: number }> = [
-  { label: '4:15 PM', h: 16, m: 15 },
+  { label: T(HALFWAY_AT), h: HALFWAY_AT[0], m: HALFWAY_AT[1] },
   { label: '6:45 PM', h: 18, m: 45 },
   { label: '7:15 PM', h: 19, m: 15 },
   { label: '7:25 PM', h: 19, m: 25 },

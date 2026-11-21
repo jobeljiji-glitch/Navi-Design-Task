@@ -10,7 +10,7 @@
  */
 import { formatINR, seatPrice, toCover } from './money';
 import { demoReducer } from './reducer';
-import { DEMAND_WINDOWS } from './rules';
+import { DEMAND_WINDOWS, formatWindow } from './rules';
 import { DEMO_HOLD_START_MS } from './seed';
 import type { Action, DemandTier, DemoState, Hold, Seat } from './types';
 
@@ -84,7 +84,7 @@ export function holdFlowReducer(state: DemoState, action: FlowAction): DemoState
         return { ...state, errorMessage: ALREADY_HOLDING };
       }
       let s: DemoState = state;
-      // Spec §1: the hold starts at 1:15 PM. Rohan browses from 1:10, so snap forward.
+      // Spec §1: the hold starts at 4:15 PM. Rohan browses from 4:10, so snap forward.
       if (s.clock.now < DEMO_HOLD_START_MS) {
         s = demoReducer(s, { type: 'SET_CLOCK', now: DEMO_HOLD_START_MS });
       }
@@ -223,14 +223,15 @@ export function isContiguousBlock(seatIds: string[], seats: Record<string, Seat>
 export interface DemandBannerInfo {
   tier: DemandTier;
   pctLeft?: number;
-  holdHours: number;
+  /** "3h", "8h", "90 min" */
+  holdLabel: string;
 }
 
 export function selectDemandBanner(state: DemoState): DemandBannerInfo {
   const tier = state.show.tier;
-  const holdHours = DEMAND_WINDOWS[tier] / HOUR_MS;
-  if (tier === 'low') return { tier, holdHours };
-  return { tier, holdHours, pctLeft: tier === 'high' ? HIGH_TIER_PCT_LEFT : state.show.pctLeft };
+  const holdLabel = formatWindow(DEMAND_WINDOWS[tier]);
+  if (tier === 'low') return { tier, holdLabel };
+  return { tier, holdLabel, pctLeft: tier === 'high' ? HIGH_TIER_PCT_LEFT : state.show.pctLeft };
 }
 
 export interface SelectionTotals {

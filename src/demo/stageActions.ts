@@ -224,7 +224,9 @@ export function jumpToMoment(id: MomentId) {
   const m = MOMENTS.find((x) => x.id === id)!
   let next = runScriptTo(freshState(), m.step)
   if ('late' in m && m.late) next = kabirOpens(next)
-  useStageStore.setState({ mode: 'explore', path: m.path, rohanPath: m.path.startsWith('/rohan') ? m.path : '/rohan/receipt' })
+  if ('opens' in m && m.opens) next = friendOpensLink(next, m.opens)
+  const rohanPath = m.path.startsWith('/rohan') ? m.path : 'rohanPath' in m ? m.rohanPath : '/rohan/receipt'
+  useStageStore.setState({ mode: 'explore', path: m.path, rohanPath })
   replaceState(next)
   if ('settle' in m && m.settle) {
     // 09: settlement happens at showtime

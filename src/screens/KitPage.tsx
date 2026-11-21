@@ -549,9 +549,9 @@ export default function KitPage() {
 
               {/* DemandBanners */}
               <div className="flex flex-col gap-1.5 rounded-[8px] overflow-hidden border border-divider">
-                <DemandBanner tier="medium" pctLeft={41} holdHours={6} />
-                <DemandBanner tier="high" pctLeft={18} holdHours={2} />
-                <DemandBanner tier="low" holdHours={24} />
+                <DemandBanner tier="medium" pctLeft={41} holdLabel="3h" />
+                <DemandBanner tier="high" pctLeft={18} holdLabel="90 min" />
+                <DemandBanner tier="low" holdLabel="8h" />
               </div>
 
               {/* MoneyLedger */}
@@ -646,7 +646,7 @@ export default function KitPage() {
                   stepNumber={3}
                   totalSteps={17}
                   title="Group Hold Signal"
-                  text="An honest signal: seats are selling, and the hold would last 6 hours."
+                  text="An honest signal: seats are selling, and the hold would last 3 hours."
                   onNext={() => alert('Next coachmark')}
                   onBack={() => alert('Back coachmark')}
                   onSkip={() => alert('Tour skipped')}

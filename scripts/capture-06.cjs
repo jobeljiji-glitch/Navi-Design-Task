@@ -24,21 +24,21 @@ async function zoomText(page, f) {
 }
 
 const SHOTS_LIST = [
-  ['/rohan/board?at=310', '06-board'],
+  ['/rohan/board?at=505', '06-board'],
   ['/rohan/board?at=neha', '06-board-neha'],
   ['/rohan/board?at=neha&sheet=release', '06-release-free'],
-  ['/rohan/board?at=310&clock=1630&sheet=release', '06-release-fee'],
+  ['/rohan/board?at=505&clock=1800&sheet=release', '06-release-fee'],
   ['/rohan/board?at=t30', '06-t30-board'],
   ['/rohan/board?at=t30&sheet=t30', '06-t30-sheet'],
   ['/rohan/board?at=t30&sheet=t30', '06-t30-sheet-release1', async (p) => {
     await p.locator('.device-frame-mobile [aria-label="Fewer seats to keep"]').first().click();
   }],
-  ['/rohan/board?at=310&sheet=more', '06-more'],
+  ['/rohan/board?at=505&sheet=more', '06-more'],
   ['/rohan/board?at=grace', '06-resolving'],
   ['/rohan/board?at=grace&play=1', '06-settling', null, 2600],
   ['/rohan/receipt?at=receipt', '06-receipt'],
   ['/rohan/receipt?at=late', '06-receipt-late'],
-  ['/rohan/orders?at=310', '06-orders'],
+  ['/rohan/orders?at=505', '06-orders'],
   ['/rohan/orders?at=late', '06-orders-settled'],
   ['/friend/kabir?at=810', '06-friend-late'],
   ['/friend/kabir?at=showtime', '06-friend-started'],

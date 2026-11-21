@@ -43,7 +43,7 @@ describe('07 guided tour', () => {
 
   it('time skips land on the spec times', () => {
     const labels = TOUR_STEPS.map((s) => s.nextLabel).filter(Boolean);
-    expect(labels).toEqual(['⏩ Skip to 3:30 PM', 'Release D05', '⏩ Skip to 4:15 PM', '⏩ Skip to 6:45 PM', '⏩ Skip to 7:15 PM', '⏩ Skip to 8:10 PM', 'Pay and skip to 9:15 PM']);
+    expect(labels).toEqual(['⏩ Skip to 5:20 PM', 'Release D05', '⏩ Skip to 5:45 PM', '⏩ Skip to 6:45 PM', '⏩ Skip to 7:15 PM', '⏩ Skip to 8:10 PM', 'Pay and skip to 9:15 PM']);
   });
 
   it('walking every step reproduces the spec §1 outcome, the same as the script', () => {

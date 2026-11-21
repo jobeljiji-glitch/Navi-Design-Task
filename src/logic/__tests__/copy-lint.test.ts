@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { FRIENDS, hasPaid, selectFriendCheckout, selectFriendPage, selectFriendTicket, type FriendName } from '../friendFlow';
+import { FRIENDS, hasPaid, selectFriendCheckout, selectFriendPage, selectFriendTicket, selectRemindMe, type FriendName } from '../friendFlow';
 import {
   selectBoard,
   selectFriendReminder,
@@ -99,6 +99,12 @@ describe('08 friend-facing screens never name unpaid friends', () => {
     }
     // 09: a friend who opened the link and entered a phone number, then left
     states.splice(2, 0, ['opened', friendOpensOnly(states[1][1], 'Sana', r) as FailureState]);
+    // 10: a logged-in friend who only opened the link, and one who asked for a reminder
+    const loggedIn = r(friendOpensLink(r(states[1][1], { type: 'SET_FRIEND_LOGGED_IN', loggedIn: true }), 'Priya', r), { type: 'FRIEND_OPEN_LINK', name: 'Priya' });
+    states.splice(3, 0, ['logged-in-opened', loggedIn as FailureState]);
+    const asked = r(friendOpensLink(states[1][1], 'Kabir', r), { type: 'FRIEND_REMIND_ME', name: 'Kabir', phone: '98765 43214' });
+    states.splice(4, 0, ['remind-me', asked as FailureState]);
+    states.splice(5, 0, ['remind-me-t30', at(asked, 18, 45, r) as FailureState]);
     states.push(['after-show', at(s, 21, 20, r) as FailureState]);
     for (const [step, base] of states) {
       for (const viewer of FRIENDS) {
@@ -112,6 +118,7 @@ describe('08 friend-facing screens never name unpaid friends', () => {
           selectTransferNote(st, viewer),
           selectFriendReminder(st, viewer),
           selectCutoffCheckout(st, viewer),
+          selectRemindMe(st, viewer),
         ]);
         for (const other of FRIENDS) {
           if (other === viewer || hasPaid(st, other)) continue;
@@ -141,6 +148,11 @@ describe('09 short copy: one idea per line, no on-screen sentence over 12 words'
     collect(selectHoldSheet(beginHold(s, r)), texts);
     for (const step of SCRIPT_STEPS) {
       s = applyStep(s, step, r) as FailureState;
+      if (step === 'amit') {
+        // 10: remind-me copy (option, consent sheet, toast, board sub-line)
+        const asked = r(friendOpensLink(s, 'Priya', r), { type: 'FRIEND_REMIND_ME', name: 'Priya', phone: '98765 43212' }) as FailureState;
+        collect([selectRemindMe(friendOpensLink(s, 'Priya', r) as FailureState, 'Priya'), selectRemindMe(asked, 'Priya'), selectBoard(asked)], texts);
+      }
       collect([selectBoard(s), selectT30Sheet(s), selectReleaseSheet(s), selectGroupReceipt(s), selectOrderCard(s), selectHoldSuccess(s)], texts);
       for (const f of FRIENDS) collect(selectLatePage(s, f), texts);
     }

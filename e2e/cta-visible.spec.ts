@@ -15,7 +15,7 @@ const CASES: Array<{ name: string; route: string; cta: RegExp; tap?: string }> =
   { name: 'Hold settings sheet', route: '#/rohan/hold', cta: /^Done$/, tap: 'edit-settings' },
   { name: 'UPI approval', route: '#/rohan/upi', cta: /Approve with PIN/ },
   { name: 'Group hold (success)', route: '#/rohan/held', cta: /Send to your group/ },
-  { name: 'Board', route: '#/rohan/board?at=310', cta: /Share link again/ },
+  { name: 'Board', route: '#/rohan/board?at=505', cta: /Share link again/ },
   { name: 'Board after the deadline', route: '#/rohan/board?at=kept', cta: /View receipt/ },
   { name: 'Release sheet', route: '#/rohan/board?at=neha&sheet=release', cta: /Release D05/ },
   { name: 'T−30 sheet', route: '#/rohan/board?at=t30&sheet=t30', cta: /^Confirm$/ },

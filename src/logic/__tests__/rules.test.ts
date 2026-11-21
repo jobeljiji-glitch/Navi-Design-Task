@@ -4,6 +4,8 @@ import {
   calculateDeadline,
   calculateFreeReleaseUntil,
   calculateGraceUntil,
+  DEMAND_WINDOWS,
+  formatWindow,
   isAccountHoldLimitReached,
   isOverBlockCap,
   latePayCutoff,
@@ -15,38 +17,57 @@ import {
 
 describe('Domain Rules', () => {
   const showStartsAt = new Date('2026-11-20T21:15:00+05:30').getTime(); // 9:15 PM
-  const createdAt = new Date('2026-11-20T13:15:00+05:30').getTime();    // 1:15 PM (8h before show)
+  const createdAt = new Date('2026-11-20T16:15:00+05:30').getTime();    // 4:15 PM (5h before show)
+  const ist = (hm: string) => new Date(`2026-11-20T${hm}:00+05:30`).getTime();
 
-  describe('Deadline Formula', () => {
-    it('calculates medium demand tier deadline (6h window, capped at showStartsAt - 2h)', () => {
-      // 1:15 PM + 6h = 7:15 PM (19:15)
-      // showStartsAt - 2h = 9:15 PM - 2h = 7:15 PM (19:15)
-      const deadline = calculateDeadline(createdAt, showStartsAt, 'medium');
-      expect(deadline).toBe(new Date('2026-11-20T19:15:00+05:30').getTime());
+  describe('Deadline Formula (10: windows 8h / 3h / 90 min)', () => {
+    it('windows are 8h low, 3h medium, 90 min high', () => {
+      expect(DEMAND_WINDOWS.low).toBe(8 * 60 * 60 * 1000);
+      expect(DEMAND_WINDOWS.medium).toBe(3 * 60 * 60 * 1000);
+      expect(DEMAND_WINDOWS.high).toBe(90 * 60 * 1000);
+      expect([formatWindow(DEMAND_WINDOWS.low), formatWindow(DEMAND_WINDOWS.medium), formatWindow(DEMAND_WINDOWS.high)]).toEqual(['8h', '3h', '90 min']);
     });
 
-    it('calculates low demand tier deadline capped at showStartsAt - 2h', () => {
-      // 1:15 PM + 24h = next day 1:15 PM
-      // but showStartsAt - 2h is 7:15 PM today, so it caps at 7:15 PM
-      const deadline = calculateDeadline(createdAt, showStartsAt, 'low');
-      expect(deadline).toBe(new Date('2026-11-20T19:15:00+05:30').getTime());
+    it('medium: 4:15 PM + 3h = 7:15 PM, which is also showtime − 2h', () => {
+      expect(calculateDeadline(createdAt, showStartsAt, 'medium')).toBe(ist('19:15'));
     });
 
-    it('calculates high demand tier deadline (2h window)', () => {
-      // 1:15 PM + 2h = 3:15 PM
-      const deadline = calculateDeadline(createdAt, showStartsAt, 'high');
-      expect(deadline).toBe(new Date('2026-11-20T15:15:00+05:30').getTime());
+    it('medium uncapped: 10:00 AM + 3h = 1:00 PM', () => {
+      expect(calculateDeadline(ist('10:00'), showStartsAt, 'medium')).toBe(ist('13:00'));
     });
 
-    it('calculates free-release cutoff as halfway point of demand window for medium/high', () => {
-      // Medium: 6h window -> halfway is +3h = 4:15 PM
-      const deadline = calculateDeadline(createdAt, showStartsAt, 'medium');
-      const freeReleaseUntil = calculateFreeReleaseUntil(createdAt, deadline, 'medium');
-      expect(freeReleaseUntil).toBe(new Date('2026-11-20T16:15:00+05:30').getTime());
+    it('low: 4:15 PM + 8h would pass midnight, capped at showtime − 2h (7:15 PM)', () => {
+      expect(calculateDeadline(createdAt, showStartsAt, 'low')).toBe(ist('19:15'));
+    });
 
-      // Low: returns null (free release not restricted to halfway point)
-      const lowFree = calculateFreeReleaseUntil(createdAt, deadline, 'low');
-      expect(lowFree).toBeNull();
+    it('low uncapped: 9:00 AM + 8h = 5:00 PM', () => {
+      expect(calculateDeadline(ist('09:00'), showStartsAt, 'low')).toBe(ist('17:00'));
+    });
+
+    it('high: 4:15 PM + 90 min = 5:45 PM', () => {
+      expect(calculateDeadline(createdAt, showStartsAt, 'high')).toBe(ist('17:45'));
+    });
+
+    it('high capped: 6:00 PM + 90 min = 7:30 PM, capped at 7:15 PM', () => {
+      expect(calculateDeadline(ist('18:00'), showStartsAt, 'high')).toBe(ist('19:15'));
+    });
+
+    it('free release: halfway of the window for medium/high, any time for low', () => {
+      const medium = calculateDeadline(createdAt, showStartsAt, 'medium');
+      expect(calculateFreeReleaseUntil(createdAt, medium, 'medium')).toBe(ist('17:45'));
+      const high = calculateDeadline(createdAt, showStartsAt, 'high');
+      expect(calculateFreeReleaseUntil(createdAt, high, 'high')).toBe(ist('17:00'));
+      expect(calculateFreeReleaseUntil(createdAt, medium, 'low')).toBeNull();
+    });
+
+    it('free release never runs past a capped deadline', () => {
+      // 5:00 PM + 3h → capped at 7:15 PM; halfway (6:30 PM) is before it
+      const created = ist('17:00');
+      const deadline = calculateDeadline(created, showStartsAt, 'medium');
+      expect(deadline).toBe(ist('19:15'));
+      expect(calculateFreeReleaseUntil(created, deadline, 'medium')).toBe(ist('18:30'));
+      // A deadline earlier than halfway wins
+      expect(calculateFreeReleaseUntil(created, ist('18:00'), 'medium')).toBe(ist('18:00'));
     });
 
     it('grace = deadline + 10 min; the block ends at showtime; late payments close 15 min before', () => {
@@ -64,6 +85,12 @@ describe('Domain Rules', () => {
       expect(isGroupSizeEligible(6)).toBe(true);
       expect(isGroupSizeEligible(10)).toBe(true);
       expect(isGroupSizeEligible(11)).toBe(false);
+    });
+
+    it('not offered in the last 3 hours: 6:15 PM is the last moment for a 9:15 PM show', () => {
+      expect(isThreeHoursBeforeShow(ist('18:15'), showStartsAt)).toBe(true);
+      expect(isThreeHoursBeforeShow(ist('18:16'), showStartsAt)).toBe(false);
+      expect(isThreeHoursBeforeShow(createdAt, showStartsAt)).toBe(true);
     });
 
     it('enforces 3-hour cutoff rule', () => {

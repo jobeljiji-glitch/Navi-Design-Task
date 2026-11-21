@@ -22,6 +22,7 @@ import {
   friendFlowReducer,
   hasDeclined,
   hasPaid,
+  isKnownToBms,
   openedSeat,
   withFriendFlow,
   type AppAction,
@@ -213,18 +214,23 @@ export function releaseOrder(state: DemoState, count: number, first?: string): s
   return out;
 }
 
-/** Friends who were given the link and could still be reminded (entered a phone, haven't paid or declined). */
-function remindable(state: AppState): FriendName[] {
+/**
+ * 10: friends BMS can nudge: everyone who opened the link and is known (phone number, logged in, or asked
+ * for a reminder) and hasn't paid or said they can't make it. Someone who only asked for a reminder gets
+ * the T−30 nudge they agreed to, not the halfway one.
+ */
+export function remindable(state: AppState, at: 'halfway' | 't30'): FriendName[] {
   return FRIENDS.filter((f) => {
-    const phone = state.friendFlow.sessions[f].phone || state.friendPayments.find((p) => p.name === f)?.phone;
-    return !!phone && !hasPaid(state, f) && !hasDeclined(state, f);
+    if (!isKnownToBms(state, f) || hasPaid(state, f) || hasDeclined(state, f)) return false;
+    // They agreed to one reminder at T−30 (the consent sheet says so): no halfway nudge.
+    return at === 't30' || !state.friendFlow.sessions[f].remindRequested;
   });
 }
 
-function friendReminders(state: BoardState): BoardState {
+function friendReminders(state: BoardState, at: 'halfway' | 't30'): BoardState {
   let s = state;
   const deadline = deadlineLabel(state);
-  for (const f of remindable(state)) {
+  for (const f of remindable(state, at)) {
     s = pushNotif(s, {
       id: `notif-remind-${f}-${state.clock.now}`,
       title: "Your seat's waiting 🍿",
@@ -485,7 +491,7 @@ export function runTimers(state: BoardState): BoardState {
         body: `${paid} of ${n} in · ${formatLeft(h.deadline - now)} left for friends to pay.`,
         type: 'halfway',
       });
-      s = friendReminders(s);
+      s = friendReminders(s, 'halfway');
     }
 
     // 3. T−30
@@ -499,7 +505,7 @@ export function runTimers(state: BoardState): BoardState {
           body: `${plural(unpaid, 'seat', 'seats')} unpaid. They're kept at ${deadlineLabel(s)} unless you release them.`,
           type: 't30',
         });
-        s = friendReminders(s);
+        s = friendReminders(s, 't30');
       }
     }
 
@@ -918,7 +924,10 @@ export function selectSeatRows(state: BoardState): SeatRow[] {
     const live = s.state === 'paying' || (s.state === 'locked' && !!s.lockedUntil && s.lockedUntil > now);
     if (live && s.lockedBy) return { ...base, name: s.lockedBy, status: 'Paying now', kind: 'paying' };
     const who = opened.get(s.id);
-    if (who) return { ...base, name: who, status: 'Opened, not paid', kind: 'opened' };
+    if (who) {
+      const asked = state.friendFlow.sessions[who as FriendName]?.remindRequested;
+      return { ...base, name: who, status: 'Opened, not paid', ...(asked ? { note: 'Asked for a reminder' } : {}), kind: 'opened' };
+    }
     return { ...base, name: null, status: 'Not opened yet', kind: 'not_opened' };
   });
 }
