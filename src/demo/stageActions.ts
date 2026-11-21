@@ -521,7 +521,7 @@ function cutoffPending() {
   later(() => {
     demo().dispatch({ type: 'SET_CLOCK', now: ist(21, 10) })
     demo().dispatch({ type: 'SET_NEXT_PAYMENT_OUTCOME', outcome: 'success' })
-    log("9:10 PM: Kabir's bank never confirmed. He isn't charged; D06 stays kept for Rohan")
+    log("9:10 PM: Kabir's bank never confirmed. Kabir isn't charged; D06 stays kept for Rohan")
   }, 3500)
 }
 

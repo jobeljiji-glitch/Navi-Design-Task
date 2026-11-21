@@ -69,6 +69,7 @@ export default function SummaryCard({
           <button
             type="button"
             onClick={onEditTicket}
+            data-oos={onEditTicket ? undefined : true}
             className="flex items-center gap-1 text-[13px] leading-none font-medium hover:opacity-80 shrink-0"
             style={{ color: 'var(--bms-red-text)' }}
           >

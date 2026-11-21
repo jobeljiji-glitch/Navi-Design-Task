@@ -104,6 +104,9 @@
   --toast-bg: rgba(0, 0, 0, 0.85);      /* new 09: one toast surface (was bg-black/85 in 6 screens) */
   --club-border: #FDE68A;               /* new 09: Club strip border (was raw hex in SeatLayout) */
   --pay-glyph-teal: #06B6D4;            /* new 09: ref-12 wallet glyph (was Tailwind cyan-500) */
+  --club-ink: #78350F;                  /* new 11: Club wordmark + Add Club text (was Tailwind amber-900) */
+  --club-cta-border: #F59E0B;           /* new 11: Add Club outline (was Tailwind amber-500) */
+  --poster-tagline: #CBD5E1;            /* new 11: movie poster tagline (was Tailwind slate-300) */
 
   /* 07 demo stage (outside the phone) */
   --stage-bg: #E9EEF2;                  /* new 07: backdrop around the phone */

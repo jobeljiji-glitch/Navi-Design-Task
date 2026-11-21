@@ -31,7 +31,7 @@ describe('07 guided tour', () => {
     expect(TOUR_STEPS[1].anchors.at(-1)).toBe('seat-map');
     expect(TOUR_STEPS[2].text).toBe('Only his seat is charged now. The rest is blocked in his account, not charged.');
     expect(TOUR_STEPS[11].text).toBe('30 minutes left. Do nothing and unpaid seats are kept, charged at 9:15 PM.');
-    expect(TOUR_STEPS[12].text).toBe("7:15 PM. Kabir didn't answer, so D06 is kept. Nothing is charged yet.");
+    expect(TOUR_STEPS[12].text).toBe("Deadline passed at 7:15 PM. Kabir didn't answer, so D06 is kept. Nothing is charged yet.");
     expect(TOUR_STEPS[13].text).toBe('Kabir pays before 9:00 PM. The ticket moves to him. D06 is never charged to Rohan.');
     expect(INTRO.problem).toBe("Rohan wants 6 seats for Friday. He shouldn't have to pay for everyone.");
   });

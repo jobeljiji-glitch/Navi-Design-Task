@@ -1298,25 +1298,42 @@ export interface GroupReceiptView {
   kept: KeptSeatActions | null;
 }
 
+/**
+ * 11: a cancelled hold (Rohan cancels, Rohan cancels the block in UPI, or the cinema cancels the show) is final at
+ * once. `at` is when it was cancelled; `cinema` = everyone refunded in full, including fees (spec §5 #27).
+ */
+export function selectCancellation(state: DemoState): { at: number; cinema: boolean } | null {
+  const h = state.hold;
+  if (!h || h.status !== 'cancelled') return null;
+  const ev = [...h.events].reverse().find((e) => e.type === 'CINEMA_CANCELLED_SHOW' || e.type === 'ROHAN_CANCELLED_BLOCK');
+  const settledAt = (state as Partial<BoardState>).board?.settledAt;
+  return { at: ev?.at ?? settledAt ?? state.clock.now, cinema: h.events.some((e) => e.type === 'CINEMA_CANCELLED_SHOW') };
+}
+
 export function selectGroupReceipt(state: BoardState): GroupReceiptView | null {
   const hold = state.hold;
   const m = selectMoney(state);
   if (!hold || !m) return null;
   const n = hold.seatIds.length;
   const seats = holdSeats(state);
-  const inCount = seats.filter((s) => s.state !== 'released').length;
+  const cancel = selectCancellation(state);
+  const cinema = !!cancel?.cinema;
+  // The cinema cancelled: nobody is in, whatever the seats showed before
+  const inCount = cinema ? 0 : seats.filter((s) => s.state !== 'released').length;
   const p = formatINR(m.perSeat);
   const cancelled = hold.status === 'cancelled';
   const final = hold.status === 'settled' || cancelled;
   const start = showLabel(state);
-  const rows: ReceiptRow[] = selectSeatRows(state).map((r) => ({
-    seatId: r.seatId,
-    // Names only when BMS knows them; otherwise the status leads ("Kept" / "Charged at 9:15 PM unless a friend pays")
-    who: r.name ?? r.status,
-    status: r.name ? seatStatusLine(r) : (r.note ?? (r.kind === 'released' ? 'Back on sale' : '')),
-    amount: r.kind === 'released' ? '' : p,
-    tone: r.kind === 'you' ? 'you' : r.kind === 'kept' ? 'kept' : r.kind === 'released' ? 'released' : 'paid',
-  }));
+  const rows: ReceiptRow[] = cinema
+    ? seats.map((s) => ({ seatId: s.id, who: 'Cancelled', status: 'By the cinema · full refund', amount: '', tone: 'released' }))
+    : selectSeatRows(state).map((r) => ({
+        seatId: r.seatId,
+        // Names only when BMS knows them; otherwise the status leads ("Kept" / "Charged at 9:15 PM unless a friend pays")
+        who: r.name ?? r.status,
+        status: r.name ? seatStatusLine(r) : (r.note ?? (r.kind === 'released' ? 'Back on sale' : '')),
+        amount: r.kind === 'released' ? '' : p,
+        tone: r.kind === 'you' ? 'you' : r.kind === 'kept' ? 'kept' : r.kind === 'released' ? 'released' : 'paid',
+      }));
   const chargedSub = (() => {
     const parts: string[] = [];
     if (m.ownSeats > 0) parts.push(m.ownSeats === 1 ? 'your seat' : `${m.ownSeats} seats`);
@@ -1325,7 +1342,21 @@ export function selectGroupReceipt(state: BoardState): GroupReceiptView | null {
     return parts.join(' + ');
   })();
   let ledger: GroupReceiptView['ledger'];
-  if (m.fallback) {
+  if (cinema) {
+    // Everything charged comes back; the rest of the block is unblocked
+    const refunded = hold.refunded ?? m.charged;
+    ledger = m.fallback
+      ? [
+          { key: 'start', label: 'Paid at start', value: formatINR(m.charged) },
+          { key: 'refunded', label: 'Refunded to you', value: formatINR(refunded), strong: true },
+        ]
+      : [
+          { key: 'start', label: 'Blocked', value: formatINR(m.blockAmount) },
+          { key: 'charged', label: 'Charged', value: formatINR(m.charged), sub: chargedSub || undefined },
+          { key: 'refunded', label: 'Refunded', value: formatINR(refunded) },
+          { key: 'unblocked', label: 'Unblocked', value: formatINR(m.unblocked), strong: true },
+        ];
+  } else if (m.fallback) {
     ledger = [
       { key: 'start', label: 'Paid at start', value: formatINR(m.blockAmount) },
       { key: 'refunded', label: 'Refunded to you', value: formatINR(m.refunded) },
@@ -1349,8 +1380,18 @@ export function selectGroupReceipt(state: BoardState): GroupReceiptView | null {
   return {
     final,
     badge: cancelled ? 'FINISHED' : final ? 'CONFIRMED' : 'GROUP HOLD',
-    title: cancelled ? `Hold cancelled · ${inCount} of ${n} in` : final ? `Your group is set · ${inCount} of ${n} in` : `Seats kept · settles at ${start}`,
-    statusLine: final && settledAt ? `${cancelled ? 'Cancelled' : 'Settled'} at ${formatClockIST(settledAt)}` : `${inCount} of ${n} in · receipt final at ${start}`,
+    title: cinema
+      ? 'Show cancelled · full refund'
+      : cancelled
+        ? `Hold cancelled · ${inCount} of ${n} in`
+        : final
+          ? `Your group is set · ${inCount} of ${n} in`
+          : `Seats kept · settles at ${start}`,
+    statusLine: cancel
+      ? `Cancelled at ${formatClockIST(cancel.at)}`
+      : final && settledAt
+        ? `Settled at ${formatClockIST(settledAt)}`
+        : `${inCount} of ${n} in · receipt final at ${start}`,
     filmLine: `${state.show.filmTitle} · ${state.show.language}, ${state.show.format}`,
     dateLine: `Fri, 20 Nov · ${start}`,
     cinemaLine: `${state.show.cinemaName} · ${state.show.screen}`,
@@ -1397,7 +1438,9 @@ export function selectOrderCard(state: BoardState) {
             ? `${plural(m.keptSeats, 'seat', 'seats')} kept · settles ${showLabel(state)}`
             : `${inCount} of ${n} in · settles ${showLabel(state)}`
           : hold.status === 'cancelled'
-            ? `Hold cancelled · ${inCount} of ${n} in`
+            ? selectCancellation(state)?.cinema
+              ? 'Show cancelled · full refund'
+              : `Hold cancelled · ${inCount} of ${n} in`
             : `${inCount} of ${n} in · you paid for ${youPaidFor}`,
     orderedDate: ordered,
     live,

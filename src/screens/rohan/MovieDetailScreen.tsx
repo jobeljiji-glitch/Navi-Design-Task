@@ -48,6 +48,7 @@ export default function MovieDetailScreen({
           type="button"
           className="p-1.5 flex items-center justify-center active:opacity-70"
           aria-label="Share movie"
+          data-oos
         >
           <Share2 size={20} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
         </button>
@@ -79,7 +80,7 @@ export default function MovieDetailScreen({
             >
               MONSOON HEIST
             </span>
-            <span className="text-[11px] font-medium text-slate-300 tracking-wide mt-1">
+            <span className="text-[11px] font-medium tracking-wide mt-1" style={{ color: 'var(--poster-tagline)' }}>
               THE VAULT DOESN'T WAIT FOR SUNSHINE
             </span>
 

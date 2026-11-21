@@ -473,7 +473,7 @@ export default function KitPage() {
                 <div className="bg-bg-surface">
                   <PaymentRow
                     icon={<CreditCard size={20} strokeWidth={1.75} style={{ color: 'var(--bms-red)' }} />}
-                    title="ICICI Bank Credit Card | ****5004"
+                    title="OKBANK Credit Card | ****5004"
                     subtitle="Enter CVV to complete payment"
                     lastUsed
                     onClick={() => alert('Card selected')}
@@ -481,13 +481,13 @@ export default function KitPage() {
                   <PaymentRow
                     icon={<Smartphone size={20} strokeWidth={1.75} style={{ color: 'var(--text-link)' }} />}
                     title="Pay by any UPI App"
-                    subtitle="Google Pay, PhonePe, Paytm, BHIM"
+                    subtitle="Kite Pay, Mango Pay and more"
                     onClick={() => setUpiScreenOpen(true)}
                   />
                   <PaymentRow
                     icon={<Wallet size={20} strokeWidth={1.75} style={{ color: 'var(--text-success)' }} />}
                     title="Mobile Wallets"
-                    subtitle="Amazon Pay, Mobikwik"
+                    subtitle="Mango Wallet and more"
                     onClick={() => alert('Wallets selected')}
                   />
                 </div>
@@ -745,7 +745,7 @@ export default function KitPage() {
 
         {/* FULL SCREEN M-TICKET MODAL (MATCHING REFERENCE 16) */}
         {ticketModalOpen && (
-          <div className="fixed inset-0 z-50 bg-[#E5E5E5] flex flex-col overflow-y-auto no-scrollbar">
+          <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto no-scrollbar" style={{ backgroundColor: 'var(--ticket-page-bg)' }}>
             <TicketCard
               onClose={() => setTicketModalOpen(false)}
               onShare={() => setShareSheetOpen(true)}

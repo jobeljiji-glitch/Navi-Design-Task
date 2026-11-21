@@ -116,7 +116,7 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
             {v.cta}
           </PrimaryCTA>
         </div>
-        <div className="flex items-center justify-center flex-wrap -mb-1">
+        <div className="flex items-center justify-center flex-wrap -mb-1 max-[389px]:flex-col">
           {remind && !remind.requested && (
             <button
               type="button"
@@ -135,7 +135,8 @@ export default function FriendPayScreen({ name }: { name: FriendName }) {
               {remind.requestedLine}
             </span>
           )}
-          {remind && <span className="text-[13px]" style={{ color: 'var(--divider)' }} aria-hidden>|</span>}
+          {/* 11: on narrow phones (iPhone SE) the two links stack, so the separator would dangle */}
+          {remind && <span className="text-[13px] max-[389px]:hidden" style={{ color: 'var(--divider)' }} aria-hidden>|</span>}
           <button type="button" onClick={() => setDeclineOpen(true)} className="h-11 px-2 text-[13px] font-medium active:opacity-70" style={{ color: 'var(--bms-red-text)' }} data-testid="cant-make-it">
             Can't make it
           </button>

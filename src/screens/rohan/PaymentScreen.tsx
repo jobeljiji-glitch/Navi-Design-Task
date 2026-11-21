@@ -67,33 +67,29 @@ export default function PaymentScreen({
         </div>
 
         <div className="flex flex-col bg-bg-surface border-y border-divider">
+          {/* 11: fictional bank, card and wallet names (no real brands or card-network marks) */}
           <PaymentRow
-            icon={<span className="font-medium text-[13px] text-blue-900 tracking-tighter">VISA</span>}
-            title="ICICI Bank Credit Card | ****5004"
+            icon={<CreditCard size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />}
+            title="OKBANK Credit Card | ****5004"
             subtitle="Enter CVV to complete payment"
             lastUsed
-            onClick={() => onSelectPayment?.('icici-card')}
+            onClick={() => onSelectPayment?.('okbank-card')}
           />
           <PaymentRow
             icon={
               <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium" style={{ backgroundColor: 'var(--pay-glyph-teal)', color: 'var(--text-on-brand)' }}>
-                pay
+                KP
               </div>
             }
-            title="Paytm"
-            subtitle="Get upto ₹200* cashback using Paytm UPI. *T&C Apply"
-            onClick={() => onSelectPayment?.('paytm')}
+            title="Kite Pay"
+            subtitle="UPI app · rohan@okbank"
+            onClick={() => onSelectPayment?.('kite-pay')}
           />
           <PaymentRow
-            icon={
-              <div className="flex -space-x-1">
-                <div className="w-3.5 h-3.5 rounded-full bg-red-500 opacity-90" />
-                <div className="w-3.5 h-3.5 rounded-full bg-amber-500 opacity-90" />
-              </div>
-            }
-            title="Axis Bank Debit Card | ****5563"
+            icon={<CreditCard size={18} strokeWidth={1.75} style={{ color: 'var(--text-secondary)' }} />}
+            title="OKBANK Debit Card | ****5563"
             subtitle="Enter CVV to complete payment"
-            onClick={() => onSelectPayment?.('axis-card')}
+            onClick={() => onSelectPayment?.('okbank-debit')}
           />
         </div>
 

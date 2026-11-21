@@ -150,6 +150,7 @@ export default function ShowtimesScreen({
             type="button"
             className="hit-44 p-1.5 flex items-center justify-center active:opacity-70"
             aria-label="Search"
+            data-oos
           >
             <Search size={20} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
           </button>
@@ -157,6 +158,7 @@ export default function ShowtimesScreen({
             type="button"
             className="hit-44 p-1.5 flex items-center justify-center active:opacity-70"
             aria-label="Filter showtimes"
+            data-oos
           >
             <SlidersHorizontal size={20} strokeWidth={1.75} style={{ color: 'var(--text-primary)' }} />
           </button>
@@ -207,6 +209,7 @@ export default function ShowtimesScreen({
           type="button"
           className="hit-44 h-[32px] flex items-center gap-1.5 px-3 rounded-[8px] border text-[13px] font-normal whitespace-nowrap bg-bg-surface shrink-0"
           style={{ borderColor: 'var(--border-grey)' }}
+          data-oos
         >
           <ArrowUpDown size={14} strokeWidth={1.75} style={{ color: 'var(--bms-red-text)' }} />
           <span style={{ color: 'var(--text-secondary)' }}>Sort by</span>
@@ -225,6 +228,7 @@ export default function ShowtimesScreen({
             type="button"
             className="hit-44 h-[32px] flex items-center gap-1.5 px-3 rounded-full border text-[13px] font-normal whitespace-nowrap bg-bg-surface shrink-0"
             style={{ borderColor: 'var(--bms-red)', color: 'var(--bms-red-text)' }}
+            data-oos
           >
             <span>{chip.label}</span>
             {chip.chevron && <ChevronDown size={13} strokeWidth={1.75} />}
@@ -267,6 +271,7 @@ export default function ShowtimesScreen({
                   type="button"
                   className="hit-44 w-[44px] h-[44px] -mt-1.5 -mr-2.5 flex items-center justify-center shrink-0"
                   aria-label="Favorite cinema"
+                  data-oos
                 >
                   <Heart size={20} strokeWidth={1.25} style={{ color: 'var(--icon-light)' }} />
                 </button>

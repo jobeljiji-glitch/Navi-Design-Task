@@ -226,7 +226,8 @@ export const TOUR_STEPS: TourStep[] = [
     label: "7:15 PM: seats kept",
     persona: 'Rohan',
     anchors: ['kept-row', 'board-headline'],
-    text: "7:15 PM. Kabir didn't answer, so D06 is kept. Nothing is charged yet.",
+    // 11: the phone clock reads 7:25 PM here (grace has ended), so the bubble names 7:15 as the deadline
+    text: "Deadline passed at 7:15 PM. Kabir didn't answer, so D06 is kept. Nothing is charged yet.",
     why: "Priya's payment was still with the bank. It got 10 more minutes.",
     nextLabel: '⏩ Skip to 8:10 PM',
     phases: [kabirOpens],

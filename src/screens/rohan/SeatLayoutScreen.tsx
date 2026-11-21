@@ -320,7 +320,7 @@ export default function SeatLayoutScreen({
             <div className="flex flex-col text-left pr-2">
               <div className="flex items-center gap-1">
                 <span className="text-[10px] font-semibold text-text-secondary leading-none">bookmyshow</span>
-                <span className="text-[11px] font-black tracking-wider text-amber-900 leading-none">CLUB</span>
+                <span className="text-[11px] font-black tracking-wider leading-none" style={{ color: 'var(--club-ink)' }}>CLUB</span>
               </div>
               <span
                 className="text-[12px] leading-[15px] font-medium mt-0.5"
@@ -332,7 +332,9 @@ export default function SeatLayoutScreen({
 
             <button
               type="button"
-              className="hit-44 px-3 py-1.5 rounded-[4px] bg-white border border-amber-500 text-[12px] font-medium text-amber-900 shrink-0"
+              className="hit-44 px-3 py-1.5 rounded-[4px] border text-[12px] font-medium shrink-0"
+              style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--club-cta-border)', color: 'var(--club-ink)' }}
+              data-oos
             >
               Add Club
             </button>

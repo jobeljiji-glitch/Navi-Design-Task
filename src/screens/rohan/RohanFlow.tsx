@@ -56,6 +56,14 @@ export default function RohanFlow() {
   const latestSms = state.smsToasts.find((t) => SMS_KEYS.some((k) => t.id.startsWith(k))) ?? null
   const [queue, setQueue] = useState<Banner[]>([])
   const [bannerVisible, setBannerVisible] = useState(true)
+  const [oos, setOos] = useState(false)
+  const oosTimer = useRef<ReturnType<typeof setTimeout>>()
+  const showOos = () => {
+    setOos(true)
+    clearTimeout(oosTimer.current)
+    oosTimer.current = setTimeout(() => setOos(false), 2000)
+  }
+  useEffect(() => () => clearTimeout(oosTimer.current), [])
   // In the demo stage the seen ids outlive this component, so a friend's payment made while
   // Rohan's phone was away still arrives as a banner when the story comes back to him.
   const inStage = useInStage()
@@ -149,7 +157,10 @@ export default function RohanFlow() {
     if (latestNotif && id !== seenNotif.current) {
       seenNotif.current = id
       syncCursor()
-      setQueue((q) => [...q, { id: latestNotif.id, app: 'bms', title: latestNotif.title, body: latestNotif.body, kind: latestNotif.type }])
+      // 11: latest wins. A newer BMS banner replaces older BMS ones (queued or showing), so a quick
+      // time skip never shows a stale "Halfway there" at the deadline. Bank SMS stay in order.
+      const next: Banner = { id: latestNotif.id, app: 'bms', title: latestNotif.title, body: latestNotif.body, kind: latestNotif.type }
+      setQueue((q) => [...q.filter((b) => b.app === 'sms'), next])
     }
   }, [latestNotif?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -168,7 +179,8 @@ export default function RohanFlow() {
   useEffect(() => setBannerVisible(true), [banner?.id])
   const nextBanner = () => {
     setBannerVisible(false)
-    setTimeout(() => setQueue((q) => q.slice(1)), 350)
+    const id = queue[0]?.id
+    setTimeout(() => setQueue((q) => q.filter((b) => b.id !== id)), 350)
   }
   const openBanner = (b: Banner) => {
     nextBanner()
@@ -379,9 +391,7 @@ export default function RohanFlow() {
           <PaymentScreen
             amountPaise={totalPaise}
             onBack={() => navigate('/rohan/confirm')}
-            onSelectPayment={(method) => {
-              console.log('Selected payment method:', method)
-            }}
+            onSelectPayment={() => showOos()}
           />
         )
 
@@ -399,7 +409,15 @@ export default function RohanFlow() {
 
   return (
     <DeviceFrame time={formatClockIST(state.clock.now).replace(/ [AP]M$/, '')}>
-      {renderActiveScreen()}
+      {/* 11: real-app chrome outside the prototype ([data-oos]) answers with one toast instead of a dead tap */}
+      <div className="contents" onClickCapture={(e) => { if ((e.target as Element).closest?.('[data-oos]')) showOos() }}>
+        {renderActiveScreen()}
+      </div>
+      {oos && (
+        <div className="absolute top-16 left-4 right-4 z-50 flex justify-center pointer-events-none">
+          <div className="toast-surface px-4 py-2 rounded-full text-[13px] font-medium shadow-lg" role="status" data-testid="oos-toast">Not part of this prototype</div>
+        </div>
+      )}
       {banner && (
         <IosNotification
           key={banner.id}

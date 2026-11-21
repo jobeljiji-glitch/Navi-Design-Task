@@ -239,7 +239,7 @@ export function selectLadderNotice(state: FailureState): LadderNotice | null {
   }
   return {
     title: failureOf(state).cardCanHold ? 'Paying for everyone now' : "Your bank and card can't hold money",
-    body: `Pay for all ${n} now and get ${per} back each time a friend pays.`,
+    body: `Pay for all ${n} now. Get ${per} back as each friend pays.`,
   };
 }
 

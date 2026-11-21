@@ -118,6 +118,7 @@ export default function ConfirmBookingScreen({
             <button
               type="button"
               className="flex items-center gap-1 text-[13px] font-medium hover:opacity-85"
+              data-oos
               style={{ color: 'var(--bms-red-text)' }}
             >
               <Edit3 size={13} strokeWidth={1.75} />

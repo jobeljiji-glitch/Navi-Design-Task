@@ -62,6 +62,8 @@ async function runWholeTour(page: Page) {
       for (const a of avoid) expect(hits(bubble, a), `step ${i}: bubble covers the CTA footer or sheet content`).toBe(false)
     }
     expect(await page.locator('body').innerText()).not.toMatch(BANNED)
+    // 11: a newer banner replaces older ones, so a quick Next never leaves "Halfway there" up at the deadline
+    if (i >= 12) expect(await page.locator('body').innerText(), `step ${i}: stale halfway banner`).not.toContain('Halfway there')
     if (bubble) await page.getByTestId('coach-next').click()
     else {
       await page.getByTestId('coach-pill').click()

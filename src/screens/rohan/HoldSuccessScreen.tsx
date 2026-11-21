@@ -19,6 +19,9 @@ import {
 import { useDemoStore } from '@/store'
 import { selectHoldSuccess } from '@/logic/holdFlow'
 
+/** 11: the band's second line starts a sentence ("Release free till 5:45 PM"). */
+const sentenceCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
 /**
  * "Group hold" success screen (04b/04c). Grey page + white 8 pt cards (ref 22),
  * badge + status line (ref 14), "who's in" as seat tiles, money card in Confirm-booking style,
@@ -96,7 +99,7 @@ export default function HoldSuccessScreen({ onBack, onOpenChat, showSms = true, 
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 flex flex-col gap-3 no-scrollbar [&>*]:shrink-0" style={{ overscrollBehavior: 'contain' }}>
         {/* Card 1: status, with the rules as the ref-22 band flush on its bottom edge */}
-        <Card testId="status-card" className="flex flex-col gap-3" band={<Band title={v.rulesBand.split(' · ')[0]} testId="status-band">{v.rulesBand.split(' · ')[1]}</Band>}>
+        <Card testId="status-card" className="flex flex-col gap-3" band={<Band title={v.rulesBand.split(' · ')[0]} testId="status-band">{sentenceCase(v.rulesBand.split(' · ')[1] ?? '')}</Band>}>
           <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status="GROUP HOLD" />
             <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>{v.statusLine}</span>

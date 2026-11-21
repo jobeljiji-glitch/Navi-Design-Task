@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { withBoard } from '../boardFlow';
+import { selectGroupReceipt, selectOrderCard, withBoard } from '../boardFlow';
 import { createInitialDemoState } from '../seed';
 import { selectHoldSheet } from '../holdFlow';
 import {
@@ -57,7 +57,7 @@ describe('08 payment fallback ladder (#4/#5)', () => {
     expect(v.ctaTitle).toBe('Pay ₹1,662.84');
     expect(v.upiAmount).toBe('₹1,662.84');
     expect(v.moneyLine).toBe('₹1,662.84 charged now · refunded as friends pay');
-    expect(selectLadderNotice(s)!.body).toBe('Pay for all 6 now and get ₹277.14 back each time a friend pays.');
+    expect(selectLadderNotice(s)!.body).toBe('Pay for all 6 now. Get ₹277.14 back as each friend pays.');
     s = R(R(s, { type: 'OPEN_UPI' }), { type: 'APPROVE_HOLD', pin: '0000' });
     expect(s.hold!.debited).toBe(s.hold!.blockAmount);
   });
@@ -188,5 +188,28 @@ describe('08 after the show (#25, spec §3)', () => {
   it('RESTART_DEMO resets the failure slice', () => {
     const s = R(R(fresh(), { type: 'CONTROLLER_TOGGLE_CARD_HOLD', supported: false }), { type: 'RESTART_DEMO' });
     expect(failureOf(s).cardCanHold).toBe(true);
+  });
+});
+
+describe('11 cancelled holds: the receipt is final at once and matches the alert', () => {
+  const hold = () => runScriptTo(fresh(), 'amit', r) as FailureState;
+  const ledger = (s: FailureState) => Object.fromEntries(selectGroupReceipt(s)!.ledger.map((l) => [l.key, l.value]));
+
+  it('#27 cinema cancels: nobody in, full refund row, Blocked = Charged + Unblocked, Refunded = Charged', () => {
+    const s = R(hold(), { type: 'CONTROLLER_CINEMA_CANCELS_SHOW' });
+    const v = selectGroupReceipt(s)!;
+    expect(v.title).toBe('Show cancelled · full refund');
+    expect(v.statusLine).toBe('Cancelled at 4:30 PM');
+    expect(v.rows.every((x) => x.who === 'Cancelled' && x.amount === '')).toBe(true);
+    expect(ledger(s)).toEqual({ start: '₹1,662.84', charged: '₹277.14', refunded: '₹277.14', unblocked: '₹1,385.70' });
+    expect(selectOrderCard(s)!.statusMessage).toBe('Show cancelled · full refund');
+  });
+
+  it('#8 Rohan cancels the block in UPI: "Cancelled at", never "receipt final at 9:15 PM"', () => {
+    const s = R(hold(), { type: 'CONTROLLER_ROHAN_CANCELS_BLOCK' });
+    const v = selectGroupReceipt(s)!;
+    expect(v.statusLine).toBe('Cancelled at 4:30 PM');
+    expect(v.title).toBe('Hold cancelled · 2 of 6 in');
+    expect(ledger(s)).toEqual({ start: '₹1,662.84', charged: '₹277.14', unblocked: '₹1,385.70' });
   });
 });

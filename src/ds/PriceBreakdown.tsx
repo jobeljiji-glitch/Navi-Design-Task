@@ -197,6 +197,7 @@ export default function PriceBreakdown({
               <button
                 type="button"
                 className="hit-44 underline hover:opacity-85 font-medium"
+                data-oos
                 style={{ color: 'var(--text-secondary)' }}
               >
                 VIEW T&C
@@ -214,6 +215,7 @@ export default function PriceBreakdown({
             <button
               type="button"
               onClick={onAddMusicians}
+              data-oos={onAddMusicians ? undefined : true}
               className="hit-44 text-[12px] leading-[16px] font-medium hover:opacity-85"
               style={{ color: 'var(--bms-red-text)' }}
             >
